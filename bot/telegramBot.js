@@ -16,9 +16,9 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
-// --- CONFIGURATION ---
-const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEJu0bson3dxS0QwLa6LFWNfmBHRdVOxok"; 
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
+/// --- CONFIGURATION ---
+const TOKEN = process.env.BOT_TOKEN || ""; // Прибрали токен звідси
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213"; // Адміна залишили
 const PORT = process.env.PORT || 3001;
 
 // Support both standard MONGO_URI and the 'myDatabase' variable
