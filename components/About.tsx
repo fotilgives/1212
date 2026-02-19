@@ -31,17 +31,19 @@ const About: React.FC = () => {
           <div className="md:col-span-6 lg:col-span-7 order-1 md:order-2 grid grid-cols-2 gap-4 md:gap-8">
              <div className="aspect-[3/4] rounded-[40px] overflow-hidden shadow-2xl hover:-translate-y-3 transition-all duration-700 relative group">
                <img 
-                 src="https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?q=80&w=1200&auto=format&fit=crop" 
+                 src="https://image2url.com/r2/default/images/1771535693647-97a7d2f0-5805-4150-90e5-a9a3a75c66fa.jpg" 
                  alt="Студія" 
-                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                 className="w-full h-full object-cover transition-all duration-1000"
+                 style={{ imageRendering: 'high-quality' as any }}
                />
                <div className="absolute inset-0 bg-black/10"></div>
              </div>
              <div className="aspect-[3/4] rounded-[40px] overflow-hidden shadow-2xl mt-12 md:mt-20 hover:-translate-y-3 transition-all duration-700 relative group">
                <img 
-                 src="https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=1200&auto=format&fit=crop" 
+                 src="https://image2url.com/r2/default/images/1771535950021-61a9db25-ad2c-499a-a485-5ddd7609c7c1.jpeg" 
                  alt="Процес" 
-                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000"
+                 className="w-full h-full object-cover transition-all duration-1000"
+                 style={{ imageRendering: 'high-quality' as any }}
                />
                <div className="absolute inset-0 bg-black/10"></div>
              </div>

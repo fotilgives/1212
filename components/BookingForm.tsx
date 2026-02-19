@@ -1,32 +1,53 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 // --- CONFIGURATION ---
-// Вставте сюди ваші реальні дані від @BotFather та @userinfobot
 const TELEGRAM_TOKEN = "8299961218:AAGLitau59BpwqlNA3IfiXjQK0wRw0xf4qk"; 
 const CHAT_ID = "8200508213";
 
-// Список доступних годин (Можна редагувати цей список тут, щоб змінити доступний час на сайті)
-const AVAILABLE_TIMES = [
-  "10:00", "11:30", "13:00", "15:00", "16:30", "18:00"
+// --- MOCK DATABASE FOR DYNAMIC SCHEDULING ---
+// In a real app, this data would come from your backend API
+const SCHEDULE_DATABASE: Record<string, string[]> = {
+  // Example: Admin added slots for Feb 20th
+  "2025-02-20": ["10:00", "14:00", "16:00", "18:30"],
+  // Example: Another date
+  "2025-02-21": ["09:00", "12:00", "15:00"],
+};
+
+// Default slots for other days (for demonstration purposes)
+const DEFAULT_SLOTS = ["10:00", "12:00", "14:00", "16:00", "18:00"];
+
+// Mock Booked Slots (Date + Time)
+const BOOKED_SLOTS_DB = [
+  "2025-02-20T14:00",
+  "2025-02-21T09:00"
 ];
 
 const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '+380',
-    service: 'Art-Фарбування',
+    service: 'Складні техніки фарбування',
     date: '',
-    time: '' // Додано поле часу
+    time: ''
   });
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
+  // Get "Today" in YYYY-MM-DD format for the min attribute
+  const today = new Date().toISOString().split('T')[0];
+
+  // Dynamic Available Times based on selected date
+  const availableTimes = useMemo(() => {
+    if (!formData.date) return [];
+    // Return specific slots if defined in DB, otherwise return default slots
+    // In strict mode (only admin added slots), you might return [] if not found.
+    return SCHEDULE_DATABASE[formData.date] || DEFAULT_SLOTS;
+  }, [formData.date]);
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
-    // Забороняємо видаляти префікс +380
     if (!value.startsWith('+380')) value = '+380';
-    // Дозволяємо вводити лише цифри після плюса
     const numberPart = value.substring(1).replace(/[^0-9]/g, '');
     setFormData({ ...formData, phone: '+' + numberPart });
   };
@@ -34,31 +55,29 @@ const BookingForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Валідація
     if (!formData.date || !formData.time) {
       alert("Будь ласка, оберіть дату та час візиту.");
       return;
     }
 
-    // Перевірка наявності токенів (для запобігання падіння сайту, якщо вони не вказані)
     if (!TELEGRAM_TOKEN || !CHAT_ID) {
-      console.warn('Telegram credentials missing. Simulated success for demo.');
-      setStatus('loading');
-      setTimeout(() => setStatus('success'), 1500);
-      return;
+        setStatus('loading');
+        setTimeout(() => setStatus('success'), 1500);
+        return;
     }
     
     setStatus('loading');
 
-    // Формування повідомлення для Telegram (HTML формат)
     const message = `
-🌟 <b>Новий запис на сайті!</b>
+🌟 <b>Новий запит!</b>
 
 👤 <b>Клієнт:</b> ${formData.name}
 📞 <b>Телефон:</b> ${formData.phone}
 ✂️ <b>Послуга:</b> ${formData.service}
 📅 <b>Дата:</b> ${formData.date}
 ⏰ <b>Час:</b> ${formData.time}
+
+<i>Очікує підтвердження через бот.</i>
     `.trim();
 
     try {
@@ -68,14 +87,21 @@ const BookingForm: React.FC = () => {
         body: JSON.stringify({
           chat_id: CHAT_ID,
           text: message,
-          parse_mode: 'HTML'
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+                [
+                    { text: "✅ Погодитись", callback_data: `approve_${formData.date}_${formData.time}` },
+                    { text: "❌ Відхилити", callback_data: `decline_${formData.date}_${formData.time}` }
+                ]
+            ]
+          }
         }),
       });
 
       if (response.ok) {
         setStatus('success');
       } else {
-        console.error('Telegram response not OK');
         setStatus('error');
       }
     } catch (error) {
@@ -92,19 +118,18 @@ const BookingForm: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="text-3xl font-playfair mb-4 text-neutral-900 font-bold">Запис підтверджено!</h3>
+        <h3 className="text-3xl font-playfair mb-4 text-neutral-900 font-bold">Запит надіслано!</h3>
         <p className="text-neutral-500 text-lg font-light leading-relaxed mb-8">
-          Світлана отримала ваш запит на <b>{formData.date}</b> о <b>{formData.time}</b>.<br/>
-          Ми зв'яжемося з вами найближчим часом.
+          Ми перевіримо доступність на <b>{formData.date}</b> о <b>{formData.time}</b> та підтвердимо ваш запис.
         </p>
         <button 
           onClick={() => { 
             setStatus('idle'); 
-            setFormData({ name: '', phone: '+380', service: 'Art-Фарбування', date: '', time: '' }); 
+            setFormData({ name: '', phone: '+380', service: 'Складні техніки фарбування', date: '', time: '' }); 
           }}
           className="text-[10px] font-bold uppercase tracking-[0.3em] border-b-2 border-black pb-1 hover:text-neutral-400 hover:border-neutral-200 transition-all"
         >
-          Зробити ще один запис
+          Новий запис
         </button>
       </div>
     );
@@ -112,7 +137,7 @@ const BookingForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Name Input */}
+      {/* Name */}
       <div className="space-y-2">
         <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Ваше Ім'я</label>
         <input
@@ -125,7 +150,7 @@ const BookingForm: React.FC = () => {
         />
       </div>
 
-      {/* Phone Input */}
+      {/* Phone */}
       <div className="space-y-2">
         <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Телефон</label>
         <input
@@ -138,7 +163,7 @@ const BookingForm: React.FC = () => {
         />
       </div>
 
-      {/* Service Selection */}
+      {/* Service */}
       <div className="space-y-2">
         <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Послуга</label>
         <div className="relative">
@@ -147,11 +172,11 @@ const BookingForm: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
             className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 appearance-none cursor-pointer focus:bg-white"
           >
-            <option value="Ексклюзивна Стрижка">Ексклюзивна Стрижка</option>
-            <option value="Art-Фарбування">Art-Фарбування</option>
-            <option value="Molecular Догляд">Molecular Догляд</option>
-            <option value="Вечірній Образ">Вечірній Образ</option>
-            <option value="Консультація">Консультація</option>
+            <option value="Складні техніки фарбування">Складні техніки фарбування (від 3000₴)</option>
+            <option value="Фарбування тон в тон">Фарбування тон в тон (від 2000₴)</option>
+            <option value="Тонування">Тонування (від 1200₴)</option>
+            <option value="Вихід з чорного">Вихід з чорного (від 3500₴)</option>
+            <option value="Відновлення волосся">Відновлення волосся (від 1500₴)</option>
           </select>
           <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -159,43 +184,60 @@ const BookingForm: React.FC = () => {
         </div>
       </div>
 
-      {/* Date & Time Section */}
+      {/* Date & Time */}
       <div className="space-y-6 pt-4">
         <div className="space-y-2">
           <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Бажана Дата</label>
           <input
             required
             type="date"
-            min={new Date().toISOString().split('T')[0]} // Блокуємо минулі дати
+            min={today}
             value={formData.date}
             onChange={(e) => {
-              setFormData({ ...formData, date: e.target.value, time: '' }); // Скидаємо час при зміні дати
+              setFormData({ ...formData, date: e.target.value, time: '' });
             }}
             className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 cursor-pointer focus:bg-white"
           />
         </div>
 
-        {/* Time Slots - Only show if date is selected */}
+        {/* Time Slots */}
         <div className={`space-y-3 transition-all duration-500 ${formData.date ? 'opacity-100 max-h-96' : 'opacity-50 max-h-0 overflow-hidden grayscale'}`}>
-          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Оберіть час</label>
-          <div className="grid grid-cols-3 gap-3 px-2">
-            {AVAILABLE_TIMES.map((time) => (
-              <button
-                key={time}
-                type="button"
-                onClick={() => setFormData({ ...formData, time })}
-                className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
-                  formData.time === time
-                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg scale-105'
-                    : 'bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
-                }`}
-              >
-                {time}
-              </button>
-            ))}
-          </div>
-          {formData.date && !formData.time && (
-            <p className="text-xs text-neutral-400 ml-4 animate-pulse">Оберіть зручний час для візиту</p>
+          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">
+             {formData.date ? `Час для ${formData.date}` : 'Оберіть дату'}
+          </label>
+          
+          {availableTimes.length > 0 ? (
+            <div className="grid grid-cols-3 gap-3 px-2">
+                {availableTimes.map((time) => {
+                // Check if this specific DateTime is booked
+                const dateTimeString = `${formData.date}T${time}`;
+                const isBooked = BOOKED_SLOTS_DB.includes(dateTimeString);
+                
+                return (
+                    <button
+                    key={time}
+                    type="button"
+                    disabled={isBooked}
+                    onClick={() => setFormData({ ...formData, time })}
+                    className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
+                        isBooked 
+                            ? 'bg-neutral-100 text-neutral-300 border-transparent cursor-not-allowed line-through decoration-neutral-400' 
+                            : formData.time === time
+                                ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg scale-105'
+                                : 'bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
+                    }`}
+                    >
+                    {time}
+                    </button>
+                );
+                })}
+            </div>
+          ) : (
+             <div className="text-sm text-neutral-400 px-4 italic">Немає вільних місць на цю дату.</div>
+          )}
+          
+          {formData.date && !formData.time && availableTimes.length > 0 && (
+            <p className="text-xs text-neutral-400 ml-4 animate-pulse">Оберіть зручний час</p>
           )}
         </div>
       </div>
@@ -210,7 +252,7 @@ const BookingForm: React.FC = () => {
 
       {status === 'error' && (
         <div className="bg-red-50 text-red-500 p-4 rounded-2xl text-center text-xs uppercase tracking-widest mt-4">
-          Помилка з'єднання. Перевірте інтернет або зателефонуйте нам.
+          Помилка з'єднання.
         </div>
       )}
     </form>

@@ -35,7 +35,7 @@ const Footer: React.FC = () => {
             <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-neutral-900">Зв'язок</h4>
             <ul className="space-y-4 text-xs text-neutral-400 font-medium">
               <li>+380 97 911 20 15</li>
-              <li>Вінниця, Україна</li>
+              <li>Вінниця, вул. Князів Коріатовичів, 106</li>
             </ul>
           </div>
         </div>

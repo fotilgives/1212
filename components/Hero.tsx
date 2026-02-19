@@ -15,7 +15,7 @@ const Hero: React.FC = () => {
             <div className="inline-flex items-center space-x-4">
               <span className="w-10 h-[1px] bg-neutral-300"></span>
               <span className="text-[10px] font-bold tracking-[0.5em] uppercase text-neutral-400">
-                Premium Hair Artist
+                Premium Hair Stylist
               </span>
             </div>
             
@@ -50,7 +50,7 @@ const Hero: React.FC = () => {
             <div className="relative aspect-[3/4] rounded-t-full rounded-b-[40px] overflow-hidden shadow-[0_60px_100px_-30px_rgba(0,0,0,0.2)] bg-neutral-100 ring-[12px] ring-white">
               <img 
                 src="https://image2url.com/r2/default/images/1771516163140-df3aaee6-ddcb-445b-9359-b65b23cca1a1.jpg" 
-                alt="Світлана Мазур - Hair Architect" 
+                alt="Світлана Мазур - Hair Stylist" 
                 width={800}
                 height={1067}
                 className="w-full h-full object-cover object-top scale-[1.02] hover:scale-110 transition-transform duration-[4s] ease-out contrast-[1.05]"
@@ -72,7 +72,7 @@ const Hero: React.FC = () => {
               <svg viewBox="0 0 100 100" className="w-full h-full p-4">
                 <path id="circlePath" d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0" fill="none" />
                 <text className="text-[11px] uppercase font-bold tracking-[0.2em] fill-neutral-800">
-                  <textPath xlinkHref="#circlePath">SVETLANA MAZUR • HAIR ARCHITECT •</textPath>
+                  <textPath xlinkHref="#circlePath">SVETLANA MAZUR • HAIR STYLIST •</textPath>
                 </text>
               </svg>
             </div>

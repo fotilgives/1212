@@ -32,7 +32,7 @@ const Contact: React.FC = () => {
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Локація</div>
-                <div className="text-2xl font-playfair font-medium text-neutral-800">м. Вінниця, вул. Соборна</div>
+                <div className="text-xl font-playfair font-medium text-neutral-800 max-w-xs">м. Вінниця, вул. Князів Коріатовичів, 106</div>
               </div>
             </div>
           </div>
