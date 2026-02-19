@@ -1,27 +1,14 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// --- CONFIGURATION ---
-const TELEGRAM_TOKEN = "8299961218:AAGLitau59BpwqlNA3IfiXjQK0wRw0xf4qk"; 
-const CHAT_ID = "8200508213";
+// Use environment variable for production API, fallback to 127.0.0.1 for better local compatibility
+// Safely access import.meta.env to avoid runtime errors
+const API_URL = (import.meta as any).env?.VITE_API_URL || "http://127.0.0.1:3001/api";
 
-// --- MOCK DATABASE FOR DYNAMIC SCHEDULING ---
-// In a real app, this data would come from your backend API
-const SCHEDULE_DATABASE: Record<string, string[]> = {
-  // Example: Admin added slots for Feb 20th
-  "2025-02-20": ["10:00", "14:00", "16:00", "18:30"],
-  // Example: Another date
-  "2025-02-21": ["09:00", "12:00", "15:00"],
-};
-
-// Default slots for other days (for demonstration purposes)
-const DEFAULT_SLOTS = ["10:00", "12:00", "14:00", "16:00", "18:00"];
-
-// Mock Booked Slots (Date + Time)
-const BOOKED_SLOTS_DB = [
-  "2025-02-20T14:00",
-  "2025-02-21T09:00"
-];
+interface TimeSlot {
+  time: string;
+  isBooked: boolean;
+}
 
 const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -32,17 +19,41 @@ const BookingForm: React.FC = () => {
     time: ''
   });
 
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  // Get "Today" in YYYY-MM-DD format for the min attribute
+  // Get "Today" in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
 
-  // Dynamic Available Times based on selected date
-  const availableTimes = useMemo(() => {
-    if (!formData.date) return [];
-    // Return specific slots if defined in DB, otherwise return default slots
-    // In strict mode (only admin added slots), you might return [] if not found.
-    return SCHEDULE_DATABASE[formData.date] || DEFAULT_SLOTS;
+  // Fetch slots when date changes
+  useEffect(() => {
+    if (!formData.date) {
+        setAvailableSlots([]);
+        return;
+    }
+
+    setLoadingSlots(true);
+    setFormData(prev => ({ ...prev, time: '' })); // Reset selected time
+
+    console.log(`Fetching slots from: ${API_URL}/slots?date=${formData.date}`);
+
+    fetch(`${API_URL}/slots?date=${formData.date}`)
+      .then(res => {
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+          return res.json();
+      })
+      .then((data: TimeSlot[]) => {
+          setAvailableSlots(data);
+          setLoadingSlots(false);
+      })
+      .catch(err => {
+          console.error("Error loading slots:", err);
+          // If fetch fails, we assume no slots or connection issue. 
+          // We clear slots and stop loading to prevent UI hang.
+          setAvailableSlots([]); 
+          setLoadingSlots(false);
+      });
   }, [formData.date]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,44 +70,14 @@ const BookingForm: React.FC = () => {
       alert("Будь ласка, оберіть дату та час візиту.");
       return;
     }
-
-    if (!TELEGRAM_TOKEN || !CHAT_ID) {
-        setStatus('loading');
-        setTimeout(() => setStatus('success'), 1500);
-        return;
-    }
     
     setStatus('loading');
 
-    const message = `
-🌟 <b>Новий запит!</b>
-
-👤 <b>Клієнт:</b> ${formData.name}
-📞 <b>Телефон:</b> ${formData.phone}
-✂️ <b>Послуга:</b> ${formData.service}
-📅 <b>Дата:</b> ${formData.date}
-⏰ <b>Час:</b> ${formData.time}
-
-<i>Очікує підтвердження через бот.</i>
-    `.trim();
-
     try {
-      const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      const response = await fetch(`${API_URL}/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text: message,
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-                [
-                    { text: "✅ Погодитись", callback_data: `approve_${formData.date}_${formData.time}` },
-                    { text: "❌ Відхилити", callback_data: `decline_${formData.date}_${formData.time}` }
-                ]
-            ]
-          }
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (response.ok) {
@@ -105,7 +86,7 @@ const BookingForm: React.FC = () => {
         setStatus('error');
       }
     } catch (error) {
-      console.error('Telegram API Error:', error);
+      console.error('API Error:', error);
       setStatus('error');
     }
   };
@@ -194,7 +175,7 @@ const BookingForm: React.FC = () => {
             min={today}
             value={formData.date}
             onChange={(e) => {
-              setFormData({ ...formData, date: e.target.value, time: '' });
+              setFormData({ ...formData, date: e.target.value });
             }}
             className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 cursor-pointer focus:bg-white"
           />
@@ -206,37 +187,41 @@ const BookingForm: React.FC = () => {
              {formData.date ? `Час для ${formData.date}` : 'Оберіть дату'}
           </label>
           
-          {availableTimes.length > 0 ? (
+          {loadingSlots ? (
+              <div className="flex items-center justify-center py-4 space-x-2 text-neutral-400">
+                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce delay-200"></div>
+              </div>
+          ) : availableSlots.length > 0 ? (
             <div className="grid grid-cols-3 gap-3 px-2">
-                {availableTimes.map((time) => {
-                // Check if this specific DateTime is booked
-                const dateTimeString = `${formData.date}T${time}`;
-                const isBooked = BOOKED_SLOTS_DB.includes(dateTimeString);
-                
+                {availableSlots.map((slot) => {
                 return (
                     <button
-                    key={time}
+                    key={slot.time}
                     type="button"
-                    disabled={isBooked}
-                    onClick={() => setFormData({ ...formData, time })}
+                    disabled={slot.isBooked}
+                    onClick={() => setFormData({ ...formData, time: slot.time })}
                     className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
-                        isBooked 
+                        slot.isBooked 
                             ? 'bg-neutral-100 text-neutral-300 border-transparent cursor-not-allowed line-through decoration-neutral-400' 
-                            : formData.time === time
+                            : formData.time === slot.time
                                 ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg scale-105'
                                 : 'bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
                     }`}
                     >
-                    {time}
+                    {slot.time}
                     </button>
                 );
                 })}
             </div>
           ) : (
-             <div className="text-sm text-neutral-400 px-4 italic">Немає вільних місць на цю дату.</div>
+             <div className="text-sm text-neutral-400 px-4 italic">
+                {formData.date && "На цю дату ще немає вільних слотів."}
+             </div>
           )}
           
-          {formData.date && !formData.time && availableTimes.length > 0 && (
+          {formData.date && !formData.time && availableSlots.length > 0 && !loadingSlots && (
             <p className="text-xs text-neutral-400 ml-4 animate-pulse">Оберіть зручний час</p>
           )}
         </div>
@@ -252,7 +237,7 @@ const BookingForm: React.FC = () => {
 
       {status === 'error' && (
         <div className="bg-red-50 text-red-500 p-4 rounded-2xl text-center text-xs uppercase tracking-widest mt-4">
-          Помилка з'єднання.
+          Помилка з'єднання з сервером. Перевірте підключення.
         </div>
       )}
     </form>

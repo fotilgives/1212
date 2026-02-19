@@ -117,7 +117,12 @@ const Gallery: React.FC = () => {
         </div>
         
         <div className="mt-24 text-center">
-           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center space-x-6 text-neutral-500 hover:text-black transition-all group">
+           <a 
+             href="https://www.instagram.com/svet.mazur.hair?igsh=MTY4b2RqdGs0Yzc4cQ==" 
+             target="_blank" 
+             rel="noopener noreferrer" 
+             className="inline-flex items-center space-x-6 text-neutral-500 hover:text-black transition-all group"
+           >
               <span className="text-[10px] uppercase tracking-[0.4em] font-bold">Більше в Instagram</span>
               <div className="w-12 h-12 rounded-full border border-neutral-200 flex items-center justify-center group-hover:bg-black group-hover:text-white transition-all">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>

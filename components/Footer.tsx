@@ -26,22 +26,30 @@ const Footer: React.FC = () => {
           <div className="space-y-6">
             <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-neutral-900">Соцмережі</h4>
             <ul className="space-y-4 text-xs text-neutral-400 font-medium">
-              <li><a href="#" className="hover:text-black transition-all">Instagram</a></li>
-              <li><a href="#" className="hover:text-black transition-all">Telegram</a></li>
-              <li><a href="#" className="hover:text-black transition-all">Facebook</a></li>
+              <li>
+                <a 
+                  href="https://www.instagram.com/svet.mazur.hair?igsh=MTY4b2RqdGs0Yzc4cQ==" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-black transition-all flex items-center gap-2"
+                >
+                  Instagram
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                </a>
+              </li>
             </ul>
           </div>
           <div className="space-y-6">
             <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-neutral-900">Зв'язок</h4>
             <ul className="space-y-4 text-xs text-neutral-400 font-medium">
               <li>+380 97 911 20 15</li>
-              <li>Вінниця, вул. Князів Коріатовичів, 106</li>
+              <li>Вінниця, вул. Князів Коріатовичів, 106, 21000</li>
             </ul>
           </div>
         </div>
       </div>
       <div className="max-w-7xl mx-auto mt-24 pt-10 border-t border-neutral-50 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.4em] text-neutral-300 font-bold">
-        <div>© 2024 SVETLANA MAZUR. ALL RIGHTS RESERVED.</div>
+        <div>© 2026 SVETLANA MAZUR. ALL RIGHTS RESERVED.</div>
         <div className="flex space-x-10">
           <a href="#" className="hover:text-black transition-colors">Privacy Policy</a>
           <a href="#" className="hover:text-black transition-colors">Terms of Use</a>

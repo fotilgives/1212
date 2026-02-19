@@ -15,7 +15,7 @@ const Hero: React.FC = () => {
             <div className="inline-flex items-center space-x-4">
               <span className="w-10 h-[1px] bg-neutral-300"></span>
               <span className="text-[10px] font-bold tracking-[0.5em] uppercase text-neutral-400">
-                Premium Hair Stylist
+                PREMIUM HAIR STYLIST
               </span>
             </div>
             
