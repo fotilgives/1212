@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 
-// НАЛАШТУВАННЯ ТЕЛЕГРАМ БОТА
-const TELEGRAM_TOKEN = 'ВАШ_ТОКЕН_ТУТ';
-const CHAT_ID = 'ВАШ_ID_ТУТ';
+// Ініціалізація змінних (замініть на власні дані)
+const TELEGRAM_TOKEN = ''; 
+const CHAT_ID = '';
 
 const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -22,6 +21,11 @@ const BookingForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!TELEGRAM_TOKEN || !CHAT_ID) {
+      alert('Будь ласка, налаштуйте токен бота та ID чату в коді BookingForm.tsx');
+      return;
+    }
+    
     setStatus('loading');
 
     const message = `
@@ -62,9 +66,9 @@ const BookingForm: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="text-3xl font-playfair mb-4">Дякуємо!</h3>
+        <h3 className="text-3xl font-playfair mb-4 text-neutral-900">Дякуємо!</h3>
         <p className="text-neutral-500 text-lg font-light leading-relaxed mb-8">
-          Світлана Мазур зв’яжеться з вами найближчим часом для підтвердження візиту.
+          Світлана Мазур зв’яжеться з вами найближчим часом для підтвердження візиту!
         </p>
         <button 
           onClick={() => { setStatus('idle'); setFormData({ name: '', phone: '+380', service: 'Фарбування', date: '' }); }}
@@ -85,7 +89,7 @@ const BookingForm: React.FC = () => {
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light"
+          className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light text-neutral-900"
           placeholder="Олена"
         />
       </div>
@@ -97,7 +101,7 @@ const BookingForm: React.FC = () => {
           type="tel"
           value={formData.phone}
           onChange={handlePhoneChange}
-          className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light"
+          className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light text-neutral-900"
         />
       </div>
 
@@ -107,7 +111,7 @@ const BookingForm: React.FC = () => {
           <select
             value={formData.service}
             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-            className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light appearance-none cursor-pointer"
+            className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light appearance-none cursor-pointer text-neutral-900"
           >
             <option value="Фарбування">Фарбування</option>
             <option value="Стрижка">Стрижка</option>
@@ -122,7 +126,7 @@ const BookingForm: React.FC = () => {
             type="date"
             value={formData.date}
             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light cursor-pointer"
+            className="w-full bg-white border-b-2 border-neutral-100 px-6 py-4 outline-none focus:border-black transition-all text-lg font-light cursor-pointer text-neutral-900"
           />
         </div>
       </div>
@@ -136,7 +140,7 @@ const BookingForm: React.FC = () => {
       </button>
 
       {status === 'error' && (
-        <p className="text-red-400 text-center text-[10px] uppercase tracking-widest mt-4">Виникла помилка. Спробуйте пізніше.</p>
+        <p className="text-red-400 text-center text-[10px] uppercase tracking-widest mt-4">Виникла помилка. Спробуйте пізніше або зверніться напряму.</p>
       )}
     </form>
   );

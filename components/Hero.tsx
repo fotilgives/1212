@@ -1,13 +1,12 @@
-
 import React from 'react';
 
 const Hero: React.FC = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-28 pb-12 px-6 md:px-8 overflow-hidden bg-[#fafafa]">
-      {/* Editorial Grain Texture - Masks artifacts */}
+      {/* Editorial Grain Texture - Masks artifacts and adds character */}
       <div className="absolute inset-0 z-40 pointer-events-none opacity-[0.05] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
-      {/* Dynamic Background */}
+      {/* Dynamic Background Accents */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-[5%] right-[10%] w-[40vw] h-[40vw] bg-pink-100/30 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[5%] left-[5%] w-[35vw] h-[35vw] bg-neutral-200/40 rounded-full blur-[100px] animate-pulse [animation-delay:2s]"></div>
@@ -55,7 +54,7 @@ const Hero: React.FC = () => {
         <div className="lg:col-span-6 order-1 lg:order-2 flex justify-center lg:justify-end relative">
           <div className="relative w-full max-w-[380px] lg:max-w-[440px]">
             
-            {/* The "Editorial" Frame - masks low res by scaling down image size in layout */}
+            {/* The "Editorial" Frame - masks artifacts by keeping image size controlled */}
             <div className="relative aspect-[3/4] rounded-t-full rounded-b-[40px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] bg-white ring-8 ring-white/50">
               <img 
                 src="" 
@@ -65,7 +64,7 @@ const Hero: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-40"></div>
             </div>
 
-            {/* Aesthetic Badges */}
+            {/* Aesthetic Overlays */}
             <div className="absolute -bottom-8 -left-8 bg-white p-8 rounded-[40px] shadow-2xl border border-neutral-100 max-w-[200px] hidden md:block">
               <p className="font-playfair italic text-2xl text-neutral-800 leading-tight mb-2">Мистецтво</p>
               <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">в кожній лінії вашого образу</p>
