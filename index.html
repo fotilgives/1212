@@ -32,7 +32,6 @@
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
         }
-        /* Custom scrollbar for premium feel */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -43,29 +42,19 @@
             background: #d1d1d1;
             border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
-        }
     </style>
-    <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "framer-motion": "https://esm.sh/framer-motion@11.11.17",
-    "clsx": "https://esm.sh/clsx@2.1.1",
-    "tailwind-merge": "https://esm.sh/tailwind-merge@2.5.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>
 </head>
 <body>
     <div id="root"></div>
-    <!-- Entry point -->
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

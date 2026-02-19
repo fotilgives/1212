@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 
-// NOTE: Fill these for functional Telegram notifications
-const TELEGRAM_TOKEN = ''; 
-const CHAT_ID = '';
+// Безпечна ініціалізація змінних оточення або порожніх рядків
+const TELEGRAM_TOKEN = ""; 
+const CHAT_ID = "";
 
 const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -23,12 +23,10 @@ const BookingForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Graceful check for credentials
     if (!TELEGRAM_TOKEN || !CHAT_ID) {
-      console.warn('BookingForm: TELEGRAM_TOKEN or CHAT_ID is missing. Notification not sent.');
+      console.warn('Telegram credentials missing. Simulated success for demo.');
       setStatus('loading');
-      // Simulate success for demo purposes if credentials are missing
-      setTimeout(() => setStatus('success'), 1500);
+      setTimeout(() => setStatus('success'), 1000);
       return;
     }
     
@@ -74,11 +72,11 @@ const BookingForm: React.FC = () => {
         </div>
         <h3 className="text-3xl font-playfair mb-4 text-neutral-900 font-bold">Успішно!</h3>
         <p className="text-neutral-500 text-lg font-light leading-relaxed mb-8">
-          Дякуємо за запис. Світлана зателефонує вам для узгодження деталей.
+          Дякуємо за запис. Світлана зателефонує вам найближчим часом.
         </p>
         <button 
           onClick={() => { setStatus('idle'); setFormData({ name: '', phone: '+380', service: 'Art-Фарбування', date: '' }); }}
-          className="text-[10px] font-bold uppercase tracking-[0.3em] border-b-2 border-black pb-1 hover:text-neutral-400 hover:border-neutral-200 transition-all"
+          className="text-[10px] font-bold uppercase tracking-[0.3em] border-b-2 border-black pb-1 hover:text-neutral-400 transition-all"
         >
           Повернутися
         </button>
