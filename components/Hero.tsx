@@ -49,11 +49,13 @@ const Hero: React.FC = () => {
             {/* Main Editorial Frame */}
             <div className="relative aspect-[3/4] rounded-t-full rounded-b-[40px] overflow-hidden shadow-[0_60px_100px_-30px_rgba(0,0,0,0.2)] bg-neutral-100 ring-[12px] ring-white">
               <img 
-                src="https://i.ibb.co/fVVcPwzR/image.png" 
-                alt="Світлана Мазур" 
+                src="https://image2url.com/r2/default/images/1771516163140-df3aaee6-ddcb-445b-9359-b65b23cca1a1.jpg" 
+                alt="Світлана Мазур - Hair Architect" 
+                width={800}
+                height={1067}
                 className="w-full h-full object-cover object-top scale-[1.02] hover:scale-110 transition-transform duration-[4s] ease-out contrast-[1.05]"
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1595152772835-219674b2a8a6?q=80&w=1200&auto=format&fit=crop";
+                style={{
+                    imageRendering: 'high-quality' as any
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-60"></div>

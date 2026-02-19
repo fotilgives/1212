@@ -1,43 +1,64 @@
 
 import React, { useState } from 'react';
 
-// Безпечна ініціалізація змінних оточення або порожніх рядків
-const TELEGRAM_TOKEN = ""; 
-const CHAT_ID = "";
+// --- CONFIGURATION ---
+// Вставте сюди ваші реальні дані від @BotFather та @userinfobot
+const TELEGRAM_TOKEN = "8299961218:AAGLitau59BpwqlNA3IfiXjQK0wRw0xf4qk"; 
+const CHAT_ID = "8200508213";
+
+// Список доступних годин (Можна редагувати цей список тут, щоб змінити доступний час на сайті)
+const AVAILABLE_TIMES = [
+  "10:00", "11:30", "13:00", "15:00", "16:30", "18:00"
+];
 
 const BookingForm: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     phone: '+380',
     service: 'Art-Фарбування',
-    date: ''
+    date: '',
+    time: '' // Додано поле часу
   });
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value;
+    // Забороняємо видаляти префікс +380
     if (!value.startsWith('+380')) value = '+380';
-    setFormData({ ...formData, phone: value });
+    // Дозволяємо вводити лише цифри після плюса
+    const numberPart = value.substring(1).replace(/[^0-9]/g, '');
+    setFormData({ ...formData, phone: '+' + numberPart });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Валідація
+    if (!formData.date || !formData.time) {
+      alert("Будь ласка, оберіть дату та час візиту.");
+      return;
+    }
+
+    // Перевірка наявності токенів (для запобігання падіння сайту, якщо вони не вказані)
     if (!TELEGRAM_TOKEN || !CHAT_ID) {
       console.warn('Telegram credentials missing. Simulated success for demo.');
       setStatus('loading');
-      setTimeout(() => setStatus('success'), 1000);
+      setTimeout(() => setStatus('success'), 1500);
       return;
     }
     
     setStatus('loading');
 
+    // Формування повідомлення для Telegram (HTML формат)
     const message = `
-🌟 <b>Новий запис!</b>
+🌟 <b>Новий запис на сайті!</b>
+
 👤 <b>Клієнт:</b> ${formData.name}
 📞 <b>Телефон:</b> ${formData.phone}
 ✂️ <b>Послуга:</b> ${formData.service}
 📅 <b>Дата:</b> ${formData.date}
+⏰ <b>Час:</b> ${formData.time}
     `.trim();
 
     try {
@@ -54,6 +75,7 @@ const BookingForm: React.FC = () => {
       if (response.ok) {
         setStatus('success');
       } else {
+        console.error('Telegram response not OK');
         setStatus('error');
       }
     } catch (error) {
@@ -64,21 +86,25 @@ const BookingForm: React.FC = () => {
 
   if (status === 'success') {
     return (
-      <div className="text-center py-8 animate-in fade-in zoom-in duration-700">
+      <div className="text-center py-12 animate-in fade-in zoom-in duration-700">
         <div className="w-24 h-24 bg-neutral-900 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
           <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="text-3xl font-playfair mb-4 text-neutral-900 font-bold">Успішно!</h3>
+        <h3 className="text-3xl font-playfair mb-4 text-neutral-900 font-bold">Запис підтверджено!</h3>
         <p className="text-neutral-500 text-lg font-light leading-relaxed mb-8">
-          Дякуємо за запис. Світлана зателефонує вам найближчим часом.
+          Світлана отримала ваш запит на <b>{formData.date}</b> о <b>{formData.time}</b>.<br/>
+          Ми зв'яжемося з вами найближчим часом.
         </p>
         <button 
-          onClick={() => { setStatus('idle'); setFormData({ name: '', phone: '+380', service: 'Art-Фарбування', date: '' }); }}
-          className="text-[10px] font-bold uppercase tracking-[0.3em] border-b-2 border-black pb-1 hover:text-neutral-400 transition-all"
+          onClick={() => { 
+            setStatus('idle'); 
+            setFormData({ name: '', phone: '+380', service: 'Art-Фарбування', date: '', time: '' }); 
+          }}
+          className="text-[10px] font-bold uppercase tracking-[0.3em] border-b-2 border-black pb-1 hover:text-neutral-400 hover:border-neutral-200 transition-all"
         >
-          Повернутися
+          Зробити ще один запис
         </button>
       </div>
     );
@@ -86,6 +112,7 @@ const BookingForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Name Input */}
       <div className="space-y-2">
         <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Ваше Ім'я</label>
         <input
@@ -93,11 +120,12 @@ const BookingForm: React.FC = () => {
           type="text"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 rounded-t-2xl"
-          placeholder="Анна"
+          className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 rounded-t-2xl focus:bg-white"
+          placeholder="Олена"
         />
       </div>
 
+      {/* Phone Input */}
       <div className="space-y-2">
         <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Телефон</label>
         <input
@@ -105,47 +133,85 @@ const BookingForm: React.FC = () => {
           type="tel"
           value={formData.phone}
           onChange={handlePhoneChange}
-          className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800"
+          maxLength={13}
+          className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 focus:bg-white"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-2">
-          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Послуга</label>
+      {/* Service Selection */}
+      <div className="space-y-2">
+        <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Послуга</label>
+        <div className="relative">
           <select
             value={formData.service}
             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-            className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-sm font-medium text-neutral-800 appearance-none cursor-pointer"
+            className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 appearance-none cursor-pointer focus:bg-white"
           >
             <option value="Ексклюзивна Стрижка">Ексклюзивна Стрижка</option>
             <option value="Art-Фарбування">Art-Фарбування</option>
             <option value="Molecular Догляд">Molecular Догляд</option>
             <option value="Вечірній Образ">Вечірній Образ</option>
+            <option value="Консультація">Консультація</option>
           </select>
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+          </div>
         </div>
+      </div>
 
+      {/* Date & Time Section */}
+      <div className="space-y-6 pt-4">
         <div className="space-y-2">
-          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Дата</label>
+          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Бажана Дата</label>
           <input
             required
             type="date"
+            min={new Date().toISOString().split('T')[0]} // Блокуємо минулі дати
             value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-sm font-medium text-neutral-800 cursor-pointer"
+            onChange={(e) => {
+              setFormData({ ...formData, date: e.target.value, time: '' }); // Скидаємо час при зміні дати
+            }}
+            className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 cursor-pointer focus:bg-white"
           />
+        </div>
+
+        {/* Time Slots - Only show if date is selected */}
+        <div className={`space-y-3 transition-all duration-500 ${formData.date ? 'opacity-100 max-h-96' : 'opacity-50 max-h-0 overflow-hidden grayscale'}`}>
+          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">Оберіть час</label>
+          <div className="grid grid-cols-3 gap-3 px-2">
+            {AVAILABLE_TIMES.map((time) => (
+              <button
+                key={time}
+                type="button"
+                onClick={() => setFormData({ ...formData, time })}
+                className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
+                  formData.time === time
+                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg scale-105'
+                    : 'bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
+                }`}
+              >
+                {time}
+              </button>
+            ))}
+          </div>
+          {formData.date && !formData.time && (
+            <p className="text-xs text-neutral-400 ml-4 animate-pulse">Оберіть зручний час для візиту</p>
+          )}
         </div>
       </div>
 
       <button
         type="submit"
-        disabled={status === 'loading'}
-        className="w-full bg-black text-white py-7 rounded-full font-bold uppercase tracking-[0.3em] text-[10px] hover:bg-neutral-800 transition-all disabled:opacity-50 shadow-2xl transform active:scale-95"
+        disabled={status === 'loading' || !formData.date || !formData.time}
+        className="w-full bg-black text-white py-7 rounded-full font-bold uppercase tracking-[0.3em] text-[10px] hover:bg-neutral-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl transform active:scale-[0.98] mt-8"
       >
-        {status === 'loading' ? 'Відправка...' : 'Підтвердити запис'}
+        {status === 'loading' ? 'Обробка...' : 'Підтвердити запис'}
       </button>
 
       {status === 'error' && (
-        <p className="text-red-400 text-center text-[9px] uppercase tracking-[0.3em] mt-4 font-bold">Помилка. Спробуйте ще раз або зателефонуйте.</p>
+        <div className="bg-red-50 text-red-500 p-4 rounded-2xl text-center text-xs uppercase tracking-widest mt-4">
+          Помилка з'єднання. Перевірте інтернет або зателефонуйте нам.
+        </div>
       )}
     </form>
   );
