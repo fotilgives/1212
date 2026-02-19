@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 
-// Use environment variable for production API, fallback to 127.0.0.1 for better local compatibility
-// Safely access import.meta.env to avoid runtime errors
-const API_URL = (import.meta as any).env?.VITE_API_URL || "http://127.0.0.1:3001/api";
+// Використовуємо вашу реальну адресу серверу на Render
+const API_URL = (import.meta as any).env?.VITE_API_URL || "https://svetlana-hair-bot.onrender.com/api";
 
 interface TimeSlot {
   time: string;
