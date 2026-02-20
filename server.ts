@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import TelegramBot from 'node-telegram-bot-api';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import 'dotenv/config';
 
 // --- CONFIGURATION ---
 const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEanmyul1h3efDzXJZGICJYxQlKf5ERKJg";
@@ -44,6 +45,11 @@ async function startServer() {
         if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
             console.error('❌ Telegram Bot Conflict: Інша копія цього бота вже запущена (наприклад, на Render або локально).');
             console.error('Будь ласка, зупиніть інші інстанції бота або змініть токен.');
+        } else if (error.code === 'ETELEGRAM' && error.message.includes('401 Unauthorized')) {
+            console.error('❌ Telegram Bot Token Invalid: Токен бота недійсний або був відкликаний.');
+            console.error('Перевірте змінну середовища BOT_TOKEN на Render або у файлі .env.');
+            // Stop polling to prevent spamming logs
+            bot.stopPolling();
         } else {
             console.error('⚠️ Telegram Polling Error:', error.message);
         }
