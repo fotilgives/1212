@@ -16,7 +16,8 @@ const PORT = 3000;
 // --- DATABASE MODELS ---
 const scheduleSchema = new mongoose.Schema({
     date: { type: String, required: true, unique: true },
-    times: [String]
+    times: [String],
+    isClosed: { type: Boolean, default: false }
 });
 
 const bookedSlotSchema = new mongoose.Schema({
@@ -58,6 +59,11 @@ async function startServer() {
         if (!date) return res.status(400).json({ error: 'Date required' });
         try {
             const scheduleDoc = await Schedule.findOne({ date: String(date).trim() });
+            
+            if (scheduleDoc?.isClosed) {
+                return res.json({ isClosed: true, slots: [] });
+            }
+
             const availableTimes = scheduleDoc ? scheduleDoc.times : [];
             console.log(`📊 API: Found ${availableTimes.length} slots for ${date}`);
             const bookedDocs = await BookedSlot.find({ dateTime: { $regex: `^${date}` } });
@@ -66,7 +72,7 @@ async function startServer() {
                 time: String(time).trim(),
                 isBooked: bookedTimeStrings.includes(`${date}T${String(time).trim()}`)
             }));
-            res.json(slots);
+            res.json({ isClosed: false, slots });
         } catch (error) {
             console.error('❌ API Error:', error);
             res.status(500).json({ error: 'Internal Server Error' });
@@ -117,16 +123,32 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
         { command: '/booked', description: '📕 Зайняті слоти' }
     ]).then(() => console.log('✅ Bot menu set'));
 
-    bot.onText(/\/start/, (msg) => {
-        if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
-        bot.sendMessage(msg.chat.id, 
+    bot.onText(/\/start(.*)/, (msg, match) => {
+        const chatId = msg.chat.id;
+        const payload = match ? match[1].trim() : '';
+
+        if (payload === 'booking_success') {
+            bot.sendMessage(chatId, "✨ <b>Дякуємо за ваш запис!</b>\n\nВаша заявка надіслана майстру. Будь ласка, <b>очікуйте підтвердження замовлення</b>. Ми надішлемо вам повідомлення тут, як тільки запис буде підтверджено.", { parse_mode: 'HTML' });
+            return;
+        }
+
+        if (String(chatId) !== ADMIN_CHAT_ID) {
+            bot.sendMessage(chatId, "👋 Вітаємо! Ви можете записатися на послуги через наш сайт.");
+            return;
+        }
+
+        bot.sendMessage(chatId, 
             "👋 <b>Вітаю, Адмін!</b>\n\n" +
             "Система працює на хмарній базі даних (MongoDB).\n\n" +
             "<b>Команди:</b>\n" +
             "/add_slots YYYY-MM-DD 10:00,12:00\n" +
             "<i>(Приклад: /add_slots 2025-05-20 10:00,14:00)</i>\n\n" +
+            "/close_day YYYY-MM-DD\n" +
+            "<i>(Зробити день недоступним для запису)</i>\n\n" +
             "/delete_day YYYY-MM-DD\n" +
-            "<i>(Видалити всі слоти на конкретну дату)</i>\n\n" +
+            "<i>(Видалити розклад ТА всі записи на цей день)</i>\n\n" +
+            "/unbook YYYY-MM-DD HH:mm\n" +
+            "<i>(Звільнити конкретний час, наприклад: /unbook 2026-02-25 10:00)</i>\n\n" +
             "/check YYYY-MM-DD\n" +
             "/booked", 
             { parse_mode: 'HTML' }
@@ -155,12 +177,29 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
         const times = timesStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
         
         try {
-            await Schedule.findOneAndUpdate({ date }, { times }, { upsert: true, new: true });
+            await Schedule.findOneAndUpdate({ date }, { times, isClosed: false }, { upsert: true, new: true });
             console.log(`✅ Bot: Saved ${times.length} slots for ${date}`);
             bot.sendMessage(msg.chat.id, `✅ <b>Слоти збережено для ${date}:</b>\n${times.join('\n')}`, { parse_mode: 'HTML' });
         } catch (error) {
             console.error('❌ Bot Save Error:', error);
             bot.sendMessage(msg.chat.id, "❌ Помилка збереження.");
+        }
+    });
+
+    // Command: /close_day YYYY-MM-DD
+    bot.onText(/\/close_day (.+)/, async (msg, match) => {
+        if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
+        const date = match ? match[1].trim() : '';
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+            bot.sendMessage(msg.chat.id, "⚠️ Формат: /close_day YYYY-MM-DD");
+            return;
+        }
+        try {
+            await Schedule.findOneAndUpdate({ date }, { isClosed: true, times: [] }, { upsert: true, new: true });
+            bot.sendMessage(msg.chat.id, `🔒 <b>День ${date} закрито для запису!</b>\nНа сайті він буде відображатися як недоступний.`, { parse_mode: 'HTML' });
+        } catch (error) {
+            bot.sendMessage(msg.chat.id, "❌ Помилка закриття дня.");
         }
     });
 
@@ -174,10 +213,42 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
             return;
         }
         try {
-            const result = await Schedule.findOneAndDelete({ date });
-            bot.sendMessage(msg.chat.id, result ? `🗑 <b>Успішно!</b>\nСлоти на ${date} видалено.` : `🤔 На ${date} слотів не знайдено.`, { parse_mode: 'HTML' });
+            // Видаляємо розклад
+            const scheduleResult = await Schedule.findOneAndDelete({ date });
+            // Видаляємо всі бронювання на цей день
+            const bookedResult = await BookedSlot.deleteMany({ dateTime: { $regex: `^${date}` } });
+            
+            let response = `🗑 <b>День ${date} повністю очищено!</b>\n`;
+            if (scheduleResult) response += `• Розклад видалено\n`;
+            if (bookedResult.deletedCount > 0) response += `• Видалено бронювань: ${bookedResult.deletedCount}\n`;
+            
+            bot.sendMessage(msg.chat.id, response, { parse_mode: 'HTML' });
         } catch (error) {
             bot.sendMessage(msg.chat.id, "❌ Помилка видалення.");
+        }
+    });
+
+    // Command: /unbook YYYY-MM-DD HH:mm
+    bot.onText(/\/unbook (.+)/, async (msg, match) => {
+        if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
+        const input = match ? match[1].trim() : '';
+        const [date, time] = input.split(/\s+/);
+        
+        if (!date || !time) {
+            bot.sendMessage(msg.chat.id, "⚠️ Формат: /unbook YYYY-MM-DD HH:mm");
+            return;
+        }
+
+        const dateTime = `${date}T${time}`;
+        try {
+            const result = await BookedSlot.findOneAndDelete({ dateTime });
+            if (result) {
+                bot.sendMessage(msg.chat.id, `🔓 <b>Слот ${date} о ${time} тепер вільний!</b>`, { parse_mode: 'HTML' });
+            } else {
+                bot.sendMessage(msg.chat.id, `🤔 Запису на ${date} о ${time} не знайдено.`);
+            }
+        } catch (error) {
+            bot.sendMessage(msg.chat.id, "❌ Помилка при звільненні слоту.");
         }
     });
 

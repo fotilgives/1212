@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
 // Використовуємо вашу реальну адресу серверу на Render
-const API_URL = "/api";
+const API_URL = "https://svetlana-hair-bot.onrender.com/api";
 
 interface TimeSlot {
   time: string;
@@ -29,6 +29,7 @@ const BookingForm: React.FC = () => {
   }, [telegramId]);
 
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
+  const [isDayClosed, setIsDayClosed] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
@@ -52,15 +53,15 @@ const BookingForm: React.FC = () => {
           if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
           return res.json();
       })
-      .then((data: TimeSlot[]) => {
-          setAvailableSlots(data);
+      .then((data: { isClosed: boolean, slots: TimeSlot[] }) => {
+          setIsDayClosed(data.isClosed);
+          setAvailableSlots(data.slots);
           setLoadingSlots(false);
       })
       .catch(err => {
           console.error("Error loading slots:", err);
-          // If fetch fails, we assume no slots or connection issue. 
-          // We clear slots and stop loading to prevent UI hang.
           setAvailableSlots([]); 
+          setIsDayClosed(false);
           setLoadingSlots(false);
       });
   }, [formData.date]);
@@ -112,6 +113,21 @@ const BookingForm: React.FC = () => {
         <p className="text-neutral-500 text-lg font-light leading-relaxed mb-8">
           Ми перевіримо доступність на <b>{formData.date}</b> о <b>{formData.time}</b> та підтвердимо ваш запис.
         </p>
+        
+        <div className="bg-neutral-50 p-6 rounded-3xl mb-8 border border-neutral-100">
+          <p className="text-sm text-neutral-600 mb-4">
+            Щоб отримувати сповіщення про статус вашого запису, перейдіть у наш Telegram бот:
+          </p>
+          <a 
+            href="https://t.me/svetlana_hair_bot?start=booking_success" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block bg-[#0088cc] text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-[#0077b5] transition-all shadow-lg"
+          >
+            Відкрити Telegram
+          </a>
+        </div>
+
         <button 
           onClick={() => { 
             setStatus('idle'); 
@@ -202,6 +218,10 @@ const BookingForm: React.FC = () => {
                   <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce delay-100"></div>
                   <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce delay-200"></div>
               </div>
+          ) : isDayClosed ? (
+            <div className="text-center py-4 px-6 bg-red-50 rounded-2xl border border-red-100">
+              <p className="text-red-500 text-sm font-medium">🔒 Цей день закрито для запису</p>
+            </div>
           ) : availableSlots.length > 0 ? (
             <div className="grid grid-cols-3 gap-3 px-2">
                 {availableSlots.map((slot) => {
