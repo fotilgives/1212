@@ -237,10 +237,10 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                     const service = booking.service || "Перукарські послуги";
                     const clientMessage = 
                         `Світлана підтвердила ваш запис! ✨\n\n` +
-                        `✂️ <b>Послуга:</b> ${service}\n` +
-                        `📅 <b>Дата:</b> ${date}\n` +
-                        `⏰ <b>Час:</b> ${time}\n\n` +
-                        `Чекаємо на вас за адресою: <b>[Твоя адреса]</b>`;
+                        `✂️ Послуга: ${service}\n` +
+                        `📅 Дата: ${date}\n` +
+                        `⏰ Час: ${time}\n\n` +
+                        `Чекаємо на вас за адресою: [Твоя адреса]`;
                     
                     await bot.sendMessage(chatId, clientMessage, { parse_mode: 'HTML' });
                 }
@@ -391,6 +391,12 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
     });
 
     bot.on('callback_query', async (query) => {
+        // Check DB connection
+        if (mongoose.connection.readyState !== 1) {
+            await bot.answerCallbackQuery(query.id, { text: "⏳ З'єднання з БД...", show_alert: true });
+            return;
+        }
+
         const action = query.data;
         const msg = query.message;
         if (!msg) return;
@@ -403,53 +409,56 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
             const parts = action.split('_');
             const date = parts[1];
             const time = parts[2];
-            const clientTelegramId = parts[3];
+            const callbackTelegramId = parts[3];
             const dateTime = `${date}T${time}`;
 
             try {
-                const booking = await BookedSlot.findOne({ dateTime });
+                // Find booking to get latest data (e.g. if contact was shared after request)
+                let booking = await BookedSlot.findOne({ dateTime });
                 if (!booking) {
-                    await BookedSlot.create({ dateTime });
+                    booking = await BookedSlot.create({ dateTime });
                 }
 
-                const service = booking?.service || "Перукарські послуги";
+                // Prefer ID from DB, fallback to callback data
+                const targetTelegramId = booking.clientTelegramId || (callbackTelegramId !== 'none' ? callbackTelegramId : undefined);
+                const service = booking.service || "Перукарські послуги";
 
                 let notificationStatus = "";
-                if (clientTelegramId && clientTelegramId !== 'none') {
+                if (targetTelegramId) {
                     try {
                         const clientMessage = 
                             `Світлана підтвердила ваш запис! ✨\n\n` +
-                            `✂️ <b>Послуга:</b> ${service}\n` +
-                            `📅 <b>Дата:</b> ${date}\n` +
-                            `⏰ <b>Час:</b> ${time}\n\n` +
-                            `Чекаємо на вас за адресою: <b>[Твоя адреса]</b>`;
+                            `✂️ Послуга: ${service}\n` +
+                            `📅 Дата: ${date}\n` +
+                            `⏰ Час: ${time}\n\n` +
+                            `Чекаємо на вас за адресою: [Твоя адреса]`;
                         
-                        await bot.sendMessage(clientTelegramId, clientMessage, { parse_mode: 'HTML' });
-                        notificationStatus = "\n🔔 <b>Сповіщення надіслано клієнту в Telegram!</b>";
+                        await bot.sendMessage(targetTelegramId, clientMessage, { parse_mode: 'HTML' });
+                        notificationStatus = "\n🔔 Сповіщення надіслано!";
                     } catch (tgErr) {
-                        notificationStatus = "\n⚠️ <b>Клієнт не отримав повідомлення (можливо, не запустив бота).</b>";
+                        notificationStatus = "\n⚠️ Клієнт не отримав повідомлення.";
                     }
                 } else {
-                    notificationStatus = "\nℹ️ <b>Клієнт не отримав повідомлення (ID не знайдено).</b>";
+                    notificationStatus = "\nℹ️ ID клієнта не знайдено.";
                 }
 
-                await bot.editMessageText(`${msg.text}\n\n✅ <b>ЗАПИС ПІДТВЕРДЖЕНО</b>\nКлієнта записано на ${time}.${notificationStatus}`, {
+                await bot.editMessageText(`${msg.text}\n\n✅ ЗАПИС ПІДТВЕРДЖЕНО\nКлієнта записано на ${time}.${notificationStatus}`, {
                     chat_id: chatId,
                     message_id: messageId,
                     parse_mode: 'HTML'
                 });
-                await bot.answerCallbackQuery(query.id, { text: "Запис підтверджено" });
+                await bot.answerCallbackQuery(query.id, { text: "Готово" });
             } catch (error) {
                 console.error(error);
-                await bot.answerCallbackQuery(query.id, { text: "Помилка бази даних!" });
+                await bot.answerCallbackQuery(query.id, { text: "Помилка БД!", show_alert: true });
             }
         } else if (action?.startsWith('decline_')) {
-            await bot.editMessageText(`${msg.text}\n\n❌ <b>ЗАПИС ВІДХИЛЕНО</b>`, {
+            await bot.editMessageText(`${msg.text}\n\n❌ ЗАПИС ВІДХИЛЕНО`, {
                 chat_id: chatId,
                 message_id: messageId,
                 parse_mode: 'HTML'
             });
-            await bot.answerCallbackQuery(query.id, { text: "Запис відхилено" });
+            await bot.answerCallbackQuery(query.id, { text: "Відхилено" });
         }
     });
 
