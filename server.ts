@@ -25,6 +25,7 @@ const bookedSlotSchema = new mongoose.Schema({
     clientName: String,
     clientPhone: String,
     clientTelegramId: String,
+    service: String,
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -93,7 +94,7 @@ async function startServer() {
             // If it's already booked, we might want to handle that, but for now let's just store the request
             await BookedSlot.findOneAndUpdate(
                 { dateTime }, 
-                { clientName: name, clientPhone: phone, clientTelegramId: telegramId }, 
+                { clientName: name, clientPhone: phone, clientTelegramId: telegramId, service: service }, 
                 { upsert: true }
             );
         } catch (e) { console.error("Error saving pending booking", e); }
@@ -119,6 +120,9 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                         [
                             { text: "✅ Погодитись", callback_data: `approve_${date}_${time}_${telegramId || 'none'}` },
                             { text: "❌ Відхилити", callback_data: `decline_${date}_${time}` }
+                        ],
+                        [
+                            { text: "📞 Подзвонити", url: `tel:${phone}` }
                         ]
                     ]
                 }
@@ -220,13 +224,27 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
         if (!phone.startsWith('+')) phone = '+' + phone;
 
         try {
-            // Find bookings with this phone number but no telegramId
+            // Find bookings with this phone number
             const bookings = await BookedSlot.find({ clientPhone: phone });
             
             if (bookings.length > 0) {
                 await BookedSlot.updateMany({ clientPhone: phone }, { clientTelegramId: String(chatId) });
                 bot.sendMessage(chatId, "✅ <b>Дякуємо!</b> Ваш номер підтверджено. Тепер ми зможемо надіслати вам сповіщення про статус вашого запису.", { parse_mode: 'HTML' });
                 
+                // If there are bookings, send confirmation for each one
+                for (const booking of bookings) {
+                    const [date, time] = booking.dateTime.split('T');
+                    const service = booking.service || "Перукарські послуги";
+                    const clientMessage = 
+                        `Світлана підтвердила ваш запис! ✨\n\n` +
+                        `✂️ <b>Послуга:</b> ${service}\n` +
+                        `📅 <b>Дата:</b> ${date}\n` +
+                        `⏰ <b>Час:</b> ${time}\n\n` +
+                        `Чекаємо на вас за адресою: <b>[Твоя адреса]</b>`;
+                    
+                    await bot.sendMessage(chatId, clientMessage, { parse_mode: 'HTML' });
+                }
+
                 // Notify admin that a client shared their contact
                 bot.sendMessage(ADMIN_CHAT_ID, `📱 Клієнт <b>${contact.first_name}</b> (${phone}) поділився контактом. Тепер він отримуватиме сповіщення!`, { parse_mode: 'HTML' });
             } else {
@@ -389,13 +407,23 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
             const dateTime = `${date}T${time}`;
 
             try {
-                const exists = await BookedSlot.findOne({ dateTime });
-                if (!exists) await BookedSlot.create({ dateTime });
+                const booking = await BookedSlot.findOne({ dateTime });
+                if (!booking) {
+                    await BookedSlot.create({ dateTime });
+                }
+
+                const service = booking?.service || "Перукарські послуги";
 
                 let notificationStatus = "";
                 if (clientTelegramId && clientTelegramId !== 'none') {
                     try {
-                        const clientMessage = `✨ <b>Ваш запис підтверджено!</b>\n\n📅 Дата: ${date}\n⏰ Час: ${time}\n\nЧекаємо на вас у Svetlana Mazur!`;
+                        const clientMessage = 
+                            `Світлана підтвердила ваш запис! ✨\n\n` +
+                            `✂️ <b>Послуга:</b> ${service}\n` +
+                            `📅 <b>Дата:</b> ${date}\n` +
+                            `⏰ <b>Час:</b> ${time}\n\n` +
+                            `Чекаємо на вас за адресою: <b>[Твоя адреса]</b>`;
+                        
                         await bot.sendMessage(clientTelegramId, clientMessage, { parse_mode: 'HTML' });
                         notificationStatus = "\n🔔 <b>Сповіщення надіслано клієнту в Telegram!</b>";
                     } catch (tgErr) {

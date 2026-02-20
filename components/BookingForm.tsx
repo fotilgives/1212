@@ -197,14 +197,6 @@ const BookingForm: React.FC = () => {
         </div>
       </div>
 
-      {!formData.telegramId && (
-        <div className="mx-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-          <p className="text-[10px] text-blue-600 leading-relaxed">
-            💡 <b>Порада:</b> Щоб отримувати автоматичні сповіщення про підтвердження запису, відкривайте цей сайт через наш Telegram-бот.
-          </p>
-        </div>
-      )}
-
       {/* Date & Time */}
       <div className="space-y-6 pt-4">
         <div className="space-y-2">
