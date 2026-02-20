@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 
 // --- CONFIGURATION ---
-const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEJu0bson3dxS0QwLa6LFWNfmBHRdVOxok";
+const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEgdKWXEwn7cQ1mBKO3xWlQxNltGnBGdGk";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
 const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/?appName=Cluster0";
 const PORT = 3000;
