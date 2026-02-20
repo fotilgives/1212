@@ -105,13 +105,16 @@ async function startServer() {
             );
         } catch (e) { console.error("Error saving pending booking", e); }
 
+        const [year, month, day] = date.split('-');
+        const formattedDate = `${day}.${month}.${year}`;
+
         const message = `
 🌟 <b>Новий запит з сайту!</b>
 
 👤 <b>Клієнт:</b> ${name}
 📞 <b>Телефон:</b> ${phone}
 ✂️ <b>Послуга:</b> ${service}
-📅 <b>Дата:</b> ${date}
+📅 <b>Дата:</b> ${formattedDate}
 ⏰ <b>Час:</b> ${time}
 ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Telegram ID не знайдено)</i>'}
 
@@ -126,9 +129,6 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                         [
                             { text: "✅ Погодитись", callback_data: `approve_${date}_${time}_${telegramId || 'none'}` },
                             { text: "❌ Відхилити", callback_data: `decline_${date}_${time}` }
-                        ],
-                        [
-                            { text: "📞 Подзвонити", url: `tel:${phone}` }
                         ]
                     ]
                 }
