@@ -1,5 +1,7 @@
 
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import TelegramBot from 'node-telegram-bot-api';
 import mongoose from 'mongoose';
@@ -265,7 +267,11 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
         });
         app.use(vite.middlewares);
     } else {
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
         app.use(express.static('dist'));
+        app.get('*', (req, res) => {
+            res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+        });
     }
 
     app.listen(PORT, '0.0.0.0', () => {

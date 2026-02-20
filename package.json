@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "tsx server.ts",
+    "start": "node server.ts",
     "build": "vite build",
     "preview": "vite preview"
   },
