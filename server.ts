@@ -22,6 +22,9 @@ const scheduleSchema = new mongoose.Schema({
 
 const bookedSlotSchema = new mongoose.Schema({
     dateTime: { type: String, required: true, unique: true },
+    clientName: String,
+    clientPhone: String,
+    clientTelegramId: String,
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -83,6 +86,18 @@ async function startServer() {
         const { name, phone, service, date, time, telegramId } = req.body;
         if (!name || !phone || !date || !time) return res.status(400).json({ error: 'Missing fields' });
 
+        // Save pending booking info to help with contact matching later
+        const dateTime = `${date}T${time}`;
+        try {
+            // We don't mark it as fully booked yet, but we store the info
+            // If it's already booked, we might want to handle that, but for now let's just store the request
+            await BookedSlot.findOneAndUpdate(
+                { dateTime }, 
+                { clientName: name, clientPhone: phone, clientTelegramId: telegramId }, 
+                { upsert: true }
+            );
+        } catch (e) { console.error("Error saving pending booking", e); }
+
         const message = `
 🌟 <b>Новий запит з сайту!</b>
 
@@ -115,13 +130,25 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
     });
 
     // --- TELEGRAM BOT LOGIC ---
+    // Set commands only for admin
     bot.setMyCommands([
         { command: '/start', description: '👋 Початок роботи' },
         { command: '/add_slots', description: '📅 Додати слоти' },
+        { command: '/close_day', description: '🔒 Закрити день' },
         { command: '/delete_day', description: '🗑 Видалити день' },
+        { command: '/unbook', description: '🔓 Звільнити слот' },
         { command: '/check', description: '🔍 Перевірити дату' },
         { command: '/booked', description: '📕 Зайняті слоти' }
-    ]).then(() => console.log('✅ Bot menu set'));
+    ], {
+        scope: { type: 'chat', chat_id: Number(ADMIN_CHAT_ID) }
+    }).then(() => console.log('✅ Admin menu set'));
+
+    // Set simple start command for everyone else
+    bot.setMyCommands([
+        { command: '/start', description: '👋 Початок' }
+    ], {
+        scope: { type: 'all_private_chats' }
+    });
 
     bot.onText(/\/start(.*)/, (msg, match) => {
         const chatId = msg.chat.id;
@@ -133,7 +160,35 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
         }
 
         if (String(chatId) !== ADMIN_CHAT_ID) {
-            bot.sendMessage(chatId, "👋 Вітаємо! Ви можете записатися на послуги через наш сайт.");
+            bot.sendMessage(chatId, 
+                "👋 <b>Вітаємо у Svetlana Mazur!</b>\n\n" +
+                "Тут ви можете швидко записатися на фарбування або догляд за волоссям.\n\n" +
+                "🔔 <b>Важливо:</b> Щоб ми могли надіслати вам підтвердження, будь ласка, натисніть кнопку нижче <b>\"Надіслати номер телефону\"</b>.", 
+                { 
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        keyboard: [
+                            [{ text: "📱 Надіслати номер телефону", request_contact: true }]
+                        ],
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    }
+                }
+            );
+            
+            // Also send the WebApp button
+            bot.sendMessage(chatId, "Або одразу переходьте до запису:", {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { 
+                                text: "📅 Записатися онлайн", 
+                                web_app: { url: "https://svetlana-hair-bot.onrender.com" } 
+                            }
+                        ]
+                    ]
+                }
+            });
             return;
         }
 
@@ -153,6 +208,33 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
             "/booked", 
             { parse_mode: 'HTML' }
         );
+    });
+
+    // Handle contact sharing
+    bot.on('contact', async (msg) => {
+        const chatId = msg.chat.id;
+        const contact = msg.contact;
+        if (!contact) return;
+
+        let phone = contact.phone_number;
+        if (!phone.startsWith('+')) phone = '+' + phone;
+
+        try {
+            // Find bookings with this phone number but no telegramId
+            const bookings = await BookedSlot.find({ clientPhone: phone });
+            
+            if (bookings.length > 0) {
+                await BookedSlot.updateMany({ clientPhone: phone }, { clientTelegramId: String(chatId) });
+                bot.sendMessage(chatId, "✅ <b>Дякуємо!</b> Ваш номер підтверджено. Тепер ми зможемо надіслати вам сповіщення про статус вашого запису.", { parse_mode: 'HTML' });
+                
+                // Notify admin that a client shared their contact
+                bot.sendMessage(ADMIN_CHAT_ID, `📱 Клієнт <b>${contact.first_name}</b> (${phone}) поділився контактом. Тепер він отримуватиме сповіщення!`, { parse_mode: 'HTML' });
+            } else {
+                bot.sendMessage(chatId, "✅ <b>Дякуємо!</b> Ваш номер збережено. Тепер ви можете записатися на послуги, і ми надішлемо вам підтвердження.", { parse_mode: 'HTML' });
+            }
+        } catch (error) {
+            console.error("Error handling contact:", error);
+        }
     });
 
     // Command: /add_slots 2025-02-20 10:00,12:00
@@ -313,12 +395,14 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                 let notificationStatus = "";
                 if (clientTelegramId && clientTelegramId !== 'none') {
                     try {
-                        const clientMessage = `Вітаємо! Ваш запис до Svetlana Mazur підтверджено на ${date} о ${time}. Чекаємо на вас!`;
-                        await bot.sendMessage(clientTelegramId, clientMessage);
-                        notificationStatus = "\n🔔 <b>Сповіщення надіслано в Telegram!</b>";
+                        const clientMessage = `✨ <b>Ваш запис підтверджено!</b>\n\n📅 Дата: ${date}\n⏰ Час: ${time}\n\nЧекаємо на вас у Svetlana Mazur!`;
+                        await bot.sendMessage(clientTelegramId, clientMessage, { parse_mode: 'HTML' });
+                        notificationStatus = "\n🔔 <b>Сповіщення надіслано клієнту в Telegram!</b>";
                     } catch (tgErr) {
-                        notificationStatus = "\n⚠️ <b>Не вдалося надіслати сповіщення.</b>";
+                        notificationStatus = "\n⚠️ <b>Клієнт не отримав повідомлення (можливо, не запустив бота).</b>";
                     }
+                } else {
+                    notificationStatus = "\nℹ️ <b>Клієнт не отримав повідомлення (ID не знайдено).</b>";
                 }
 
                 await bot.editMessageText(`${msg.text}\n\n✅ <b>ЗАПИС ПІДТВЕРДЖЕНО</b>\nКлієнта записано на ${time}.${notificationStatus}`, {

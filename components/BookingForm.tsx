@@ -119,17 +119,19 @@ const BookingForm: React.FC = () => {
           Ми перевіримо доступність на <b>{formData.date}</b> о <b>{formData.time}</b> та підтвердимо ваш запис.
         </p>
         
-        <div className="bg-neutral-50 p-6 rounded-3xl mb-8 border border-neutral-100">
-          <p className="text-sm text-neutral-600 mb-4">
-            Щоб отримувати сповіщення про статус вашого запису, перейдіть у наш Telegram бот:
+        <div className="bg-neutral-50 p-8 rounded-[32px] mb-8 border border-neutral-100 shadow-sm">
+          <p className="text-sm text-neutral-600 mb-6 leading-relaxed">
+            🔔 <b>Отримати підтвердження у Telegram:</b><br/>
+            Натисніть кнопку нижче, потім обов'язково натисніть <b>Start</b> та <b>Поділіться контактом</b> у боті, щоб ми могли надіслати вам деталі!
           </p>
           <a 
-            href={`${BOT_URL}?start=booking_success`} 
+            href={BOT_URL} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="inline-block bg-[#0088cc] text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-[#0077b5] transition-all shadow-lg"
+            className="w-full inline-flex items-center justify-center space-x-3 bg-[#0088cc] text-white px-8 py-5 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-[#0077b5] transition-all shadow-lg active:scale-95"
           >
-            Відкрити Telegram
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.48.99-.73 3.88-1.69 6.46-2.81 7.75-3.35 3.68-1.54 4.44-1.81 4.94-1.82.11 0 .35.03.51.16.13.11.17.26.19.37.01.07.02.21.01.35z"/></svg>
+            <span>Підтвердити у Telegram</span>
           </a>
         </div>
 
@@ -194,6 +196,14 @@ const BookingForm: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {!formData.telegramId && (
+        <div className="mx-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+          <p className="text-[10px] text-blue-600 leading-relaxed">
+            💡 <b>Порада:</b> Щоб отримувати автоматичні сповіщення про підтвердження запису, відкривайте цей сайт через наш Telegram-бот.
+          </p>
+        </div>
+      )}
 
       {/* Date & Time */}
       <div className="space-y-6 pt-4">
