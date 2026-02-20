@@ -15,14 +15,15 @@ const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+// SMS logic removed as per user request (no paid SMS)
 
 // --- CONFIGURATION ---
-const TOKEN = process.env.BOT_TOKEN || "8299961218:AAGLitau59BpwqlNA3IfiXjQK0wRw0xf4qk"; 
+const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEJu0bson3dxS0QwLa6LFWNfmBHRdVOxok"; 
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
 const PORT = process.env.PORT || 3001;
 
 // Support both standard MONGO_URI and the 'myDatabase' variable
-const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || ""; 
+const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/?appName=Cluster0"; 
 
 // --- DATABASE MODELS ---
 const scheduleSchema = new mongoose.Schema({
@@ -103,7 +104,7 @@ app.get('/api/slots', async (req, res) => {
 
 // POST /api/book
 app.post('/api/book', async (req, res) => {
-    const { name, phone, service, date, time } = req.body;
+    const { name, phone, service, date, time, telegramId } = req.body;
 
     if (!name || !phone || !date || !time) {
         return res.status(400).json({ error: 'Missing fields' });
@@ -117,6 +118,7 @@ app.post('/api/book', async (req, res) => {
 ✂️ <b>Послуга:</b> ${service}
 📅 <b>Дата:</b> ${date}
 ⏰ <b>Час:</b> ${time}
+${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Telegram ID не знайдено)</i>'}
 
 <i>Очікує підтвердження...</i>
     `.trim();
@@ -127,7 +129,7 @@ app.post('/api/book', async (req, res) => {
             reply_markup: {
                 inline_keyboard: [
                     [
-                        { text: "✅ Погодитись", callback_data: `approve_${date}_${time}` },
+                        { text: "✅ Погодитись", callback_data: `approve_${date}_${time}_${telegramId || 'none'}` },
                         { text: "❌ Відхилити", callback_data: `decline_${date}_${time}` }
                     ]
                 ]
@@ -284,6 +286,7 @@ bot.on('callback_query', async (query) => {
         const parts = action.split('_');
         const date = parts[1];
         const time = parts[2];
+        const clientTelegramId = parts[3];
         const dateTime = `${date}T${time}`;
 
         try {
@@ -293,12 +296,27 @@ bot.on('callback_query', async (query) => {
                 await BookedSlot.create({ dateTime });
             }
 
-            await bot.editMessageText(`${msg.text}\n\n✅ <b>ЗАПИС ПІДТВЕРДЖЕНО</b>\nКлієнта записано на ${time}.`, {
+            // Send Telegram Notification to Client
+            let notificationStatus = "";
+            if (clientTelegramId && clientTelegramId !== 'none') {
+                try {
+                    const clientMessage = `Вітаємо! Ваш запис до Svetlana Mazur підтверджено на ${date} о ${time}. Чекаємо на вас!`;
+                    await bot.sendMessage(clientTelegramId, clientMessage);
+                    notificationStatus = "\n🔔 <b>Сповіщення надіслано в Telegram!</b>";
+                } catch (tgErr) {
+                    console.error("Telegram notification failed:", tgErr);
+                    notificationStatus = "\n⚠️ <b>Не вдалося надіслати сповіщення (можливо, бот заблокований).</b>";
+                }
+            } else {
+                notificationStatus = "\nℹ️ <b>Сповіщення не надіслано (немає Telegram ID).</b>";
+            }
+
+            await bot.editMessageText(`${msg.text}\n\n✅ <b>ЗАПИС ПІДТВЕРДЖЕНО</b>\nКлієнта записано на ${time}.${notificationStatus}`, {
                 chat_id: chatId,
                 message_id: messageId,
                 parse_mode: 'HTML'
             });
-            await bot.answerCallbackQuery(query.id, { text: "Запис збережено в базі" });
+            await bot.answerCallbackQuery(query.id, { text: "Запис підтверджено" });
 
         } catch (error) {
             console.error("DB Error on approve:", error);

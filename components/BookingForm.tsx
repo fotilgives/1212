@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTelegram } from '../hooks/useTelegram';
 
 // Використовуємо вашу реальну адресу серверу на Render
-const API_URL = (import.meta as any).env?.VITE_API_URL || "https://svetlana-hair-bot.onrender.com/api";
+const API_URL = "/api";
 
 interface TimeSlot {
   time: string;
@@ -15,8 +16,17 @@ const BookingForm: React.FC = () => {
     phone: '+380',
     service: 'Складні техніки фарбування',
     date: '',
-    time: ''
+    time: '',
+    telegramId: ''
   });
+
+  const { telegramId } = useTelegram();
+
+  useEffect(() => {
+    if (telegramId) {
+      setFormData(prev => ({ ...prev, telegramId: telegramId.toString() }));
+    }
+  }, [telegramId]);
 
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
