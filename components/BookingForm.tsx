@@ -4,6 +4,7 @@ import { useTelegram } from '../hooks/useTelegram';
 
 // Використовуємо вашу реальну адресу серверу на Render
 const API_URL = "https://svetlana-hair-bot.onrender.com/api";
+const BOT_URL = "https://t.me/mazur_beauty_bot";
 
 interface TimeSlot {
   time: string;
@@ -92,6 +93,10 @@ const BookingForm: React.FC = () => {
 
       if (response.ok) {
         setStatus('success');
+        // Редирект до бота через 2 секунди для зручності
+        setTimeout(() => {
+          window.location.href = `${BOT_URL}?start=booking_success`;
+        }, 3000);
       } else {
         setStatus('error');
       }
@@ -119,7 +124,7 @@ const BookingForm: React.FC = () => {
             Щоб отримувати сповіщення про статус вашого запису, перейдіть у наш Telegram бот:
           </p>
           <a 
-            href="https://t.me/svetlana_hair_bot?start=booking_success" 
+            href={`${BOT_URL}?start=booking_success`} 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-block bg-[#0088cc] text-white px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-[#0077b5] transition-all shadow-lg"

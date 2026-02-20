@@ -60,7 +60,7 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
       </nav>
 
       {/* Mobile Menu Overlay */}
-      <div className={`fixed inset-0 bg-white/95 backdrop-blur-xl z-40 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none translate-y-10'} md:hidden flex flex-col items-center justify-center`}>
+      <div className={`fixed inset-0 bg-white/98 backdrop-blur-md z-40 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none translate-y-10'} md:hidden flex flex-col items-center justify-center`}>
         <div className="flex flex-col space-y-10 text-center font-playfair text-3xl italic">
           {navLinks.map((link) => (
             <a 
