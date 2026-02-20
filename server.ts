@@ -10,7 +10,7 @@ import cors from 'cors';
 // --- CONFIGURATION ---
 const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEanmyul1h3efDzXJZGICJYxQlKf5ERKJg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
-const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/?appName=Cluster0";
+const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/beauty_salon?appName=Cluster0";
 const PORT = 3000;
 
 // --- DATABASE MODELS ---
@@ -24,8 +24,8 @@ const bookedSlotSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-const Schedule = mongoose.model('Schedule', scheduleSchema);
-const BookedSlot = mongoose.model('BookedSlot', bookedSlotSchema);
+const Schedule = mongoose.model('Schedule', scheduleSchema, 'schedules');
+const BookedSlot = mongoose.model('BookedSlot', bookedSlotSchema, 'bookedslots');
 
 async function startServer() {
     const app = express();
@@ -47,25 +47,28 @@ async function startServer() {
     // Connect to MongoDB
     if (MONGO_URI) {
         mongoose.connect(MONGO_URI, { dbName: 'beauty_salon' })
-            .then(() => console.log('✅ Connected to MongoDB'))
+            .then(() => console.log('✅ Connected to MongoDB (Database: beauty_salon)'))
             .catch(err => console.error('❌ MongoDB Connection Error:', err));
     }
 
     // --- API ENDPOINTS ---
     app.get('/api/slots', async (req, res) => {
         const { date } = req.query;
+        console.log(`🔍 API: Fetching slots for date: [${date}]`);
         if (!date) return res.status(400).json({ error: 'Date required' });
         try {
-            const scheduleDoc = await Schedule.findOne({ date });
+            const scheduleDoc = await Schedule.findOne({ date: String(date).trim() });
             const availableTimes = scheduleDoc ? scheduleDoc.times : [];
+            console.log(`📊 API: Found ${availableTimes.length} slots for ${date}`);
             const bookedDocs = await BookedSlot.find({ dateTime: { $regex: `^${date}` } });
             const bookedTimeStrings = bookedDocs.map(doc => doc.dateTime);
             const slots = availableTimes.map(time => ({
-                time,
-                isBooked: bookedTimeStrings.includes(`${date}T${time}`)
+                time: String(time).trim(),
+                isBooked: bookedTimeStrings.includes(`${date}T${String(time).trim()}`)
             }));
             res.json(slots);
         } catch (error) {
+            console.error('❌ API Error:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
     });
@@ -133,22 +136,30 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
     // Command: /add_slots 2025-02-20 10:00,12:00
     bot.onText(/\/add_slots (.+)/, async (msg, match) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
-        const input = match ? match[1] : ''; 
-        const [date, timesStr] = input.split(' ');
+        const input = match ? match[1].trim() : ''; 
+        // Handle both spaces and newlines as separators between date and times
+        const parts = input.split(/\s+/);
+        const date = parts[0];
+        const timesStr = parts[1];
+
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(date)) {
-            bot.sendMessage(msg.chat.id, "⚠️ <b>Помилка формату дати!</b>\nПотрібно: РРРР-ММ-ДД.", { parse_mode: 'HTML' });
+            bot.sendMessage(msg.chat.id, "⚠️ <b>Помилка формату дати!</b>\nПотрібно: РРРР-ММ-ДД.\nПриклад: <code>/add_slots 2026-02-25 10:00,12:00</code>", { parse_mode: 'HTML' });
             return;
         }
         if (!date || !timesStr) {
             bot.sendMessage(msg.chat.id, "⚠️ Формат: /add_slots YYYY-MM-DD HH:mm,HH:mm");
             return;
         }
-        const times = timesStr.split(',');
+        // Split times and trim each one
+        const times = timesStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        
         try {
             await Schedule.findOneAndUpdate({ date }, { times }, { upsert: true, new: true });
+            console.log(`✅ Bot: Saved ${times.length} slots for ${date}`);
             bot.sendMessage(msg.chat.id, `✅ <b>Слоти збережено для ${date}:</b>\n${times.join('\n')}`, { parse_mode: 'HTML' });
         } catch (error) {
+            console.error('❌ Bot Save Error:', error);
             bot.sendMessage(msg.chat.id, "❌ Помилка збереження.");
         }
     });
