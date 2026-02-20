@@ -134,8 +134,11 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                 }
             });
             res.json({ success: true });
-        } catch (error) {
-            res.status(500).json({ error: 'Failed to send message' });
+        } catch (error: any) {
+            console.error('Error sending message to admin:', error);
+            // If it's a Telegram error, we should probably still consider the booking "received" but warn the user?
+            // Or fail completely. For now, let's return the specific error so the user knows.
+            res.status(500).json({ error: `Помилка Telegram: ${error.message || 'Невідома помилка'}` });
         }
     });
 

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
-// Використовуємо вашу реальну адресу серверу на Render
-const API_URL = "https://svetlana-hair-bot.onrender.com/api";
+// Використовуємо відносний шлях, щоб працювало і локально, і на проді
+const API_URL = "/api";
 const BOT_URL = "https://t.me/mazur_beauty_bot";
 
 interface TimeSlot {
@@ -98,7 +98,12 @@ const BookingForm: React.FC = () => {
           window.location.href = `${BOT_URL}?start=booking_success`;
         }, 3000);
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Server Error:', errorData);
         setStatus('error');
+        if (errorData.error) {
+            alert(`Помилка: ${errorData.error}`);
+        }
       }
     } catch (error) {
       console.error('API Error:', error);
