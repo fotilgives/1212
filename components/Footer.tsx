@@ -49,7 +49,7 @@ const Footer: React.FC = () => {
         </div>
       </div>
       <div className="max-w-7xl mx-auto mt-24 pt-10 border-t border-neutral-50 flex flex-col md:flex-row justify-between items-center gap-6 text-[9px] uppercase tracking-[0.4em] text-neutral-300 font-bold">
-        <div>© 2026 SVETLANA MAZUR. ALL RIGHTS RESERVED.</div>
+        <div>© {new Date().getFullYear()} SVETLANA MAZUR. ALL RIGHTS RESERVED.</div>
         <div className="flex space-x-10">
           <a href="#" className="hover:text-black transition-colors">Privacy Policy</a>
           <a href="#" className="hover:text-black transition-colors">Terms of Use</a>

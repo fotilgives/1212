@@ -243,13 +243,17 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                 // If there are bookings, send confirmation for each one
                 for (const booking of bookings) {
                     const [date, time] = booking.dateTime.split('T');
+                    const [year, month, day] = date.split('-');
+                    const formattedDate = `${day}.${month}.${year}`;
+                    
                     const service = booking.service || "Перукарські послуги";
                     const clientMessage = 
                         `Світлана підтвердила ваш запис! ✨\n\n` +
                         `✂️ Послуга: ${service}\n` +
-                        `📅 Дата: ${date}\n` +
+                        `📅 Дата: ${formattedDate}\n` +
                         `⏰ Час: ${time}\n\n` +
-                        `Чекаємо на вас за адресою: [Твоя адреса]`;
+                        `📍 Адреса: м. Вінниця, вул. Князів Коріатовичів, 106\n` +
+                        `🌐 Сайт: https://svetlana-mazur.vercel.app`;
                     
                     await bot.sendMessage(chatId, clientMessage, { parse_mode: 'HTML' });
                 }
@@ -435,12 +439,16 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
                 let notificationStatus = "";
                 if (targetTelegramId) {
                     try {
+                        const [year, month, day] = date.split('-');
+                        const formattedDate = `${day}.${month}.${year}`;
+
                         const clientMessage = 
                             `Світлана підтвердила ваш запис! ✨\n\n` +
                             `✂️ Послуга: ${service}\n` +
-                            `📅 Дата: ${date}\n` +
+                            `📅 Дата: ${formattedDate}\n` +
                             `⏰ Час: ${time}\n\n` +
-                            `Чекаємо на вас за адресою: [Твоя адреса]`;
+                            `📍 Адреса: м. Вінниця, вул. Князів Коріатовичів, 106\n` +
+                            `🌐 Сайт: https://svetlana-mazur.vercel.app`;
                         
                         await bot.sendMessage(targetTelegramId, clientMessage, { parse_mode: 'HTML' });
                         notificationStatus = "\n🔔 Сповіщення надіслано!";

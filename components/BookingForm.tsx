@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
-// Використовуємо відносний шлях, щоб працювало і локально, і на проді
-const API_URL = "/api";
+// Використовуємо адресу бекенду на Render, щоб фронтенд на Vercel міг до нього звертатися
+const API_URL = "https://svetlana-hair-bot.onrender.com/api";
 const BOT_URL = "https://t.me/mazur_beauty_bot";
 
 interface TimeSlot {
