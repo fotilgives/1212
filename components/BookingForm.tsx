@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
-// Використовуємо локальну адресу API
-const API_URL = "/api";
+// Використовуємо абсолютну адресу бекенду на Render
+const API_URL = "https://svetlana-hair-bot.onrender.com/api";
 const BOT_URL = "https://t.me/mazur_beauty_bot";
 
 interface TimeSlot {

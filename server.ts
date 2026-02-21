@@ -43,6 +43,10 @@ async function startServer() {
     app.use(express.json());
 
     // Initialize Bot
+    if (!TOKEN) {
+        console.error('❌ BOT_TOKEN is missing!');
+        return;
+    }
     const bot = new TelegramBot(TOKEN, { polling: true });
 
     // Initialize Nodemailer
@@ -92,7 +96,7 @@ async function startServer() {
     BookedSlot.schema.index({ dateTime: 1 });
 
     // --- API ENDPOINTS ---
-    app.get('/api/slots', async (req, res) => {
+    app.get('/api/slots', async (req: express.Request, res: express.Response) => {
         const { date } = req.query;
         console.log(`🔍 API: Fetching slots for date: [${date}]`);
         if (!date) return res.status(400).json({ error: 'Date required' });
@@ -128,7 +132,7 @@ async function startServer() {
         }
     });
 
-    app.post('/api/book', async (req, res) => {
+    app.post('/api/book', async (req: express.Request, res: express.Response) => {
         const { name, phone, email, service, date, time, telegramId } = req.body;
         if (!name || !phone || !email || !date || !time) return res.status(400).json({ error: 'Missing fields' });
 
@@ -199,16 +203,18 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
         `.trim();
 
         try {
-            await bot.sendMessage(ADMIN_CHAT_ID, message, {
-                parse_mode: 'HTML',
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            { text: "❌ Скасувати запис", callback_data: `cancel_${date}_${time}` }
+            if (ADMIN_CHAT_ID) {
+                await bot.sendMessage(ADMIN_CHAT_ID, message, {
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                { text: "❌ Скасувати запис", callback_data: `cancel_${date}_${time}` }
+                            ]
                         ]
-                    ]
-                }
-            });
+                    }
+                });
+            }
             res.json({ success: true });
         } catch (error: any) {
             console.error('Error sending message to admin:', error);
@@ -218,17 +224,19 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
 
     // --- TELEGRAM BOT LOGIC ---
     // Set commands only for admin
-    bot.setMyCommands([
-        { command: '/start', description: '👋 Початок роботи' },
-        { command: '/add_slots', description: '📅 Додати слоти' },
-        { command: '/close_day', description: '🔒 Закрити день' },
-        { command: '/delete_day', description: '🗑 Видалити день' },
-        { command: '/unbook', description: '🔓 Звільнити слот' },
-        { command: '/check', description: '🔍 Перевірити дату' },
-        { command: '/booked', description: '📕 Зайняті слоти' }
-    ], {
-        scope: { type: 'chat', chat_id: Number(ADMIN_CHAT_ID) }
-    }).then(() => console.log('✅ Admin menu set'));
+    if (ADMIN_CHAT_ID) {
+        bot.setMyCommands([
+            { command: '/start', description: '👋 Початок роботи' },
+            { command: '/add_slots', description: '📅 Додати слоти' },
+            { command: '/close_day', description: '🔒 Закрити день' },
+            { command: '/delete_day', description: '🗑 Видалити день' },
+            { command: '/unbook', description: '🔓 Звільнити слот' },
+            { command: '/check', description: '🔍 Перевірити дату' },
+            { command: '/booked', description: '📕 Зайняті слоти' }
+        ], {
+            scope: { type: 'chat', chat_id: Number(ADMIN_CHAT_ID) }
+        }).then(() => console.log('✅ Admin menu set'));
+    }
 
     // Set simple start command for everyone else
     bot.setMyCommands([
@@ -237,7 +245,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
         scope: { type: 'all_private_chats' }
     });
 
-    bot.onText(/\/start(.*)/, (msg, match) => {
+    bot.onText(/\/start(.*)/, (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
         const chatId = msg.chat.id;
         const payload = match ? match[1].trim() : '';
 
@@ -298,7 +306,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Handle contact sharing
-    bot.on('contact', async (msg) => {
+    bot.on('contact', async (msg: TelegramBot.Message) => {
         const chatId = msg.chat.id;
         const contact = msg.contact;
         if (!contact) return;
@@ -333,7 +341,9 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
                 }
 
                 // Notify admin that a client shared their contact
-                bot.sendMessage(ADMIN_CHAT_ID, `📱 Клієнт <b>${contact.first_name}</b> (${phone}) поділився контактом. Тепер він отримуватиме сповіщення!`, { parse_mode: 'HTML' });
+                if (ADMIN_CHAT_ID) {
+                    bot.sendMessage(ADMIN_CHAT_ID, `📱 Клієнт <b>${contact.first_name}</b> (${phone}) поділився контактом. Тепер він отримуватиме сповіщення!`, { parse_mode: 'HTML' });
+                }
             } else {
                 bot.sendMessage(chatId, "✅ <b>Дякуємо!</b> Ваш номер збережено. Тепер ви можете записатися на послуги, і ми надішлемо вам підтвердження.", { parse_mode: 'HTML' });
             }
@@ -343,7 +353,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Command: /add_slots 2025-02-20 10:00,12:00
-    bot.onText(/\/add_slots (.+)/, async (msg, match) => {
+    bot.onText(/\/add_slots (.+)/, async (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
         const input = match ? match[1].trim() : ''; 
         // Handle both spaces and newlines as separators between date and times
@@ -361,7 +371,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
             return;
         }
         // Split times and trim each one
-        const times = timesStr.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        const times = timesStr.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
         
         try {
             await Schedule.findOneAndUpdate({ date }, { times, isClosed: false }, { upsert: true, new: true });
@@ -374,7 +384,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Command: /close_day YYYY-MM-DD
-    bot.onText(/\/close_day (.+)/, async (msg, match) => {
+    bot.onText(/\/close_day (.+)/, async (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
         const date = match ? match[1].trim() : '';
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -391,7 +401,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Command: /delete_day YYYY-MM-DD
-    bot.onText(/\/delete_day (.+)/, async (msg, match) => {
+    bot.onText(/\/delete_day (.+)/, async (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
         const date = match ? match[1].trim() : '';
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -416,7 +426,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Command: /unbook YYYY-MM-DD HH:mm
-    bot.onText(/\/unbook (.+)/, async (msg, match) => {
+    bot.onText(/\/unbook (.+)/, async (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
         const input = match ? match[1].trim() : '';
         const [date, time] = input.split(/\s+/);
@@ -440,7 +450,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Command: /check YYYY-MM-DD
-    bot.onText(/\/check (.+)/, async (msg, match) => {
+    bot.onText(/\/check (.+)/, async (msg: TelegramBot.Message, match: RegExpExecArray | null) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
         const date = match ? match[1].trim() : '';
         try {
@@ -462,7 +472,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     });
 
     // Command: /booked
-    bot.onText(/\/booked/, async (msg) => {
+    bot.onText(/\/booked/, async (msg: TelegramBot.Message) => {
         if (String(msg.chat.id) !== ADMIN_CHAT_ID) return;
         try {
             const bookings = await BookedSlot.find({}).sort({ dateTime: 1 });
@@ -477,7 +487,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
         }
     });
 
-    bot.on('callback_query', async (query) => {
+    bot.on('callback_query', async (query: TelegramBot.CallbackQuery) => {
         // Check DB connection
         if (mongoose.connection.readyState !== 1) {
             await bot.answerCallbackQuery(query.id, { text: "⏳ З'єднання з БД...", show_alert: true });
@@ -525,7 +535,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
     } else {
         const __dirname = path.dirname(fileURLToPath(import.meta.url));
         app.use(express.static('dist'));
-        app.get('*', (req, res) => {
+        app.get('*', (req: express.Request, res: express.Response) => {
             res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
         });
     }

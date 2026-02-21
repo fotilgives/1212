@@ -30,6 +30,9 @@
     "vite": "^6.0.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node-telegram-bot-api": "^0.64.13",
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
