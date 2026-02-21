@@ -78,6 +78,76 @@ app.get('/api/slots', async (req, res) => {
     }
 });
 
+// --- EMAIL TEMPLATE ---
+const generateEmailHtml = (customerName: string, serviceName: string, date: string, time: string) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Підтвердження запису</title>
+        <style>
+            body { background-color: #fdfaf7; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+            .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(197, 160, 89, 0.1); }
+            .header { background-color: #ffffff; padding: 40px 20px; text-align: center; border-bottom: 1px solid #f5eee0; }
+            .logo { font-size: 24px; font-weight: 300; letter-spacing: 4px; text-transform: uppercase; color: #333; margin: 0; }
+            .content { padding: 40px 50px; text-align: center; }
+            .title { font-size: 22px; color: #c5a059; font-weight: 400; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+            .greeting { font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 30px; }
+            .details-box { background-color: #fdfaf7; border: 1px solid #f5eee0; border-radius: 12px; padding: 25px; margin-bottom: 35px; text-align: left; }
+            .detail-item { margin-bottom: 12px; font-size: 14px; color: #444; }
+            .detail-label { font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; color: #c5a059; display: block; margin-bottom: 4px; }
+            .detail-value { font-size: 16px; font-weight: 300; }
+            .address { font-size: 14px; color: #888; margin-top: 20px; line-height: 1.5; }
+            .button { display: inline-block; padding: 16px 40px; background-color: #c5a059; color: #ffffff !important; text-decoration: none; border-radius: 50px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-top: 10px; transition: background-color 0.3s; }
+            .footer { padding: 30px; background-color: #ffffff; text-align: center; border-top: 1px solid #f5eee0; }
+            .social-link { color: #c5a059; text-decoration: none; font-size: 13px; margin: 0 15px; font-weight: 500; }
+            .phone { display: block; margin-top: 15px; font-size: 14px; color: #333; text-decoration: none; }
+            @media only screen and (max-width: 600px) {
+                .container { margin: 0; border-radius: 0; }
+                .content { padding: 30px 20px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 class="logo">Svetlana Mazur Beauty</h1>
+            </div>
+            <div class="content">
+                <h2 class="title">Ваш запис підтверджено</h2>
+                <p class="greeting">Вітаємо, ${customerName}! <br> Ваша краса в надійних руках. Ми вже готуємося до вашого візиту.</p>
+                
+                <div class="details-box">
+                    <div class="detail-item">
+                        <span class="detail-label">Послуга</span>
+                        <span class="detail-value">${serviceName}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Дата та час</span>
+                        <span class="detail-value">${date} о ${time}</span>
+                    </div>
+                    <div class="detail-item" style="margin-bottom: 0;">
+                        <span class="detail-label">Локація</span>
+                        <span class="detail-value">м. Вінниця, вул. Князів Коріатовичів, 106</span>
+                    </div>
+                </div>
+
+                <a href="https://www.google.com/maps/search/?api=1&query=Вінниця+Князів+Коріатовичів+106" class="button">Як знайти студію</a>
+                
+                <p class="address">Будь ласка, приходьте за 5-10 хвилин до початку. <br> Якщо ваші плани зміняться, повідомте нас заздалегідь.</p>
+            </div>
+            <div class="footer">
+                <a href="https://instagram.com/svitlana_mazur_beauty" class="social-link">Instagram</a>
+                <a href="tel:+380930000000" class="phone">+38 (093) 000-00-00</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
 app.post('/api/book', async (req, res) => {
     await connectDB();
     const { name, phone, email, service, date, time, telegramId } = req.body;
@@ -100,7 +170,7 @@ app.post('/api/book', async (req, res) => {
                 from: `"Svetlana Mazur" <${EMAIL_USER}>`,
                 to: email,
                 subject: 'Підтвердження запису | Svetlana Mazur',
-                html: `<div style="font-family: sans-serif;"><h2>Запис підтверджено!</h2><p>Чекаємо на вас ${formattedDate} о ${time}.</p></div>`
+                html: generateEmailHtml(name, service, formattedDate, time)
             });
         }
 
@@ -133,15 +203,73 @@ app.post('/api/webhook', async (req, res) => {
                     const times = timesStr.split(',').map((t: string) => t.trim());
                     await Schedule.findOneAndUpdate({ date }, { times, isClosed: false }, { upsert: true });
                     await bot.sendMessage(chatId, `✅ Слоти додано на ${date}`);
+                } else {
+                    await bot.sendMessage(chatId, "⚠️ Формат: /add_slots YYYY-MM-DD 10:00,12:00");
+                }
+            } else if (text?.startsWith('/close_day')) {
+                const date = text.split(/\s+/)[1];
+                if (date) {
+                    await Schedule.findOneAndUpdate({ date }, { isClosed: true, times: [] }, { upsert: true });
+                    await bot.sendMessage(chatId, `🔒 День ${date} закрито для запису`);
+                } else {
+                    await bot.sendMessage(chatId, "⚠️ Формат: /close_day YYYY-MM-DD");
+                }
+            } else if (text?.startsWith('/delete_day')) {
+                const date = text.split(/\s+/)[1];
+                if (date) {
+                    await Schedule.findOneAndDelete({ date });
+                    await BookedSlot.deleteMany({ dateTime: { $regex: `^${date}` } });
+                    await bot.sendMessage(chatId, `🗑 День ${date} та всі записи видалено`);
+                } else {
+                    await bot.sendMessage(chatId, "⚠️ Формат: /delete_day YYYY-MM-DD");
+                }
+            } else if (text?.startsWith('/unbook')) {
+                const parts = text.split(/\s+/);
+                const date = parts[1];
+                const time = parts[2];
+                if (date && time) {
+                    await BookedSlot.findOneAndDelete({ dateTime: `${date}T${time}` });
+                    await bot.sendMessage(chatId, `🔓 Слот ${date} о ${time} тепер вільний`);
+                } else {
+                    await bot.sendMessage(chatId, "⚠️ Формат: /unbook YYYY-MM-DD HH:mm");
+                }
+            } else if (text?.startsWith('/check')) {
+                const date = text.split(/\s+/)[1];
+                if (date) {
+                    const schedule = await Schedule.findOne({ date });
+                    if (!schedule) {
+                        await bot.sendMessage(chatId, `📅 На ${date} розкладу немає`);
+                    } else {
+                        const bookings = await BookedSlot.find({ dateTime: { $regex: `^${date}` } });
+                        const bookedTimes = new Set(bookings.map(b => b.dateTime.split('T')[1]));
+                        const list = schedule.times.map((t: string) => `${t} ${bookedTimes.has(t) ? '🔴' : '🟢'}`).join('\n');
+                        await bot.sendMessage(chatId, `📅 Розклад на ${date}:\n\n${list}`);
+                    }
+                } else {
+                    await bot.sendMessage(chatId, "⚠️ Формат: /check YYYY-MM-DD");
                 }
             } else if (text?.startsWith('/booked')) {
                 const bookings = await BookedSlot.find({}).sort({ dateTime: 1 });
-                const list = bookings.map((b: any) => b.dateTime.replace('T', ' ')).join('\n') || "Нічого не знайдено";
+                const list = bookings.map((b: any) => `${b.dateTime.replace('T', ' ')} - ${b.clientName}`).join('\n') || "Нічого не знайдено";
                 await bot.sendMessage(chatId, `📕 Зайняті слоти:\n\n${list}`);
             } else if (text === '/start') {
-                await bot.sendMessage(chatId, "👋 Вітаю, Адмін! Команди:\n/add_slots ГГГГ-ММ-ДД час,час\n/booked\n/check ГГГГ-ММ-ДД");
+                const adminMsg = `
+👋 <b>Вітаю, Адмін!</b>
+
+Система працює на Vercel + MongoDB.
+
+<b>Команди:</b>
+/add_slots YYYY-MM-DD 10:00,12:00
+/close_day YYYY-MM-DD
+/delete_day YYYY-MM-DD
+/unbook YYYY-MM-DD HH:mm
+/check YYYY-MM-DD
+/booked
+                `.trim();
+                await bot.sendMessage(chatId, adminMsg, { parse_mode: 'HTML' });
             }
-        } else if (text === '/start') {
+        }
+ else if (text === '/start') {
             await bot.sendMessage(chatId, "👋 Вітаємо! Записуйтесь онлайн: " + APP_URL);
         }
     }
@@ -164,7 +292,30 @@ app.get('/api/setup-bot', async (req, res) => {
     try {
         const url = `${APP_URL}/api/webhook`;
         await bot.setWebHook(url);
-        res.json({ success: true, message: `Webhook set to ${url}` });
+        
+        // Set commands for admin
+        if (ADMIN_CHAT_ID) {
+            await bot.setMyCommands([
+                { command: '/start', description: '👋 Початок' },
+                { command: '/add_slots', description: '📅 Додати слоти (ГГГГ-ММ-ДД час,час)' },
+                { command: '/close_day', description: '🔒 Закрити день' },
+                { command: '/delete_day', description: '🗑 Видалити день' },
+                { command: '/unbook', description: '🔓 Звільнити слот' },
+                { command: '/check', description: '🔍 Перевірити дату' },
+                { command: '/booked', description: '📕 Зайняті слоти' }
+            ], {
+                scope: { type: 'chat', chat_id: Number(ADMIN_CHAT_ID) }
+            });
+        }
+
+        // Set commands for everyone else
+        await bot.setMyCommands([
+            { command: '/start', description: '👋 Початок' }
+        ], {
+            scope: { type: 'all_private_chats' }
+        });
+
+        res.json({ success: true, message: `Webhook set to ${url} and commands registered.` });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
     }
