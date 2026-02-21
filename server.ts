@@ -7,12 +7,15 @@ import TelegramBot from 'node-telegram-bot-api';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import 'dotenv/config';
+import nodemailer from 'nodemailer';
 
 // --- CONFIGURATION ---
 const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEanmyul1h3efDzXJZGICJYxQlKf5ERKJg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
 const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/beauty_salon?appName=Cluster0";
 const PORT = 3000;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 
 // --- DATABASE MODELS ---
 const scheduleSchema = new mongoose.Schema({
@@ -25,6 +28,7 @@ const bookedSlotSchema = new mongoose.Schema({
     dateTime: { type: String, required: true, unique: true },
     clientName: String,
     clientPhone: String,
+    clientEmail: String,
     clientTelegramId: String,
     service: String,
     createdAt: { type: Date, default: Date.now }
@@ -40,6 +44,15 @@ async function startServer() {
 
     // Initialize Bot
     const bot = new TelegramBot(TOKEN, { polling: true });
+
+    // Initialize Nodemailer
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: EMAIL_USER,
+            pass: EMAIL_PASS
+        }
+    });
 
     bot.on('polling_error', (error: any) => {
         if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
@@ -90,8 +103,8 @@ async function startServer() {
     });
 
     app.post('/api/book', async (req, res) => {
-        const { name, phone, service, date, time, telegramId } = req.body;
-        if (!name || !phone || !date || !time) return res.status(400).json({ error: 'Missing fields' });
+        const { name, phone, email, service, date, time, telegramId } = req.body;
+        if (!name || !phone || !email || !date || !time) return res.status(400).json({ error: 'Missing fields' });
 
         // Save pending booking info to help with contact matching later
         const dateTime = `${date}T${time}`;
@@ -100,7 +113,7 @@ async function startServer() {
             // If it's already booked, we might want to handle that, but for now let's just store the request
             await BookedSlot.findOneAndUpdate(
                 { dateTime }, 
-                { clientName: name, clientPhone: phone, clientTelegramId: telegramId, service: service }, 
+                { clientName: name, clientPhone: phone, clientEmail: email, clientTelegramId: telegramId, service: service }, 
                 { upsert: true }
             );
         } catch (e) { console.error("Error saving pending booking", e); }
@@ -113,10 +126,11 @@ async function startServer() {
 
 👤 <b>Клієнт:</b> ${name}
 📞 <b>Телефон:</b> ${phone}
+📧 <b>Email:</b> ${email}
 ✂️ <b>Послуга:</b> ${service}
 📅 <b>Дата:</b> ${formattedDate}
 ⏰ <b>Час:</b> ${time}
-${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Telegram ID не знайдено)</i>'}
+${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
 
 <i>Очікує підтвердження...</i>
         `.trim();
@@ -422,41 +436,62 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : '<i>(Tele
             const parts = action.split('_');
             const date = parts[1];
             const time = parts[2];
-            const callbackTelegramId = parts[3];
             const dateTime = `${date}T${time}`;
 
             try {
-                // Find booking to get latest data (e.g. if contact was shared after request)
+                // Find booking to get latest data
                 let booking = await BookedSlot.findOne({ dateTime });
                 if (!booking) {
                     booking = await BookedSlot.create({ dateTime });
                 }
 
-                // Prefer ID from DB, fallback to callback data
-                const targetTelegramId = booking.clientTelegramId || (callbackTelegramId !== 'none' ? callbackTelegramId : undefined);
                 const service = booking.service || "Перукарські послуги";
+                const clientEmail = booking.clientEmail;
 
                 let notificationStatus = "";
-                if (targetTelegramId) {
+                
+                if (clientEmail) {
                     try {
                         const [year, month, day] = date.split('-');
                         const formattedDate = `${day}.${month}.${year}`;
 
-                        const clientMessage = 
-                            `Світлана підтвердила ваш запис! ✨\n\n` +
-                            `✂️ Послуга: ${service}\n` +
-                            `📅 Дата: ${formattedDate}\n` +
-                            `⏰ Час: ${time}\n\n` +
-                            `📍 Адреса: м. Вінниця, вул. Князів Коріатовичів, 106\n` +
-                            `🌐 Сайт: https://svetlana-mazur.vercel.app`;
+                        const htmlContent = `
+                        <div style="background-color: #f5f5f0; padding: 40px; font-family: sans-serif; color: #333;">
+                            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                                <h2 style="color: #c5a059; text-align: center; margin-bottom: 30px; font-weight: 300; text-transform: uppercase; letter-spacing: 2px;">Ваша зустріч підтверджена!</h2>
+                                
+                                <p style="text-align: center; font-size: 16px; line-height: 1.6; margin-bottom: 30px; color: #555;">
+                                    Світлана Мазур чекає на вас.
+                                </p>
+
+                                <div style="background-color: #fafafa; padding: 20px; border-radius: 6px; border: 1px solid #eee;">
+                                    <p style="margin: 10px 0; font-size: 15px;">✂️ <strong>Послуга:</strong> ${service}</p>
+                                    <p style="margin: 10px 0; font-size: 15px;">📅 <strong>Дата:</strong> ${formattedDate}</p>
+                                    <p style="margin: 10px 0; font-size: 15px;">⏰ <strong>Час:</strong> ${time}</p>
+                                </div>
+
+                                <div style="margin-top: 30px; text-align: center; font-size: 14px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
+                                    <p>📍 м. Вінниця, вул. Князів Коріатовичів, 106</p>
+                                    <p><a href="https://svetlana-mazur.vercel.app" style="color: #c5a059; text-decoration: none;">svetlana-mazur.vercel.app</a></p>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+
+                        await transporter.sendMail({
+                            from: `"Svetlana Mazur" <${EMAIL_USER}>`,
+                            to: clientEmail,
+                            subject: 'Підтвердження запису | Svetlana Mazur',
+                            html: htmlContent
+                        });
                         
-                        await bot.sendMessage(targetTelegramId, clientMessage, { parse_mode: 'HTML' });
-                        notificationStatus = "\n🔔 Сповіщення надіслано!";
-                    } catch (tgErr) {
-                        notificationStatus = "\n⚠️ Клієнт не отримав повідомлення.";
+                        notificationStatus = "\n📧 Лист надіслано!";
+                    } catch (emailErr) {
+                        console.error('Email error:', emailErr);
+                        notificationStatus = "\n⚠️ Помилка відправки листа.";
                     }
                 } else {
-                    notificationStatus = "\nℹ️ ID клієнта не знайдено.";
+                    notificationStatus = "\nℹ️ Email не вказано.";
                 }
 
                 await bot.editMessageText(`${msg.text}\n\n✅ ЗАПИС ПІДТВЕРДЖЕНО\nКлієнта записано на ${time}.${notificationStatus}`, {
