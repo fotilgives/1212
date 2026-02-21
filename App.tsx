@@ -7,6 +7,10 @@ import About from './components/About';
 import Gallery from './components/Gallery';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
+import CareGuide from './components/CareGuide';
+import BeforeAfterSlider from './components/BeforeAfterSlider';
+import VisitPrep from './components/VisitPrep';
+import PriceEstimator from './components/PriceEstimator';
 
 const App: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -27,7 +31,9 @@ const App: React.FC = () => {
         <Hero />
         <About />
         <Services />
+        <CareGuide />
         <Gallery />
+        <VisitPrep />
         <Contact />
       </main>
 

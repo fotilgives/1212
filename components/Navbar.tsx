@@ -26,21 +26,15 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
           
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-12 text-[10px] font-bold tracking-[0.3em] uppercase text-neutral-500">
-            {navLinks.map((link) => (
-              <a 
-                key={link.name} 
-                href={link.href} 
-                className="hover:text-black transition-all duration-300 relative group"
-              >
-                {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-black transition-all duration-300 group-hover:w-full"></span>
-              </a>
-            ))}
+            <a href="#about" className="hover:text-black transition-all duration-300 relative group">Про мене<span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-black transition-all duration-300 group-hover:w-full"></span></a>
+            <a href="#services" className="hover:text-black transition-all duration-300 relative group">Послуги<span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-black transition-all duration-300 group-hover:w-full"></span></a>
+            <a href="#gallery" className="hover:text-black transition-all duration-300 relative group">Портфоліо<span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-black transition-all duration-300 group-hover:w-full"></span></a>
+            <a href="#contact" className="hover:text-black transition-all duration-300 relative group">Контакти<span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-black transition-all duration-300 group-hover:w-full"></span></a>
           </div>
 
           <div className="hidden md:block">
             <a href="#contact" className="bg-black text-white px-10 py-4 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-neutral-800 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-black/5">
-              Забронювати
+              ЗАПИСАТИСЯ
             </a>
           </div>
 
@@ -62,20 +56,14 @@ const Navbar: React.FC<NavbarProps> = ({ scrolled }) => {
       {/* Mobile Menu Overlay */}
       <div className={`fixed inset-0 bg-white/98 backdrop-blur-md z-40 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none translate-y-10'} md:hidden flex flex-col items-center justify-center`}>
         <div className="flex flex-col space-y-10 text-center font-playfair text-3xl italic">
-          {navLinks.map((link) => (
-            <a 
-              key={link.name} 
-              href={link.href} 
-              onClick={() => setIsMobileMenuOpen(false)} 
-              className="text-neutral-900 hover:text-neutral-400 transition-colors"
-            >
-              {link.name}
-            </a>
-          ))}
+            <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="text-neutral-900 hover:text-neutral-400 transition-colors">Про мене</a>
+            <a href="#services" onClick={() => setIsMobileMenuOpen(false)} className="text-neutral-900 hover:text-neutral-400 transition-colors">Послуги</a>
+            <a href="#gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-neutral-900 hover:text-neutral-400 transition-colors">Портфоліо</a>
+            <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="text-neutral-900 hover:text-neutral-400 transition-colors">Контакти</a>
         </div>
         <div className="mt-16">
             <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="bg-black text-white px-12 py-5 rounded-full text-xs font-bold uppercase tracking-widest shadow-2xl">
-              Записатися
+              ЗАПИСАТИСЯ
             </a>
         </div>
       </div>

@@ -1,61 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-
-// --- Smart Image Component for HEIC Support ---
-const SmartImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
-  const [imgSrc, setImgSrc] = useState<string>(src);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // Check if URL ends with .heic (case insensitive)
-    if (src.toLowerCase().endsWith('.heic')) {
-      setLoading(true);
-      fetch(src)
-        .then((res) => res.blob())
-        .then((blob) => {
-          // @ts-ignore - heic2any is loaded via CDN in index.html
-          if (window.heic2any) {
-            // @ts-ignore
-            return window.heic2any({
-              blob,
-              toType: 'image/jpeg',
-              quality: 0.8
-            });
-          }
-          throw new Error('heic2any library not found');
-        })
-        .then((conversionResult) => {
-          const url = URL.createObjectURL(Array.isArray(conversionResult) ? conversionResult[0] : conversionResult);
-          setImgSrc(url);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error('HEIC conversion failed', err);
-          // Fallback to original if conversion fails, though browser likely won't render it
-          setImgSrc(src);
-          setLoading(false);
-        });
-    } else {
-        setImgSrc(src);
-    }
-  }, [src]);
-
-  return (
-    <div className="w-full h-full relative overflow-hidden">
-        {loading && (
-            <div className="absolute inset-0 bg-neutral-100 flex items-center justify-center z-10">
-                <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        )}
-        <img 
-            src={imgSrc} 
-            alt={alt} 
-            className={className} 
-            style={{ imageRendering: 'high-quality' as any }}
-        />
-    </div>
-  );
-};
+import React from 'react';
+import BeforeAfterSlider from './BeforeAfterSlider';
 
 // --- Data ---
 const portfolioPairs = [
@@ -81,37 +26,16 @@ const Gallery: React.FC = () => {
         
         <div className="text-center space-y-6">
           <span className="text-[10px] tracking-[0.6em] text-neutral-400 uppercase font-bold">Результати</span>
-          <h2 className="font-playfair text-5xl md:text-7xl font-medium text-neutral-900">Портфоліо: <span className="italic text-neutral-400">До та Після</span></h2>
+          <h2 className="font-playfair text-5xl md:text-7xl font-medium text-neutral-900">Портфоліо</h2>
         </div>
 
-        <div className="space-y-16">
+        <div className="space-y-24">
           {portfolioPairs.map((pair, index) => (
-            <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-12 items-center">
-               
-               {/* Before */}
-               <div className="relative group rounded-[32px] overflow-hidden shadow-2xl bg-neutral-100 aspect-[3/4] md:aspect-[4/5]">
-                  <div className="absolute top-6 left-6 z-10 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest text-neutral-800 shadow-sm">
-                      До
-                  </div>
-                  <SmartImage 
-                    src={pair.before} 
-                    alt={`Before ${index}`} 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-               </div>
-
-               {/* After */}
-               <div className="relative group rounded-[32px] overflow-hidden shadow-2xl bg-neutral-100 aspect-[3/4] md:aspect-[4/5] ring-1 ring-black/5">
-                  <div className="absolute top-6 left-6 z-10 bg-neutral-900 text-white px-4 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest shadow-sm">
-                      Після
-                  </div>
-                  <SmartImage 
-                    src={pair.after} 
-                    alt={`After ${index}`} 
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-               </div>
-
+            <div key={index} className="w-full">
+               <BeforeAfterSlider 
+                 beforeImage={pair.before} 
+                 afterImage={pair.after} 
+               />
             </div>
           ))}
         </div>

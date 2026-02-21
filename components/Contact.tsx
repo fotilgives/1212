@@ -9,7 +9,7 @@ const Contact: React.FC = () => {
         <div className="space-y-12">
           <div className="space-y-6">
             <span className="text-[10px] uppercase tracking-[0.5em] text-neutral-400 font-bold block">Бронювання</span>
-            <h2 className="font-playfair text-6xl md:text-7xl leading-[1] text-neutral-900">Готові до <br /><span className="italic text-neutral-300">перевтілення?</span></h2>
+            <h2 className="font-playfair text-4xl md:text-7xl leading-[1] text-neutral-900">Готові до <br /><span className="italic text-neutral-300">перевтілення?</span></h2>
             <p className="text-neutral-500 max-w-sm text-lg font-light leading-relaxed">
               Залиште ваші контакти, і ми зв'яжемося для підтвердження візиту.
             </p>

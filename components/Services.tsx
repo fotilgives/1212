@@ -6,7 +6,7 @@ const services = [
     title: 'Складні техніки фарбування',
     price: 'від 3000 ₴',
     desc: 'Airtouch, балаяж, шатуш, рельєфне фарбування, мікромілірування.',
-    image: 'https://ruki-nozhnitsi.com.ua/wp-content/uploads/2024/05/airtouch-ombre-balayage.jpg',
+    image: 'https://image2url.com/r2/default/images/1771679276482-7434c1f2-e1fb-47ed-bf1a-c06638740a3c.jpg',
   },
   {
     title: 'Фарбування тон в тон',
@@ -49,11 +49,11 @@ const Services: React.FC = () => {
         </div>
 
         {/* Uniform Grid - Vertical Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {services.map((service, idx) => (
             <div 
               key={idx} 
-              className="group flex flex-col bg-white rounded-[32px] overflow-hidden border border-neutral-100 hover:shadow-2xl transition-all duration-500"
+              className="group flex flex-col bg-white rounded-[24px] md:rounded-[32px] overflow-hidden border border-neutral-100 hover:shadow-2xl transition-all duration-500"
             >
               {/* Image Container - Vertical Aspect Ratio 3:4 */}
               <div className="relative w-full aspect-[3/4] overflow-hidden bg-neutral-100">
