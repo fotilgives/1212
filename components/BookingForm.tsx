@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
-// Використовуємо абсолютну адресу бекенду на Render
-const API_URL = "https://svetlana-hair-bot.onrender.com/api";
+// Використовуємо локальну адресу API (для Vercel)
+const API_URL = "/api";
 const BOT_URL = "https://t.me/mazur_beauty_bot";
 
 interface TimeSlot {
@@ -33,11 +33,48 @@ const BookingForm: React.FC = () => {
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [isDayClosed, setIsDayClosed] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotError, setSlotError] = useState<string | null>(null);
+  const [isWakingUp, setIsWakingUp] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [adminMode, setAdminMode] = useState(false);
 
   // Get "Today" in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
+
+  // Fetch slots function
+  const fetchSlots = (date: string) => {
+    setLoadingSlots(true);
+    setSlotError(null);
+    setIsWakingUp(false);
+    setFormData(prev => ({ ...prev, time: '' }));
+
+    // Timer to show "Waking up" message if server is slow (Render free tier)
+    const wakeTimer = setTimeout(() => {
+        setIsWakingUp(true);
+    }, 3000);
+
+    fetch(`${API_URL}/slots?date=${date}`)
+      .then(res => {
+          clearTimeout(wakeTimer);
+          if (!res.ok) throw new Error(`Помилка сервера: ${res.status}`);
+          return res.json();
+      })
+      .then((data: { isClosed: boolean, slots: TimeSlot[] }) => {
+          setIsDayClosed(data.isClosed);
+          setAvailableSlots(data.slots);
+          setLoadingSlots(false);
+          setIsWakingUp(false);
+      })
+      .catch(err => {
+          clearTimeout(wakeTimer);
+          console.error("Error loading slots:", err);
+          setSlotError("Не вдалося завантажити час. Можливо, сервер прокидається. Спробуйте ще раз.");
+          setAvailableSlots([]); 
+          setIsDayClosed(false);
+          setLoadingSlots(false);
+          setIsWakingUp(false);
+      });
+  };
 
   // Toggle slot availability (Admin Mode)
   const toggleSlotAvailability = (index: number) => {
@@ -52,28 +89,7 @@ const BookingForm: React.FC = () => {
         setAvailableSlots([]);
         return;
     }
-
-    setLoadingSlots(true);
-    setFormData(prev => ({ ...prev, time: '' })); // Reset selected time
-
-    console.log(`Fetching slots from: ${API_URL}/slots?date=${formData.date}`);
-
-    fetch(`${API_URL}/slots?date=${formData.date}`)
-      .then(res => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return res.json();
-      })
-      .then((data: { isClosed: boolean, slots: TimeSlot[] }) => {
-          setIsDayClosed(data.isClosed);
-          setAvailableSlots(data.slots);
-          setLoadingSlots(false);
-      })
-      .catch(err => {
-          console.error("Error loading slots:", err);
-          setAvailableSlots([]); 
-          setIsDayClosed(false);
-          setLoadingSlots(false);
-      });
+    fetchSlots(formData.date);
   }, [formData.date]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,11 +258,29 @@ const BookingForm: React.FC = () => {
           </div>
           
           {loadingSlots ? (
-              <div className="flex items-center justify-center py-4 space-x-2 text-neutral-400">
-                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce delay-200"></div>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                  <div className="flex space-x-2">
+                    <div className="w-2 h-2 bg-neutral-900 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-neutral-900 rounded-full animate-bounce delay-100"></div>
+                    <div className="w-2 h-2 bg-neutral-900 rounded-full animate-bounce delay-200"></div>
+                  </div>
+                  {isWakingUp && (
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 animate-pulse text-center px-4">
+                      Сервер прокидається... <br/> Зазвичай це займає до 30 секунд
+                    </p>
+                  )}
               </div>
+          ) : slotError ? (
+            <div className="text-center py-6 px-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+              <p className="text-neutral-500 text-xs mb-4">{slotError}</p>
+              <button 
+                type="button"
+                onClick={() => fetchSlots(formData.date)}
+                className="text-[9px] font-bold uppercase tracking-widest border border-black px-4 py-2 rounded-full hover:bg-black hover:text-white transition-all"
+              >
+                Спробувати ще раз
+              </button>
+            </div>
           ) : isDayClosed ? (
             <div className="text-center py-4 px-6 bg-red-50 rounded-2xl border border-red-100">
               <p className="text-red-500 text-sm font-medium">🔒 Цей день закрито для запису</p>

@@ -14,8 +14,8 @@ const TOKEN = process.env.BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase;
 const PORT = 3000;
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_USER = process.env.EMAIL_USER || "svitlanamazur222@gmail.com";
+const EMAIL_PASS = process.env.EMAIL_PASS || "lvcb tlfq spmm fjaa";
 
 // --- DATABASE MODELS ---
 const scheduleSchema = new mongoose.Schema({
@@ -96,6 +96,8 @@ async function startServer() {
     BookedSlot.schema.index({ dateTime: 1 });
 
     // --- API ENDPOINTS ---
+    app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
     app.get('/api/slots', async (req: express.Request, res: express.Response) => {
         const { date } = req.query;
         console.log(`🔍 API: Fetching slots for date: [${date}]`);
