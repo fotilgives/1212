@@ -10,9 +10,9 @@ import 'dotenv/config';
 import nodemailer from 'nodemailer';
 
 // --- CONFIGURATION ---
-const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEanmyul1h3efDzXJZGICJYxQlKf5ERKJg";
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
-const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/beauty_salon?appName=Cluster0";
+const TOKEN = process.env.BOT_TOKEN;
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+const MONGO_URI = process.env.MONGO_URI || process.env.myDatabase;
 const PORT = 3000;
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
@@ -46,13 +46,19 @@ async function startServer() {
     const bot = new TelegramBot(TOKEN, { polling: true });
 
     // Initialize Nodemailer
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: EMAIL_USER,
-            pass: EMAIL_PASS
-        }
-    });
+    let transporter: any = null;
+    if (EMAIL_USER && EMAIL_PASS) {
+        transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: EMAIL_USER,
+                pass: EMAIL_PASS
+            }
+        });
+        console.log('✅ Email transporter initialized');
+    } else {
+        console.warn('⚠️ Email credentials missing. Email notifications disabled.');
+    }
 
     bot.on('polling_error', (error: any) => {
         if (error.code === 'ETELEGRAM' && error.message.includes('409 Conflict')) {
@@ -140,7 +146,7 @@ async function startServer() {
         const formattedDate = `${day}.${month}.${year}`;
 
         // 1. Send Email to Client Immediately
-        if (email) {
+        if (email && transporter) {
             const htmlContent = `
             <div style="background-color: #f5f5f0; padding: 40px; font-family: sans-serif; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">

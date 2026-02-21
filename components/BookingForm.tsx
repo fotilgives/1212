@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 
-// Використовуємо адресу бекенду на Render, щоб фронтенд на Vercel міг до нього звертатися
-const API_URL = "https://svetlana-hair-bot.onrender.com/api";
+// Використовуємо локальну адресу API
+const API_URL = "/api";
 const BOT_URL = "https://t.me/mazur_beauty_bot";
 
 interface TimeSlot {
@@ -34,9 +34,17 @@ const BookingForm: React.FC = () => {
   const [isDayClosed, setIsDayClosed] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [adminMode, setAdminMode] = useState(false);
 
   // Get "Today" in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
+
+  // Toggle slot availability (Admin Mode)
+  const toggleSlotAvailability = (index: number) => {
+    const newSlots = [...availableSlots];
+    newSlots[index].isBooked = !newSlots[index].isBooked;
+    setAvailableSlots(newSlots);
+  };
 
   // Fetch slots when date changes
   useEffect(() => {
@@ -219,9 +227,19 @@ const BookingForm: React.FC = () => {
 
         {/* Time Slots */}
         <div className={`space-y-3 transition-all duration-500 ${formData.date ? 'opacity-100 max-h-96' : 'opacity-50 max-h-0 overflow-hidden grayscale'}`}>
-          <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400 ml-4">
-             {formData.date ? `Час для ${formData.date}` : 'Оберіть дату'}
-          </label>
+          <div className="flex justify-between items-center ml-4 mr-2">
+            <label className="text-[9px] uppercase tracking-[0.4em] font-bold text-neutral-400">
+               {formData.date ? `Час для ${formData.date}` : 'Оберіть дату'}
+            </label>
+            <button 
+              type="button" 
+              onClick={() => setAdminMode(!adminMode)}
+              className={`text-[9px] uppercase tracking-widest font-bold transition-colors ${adminMode ? 'text-red-500 animate-pulse' : 'text-neutral-200 hover:text-neutral-400'}`}
+              title="Admin Mode: Toggle slot availability"
+            >
+              {adminMode ? '● EDIT MODE' : '●'}
+            </button>
+          </div>
           
           {loadingSlots ? (
               <div className="flex items-center justify-center py-4 space-x-2 text-neutral-400">
@@ -234,20 +252,30 @@ const BookingForm: React.FC = () => {
               <p className="text-red-500 text-sm font-medium">🔒 Цей день закрито для запису</p>
             </div>
           ) : availableSlots.length > 0 ? (
-            <div className="grid grid-cols-3 gap-3 px-2">
-                {availableSlots.map((slot) => {
+            <div className={`grid grid-cols-3 gap-3 px-2 ${adminMode ? 'ring-2 ring-red-100 rounded-xl p-2 bg-red-50/30' : ''}`}>
+                {availableSlots.map((slot, index) => {
                 return (
                     <button
                     key={slot.time}
                     type="button"
-                    disabled={slot.isBooked}
-                    onClick={() => setFormData({ ...formData, time: slot.time })}
+                    disabled={!adminMode && slot.isBooked}
+                    onClick={() => {
+                      if (adminMode) {
+                        toggleSlotAvailability(index);
+                      } else {
+                        setFormData({ ...formData, time: slot.time });
+                      }
+                    }}
                     className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-300 border ${
                         slot.isBooked 
-                            ? 'bg-neutral-100 text-neutral-300 border-transparent cursor-not-allowed line-through decoration-neutral-400' 
-                            : formData.time === slot.time
+                            ? adminMode 
+                              ? 'bg-red-100 text-red-400 border-red-200 line-through decoration-red-400 hover:bg-red-200 cursor-pointer'
+                              : 'bg-neutral-100 text-neutral-300 border-transparent cursor-not-allowed line-through decoration-neutral-400' 
+                            : formData.time === slot.time && !adminMode
                                 ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg scale-105'
-                                : 'bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
+                                : adminMode
+                                  ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 cursor-pointer'
+                                  : 'bg-white text-neutral-600 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
                     }`}
                     >
                     {slot.time}
@@ -261,7 +289,7 @@ const BookingForm: React.FC = () => {
              </div>
           )}
           
-          {formData.date && !formData.time && availableSlots.length > 0 && !loadingSlots && (
+          {formData.date && !formData.time && availableSlots.length > 0 && !loadingSlots && !adminMode && (
             <p className="text-xs text-neutral-400 ml-4 animate-pulse">Оберіть зручний час</p>
           )}
         </div>
