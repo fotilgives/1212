@@ -16,25 +16,25 @@ const Contact: React.FC = () => {
           </div>
 
           <div className="space-y-10">
-            <div className="flex items-center space-x-8 group">
+            <a href="tel:+380979112015" className="flex items-center space-x-8 group cursor-pointer">
               <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center text-neutral-900 border border-neutral-100 group-hover:bg-black group-hover:text-white transition-all duration-500">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Зателефонуйте нам</div>
-                <div className="text-2xl font-playfair font-medium text-neutral-800">+380 97 911 20 15</div>
+                <div className="text-2xl font-playfair font-medium text-neutral-800 group-hover:text-neutral-600 transition-colors">+380 97 911 20 15</div>
               </div>
-            </div>
+            </a>
 
-            <div className="flex items-center space-x-8 group">
+            <a href="https://www.google.com/maps/search/?api=1&query=м.+Вінниця,+вул.+Князів+Коріатовичів,+106" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-8 group cursor-pointer">
               <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center text-neutral-900 border border-neutral-100 group-hover:bg-black group-hover:text-white transition-all duration-500">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               </div>
               <div>
                 <div className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Локація</div>
-                <div className="text-xl font-playfair font-medium text-neutral-800 max-w-xs">м. Вінниця, вул. Князів Коріатовичів, 106, 21000</div>
+                <div className="text-xl font-playfair font-medium text-neutral-800 max-w-xs group-hover:text-neutral-600 transition-colors">м. Вінниця, вул. Князів Коріатовичів, 106, 21000</div>
               </div>
-            </div>
+            </a>
           </div>
         </div>
 

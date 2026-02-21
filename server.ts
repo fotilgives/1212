@@ -68,12 +68,22 @@ async function startServer() {
         }
     });
 
-    // Connect to MongoDB
+    // Connect to MongoDB with optimized settings
     if (MONGO_URI) {
-        mongoose.connect(MONGO_URI, { dbName: 'beauty_salon' })
+        mongoose.connect(MONGO_URI, { 
+            dbName: 'beauty_salon',
+            maxPoolSize: 10, // Maintain up to 10 socket connections
+            serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+            socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+        })
             .then(() => console.log('✅ Connected to MongoDB (Database: beauty_salon)'))
             .catch(err => console.error('❌ MongoDB Connection Error:', err));
     }
+
+    // Ensure indexes for faster queries
+    // This runs in the background and won't block startup
+    Schedule.schema.index({ date: 1 });
+    BookedSlot.schema.index({ dateTime: 1 });
 
     // --- API ENDPOINTS ---
     app.get('/api/slots', async (req, res) => {
@@ -88,12 +98,22 @@ async function startServer() {
             }
 
             const availableTimes = scheduleDoc ? scheduleDoc.times : [];
-            console.log(`📊 API: Found ${availableTimes.length} slots for ${date}`);
-            const bookedDocs = await BookedSlot.find({ dateTime: { $regex: `^${date}` } });
-            const bookedTimeStrings = bookedDocs.map(doc => doc.dateTime);
+            
+            // Optimized query: Use $in operator instead of regex if possible, or at least limit fields
+            // Since we need to check if specific times are booked, let's construct the exact dateTime strings we care about
+            const potentialBookings = availableTimes.map(time => `${date}T${time.trim()}`);
+            
+            // Find only the bookings that match our available slots for this day
+            // This is much faster than regex scanning the whole collection
+            const bookedDocs = await BookedSlot.find({ 
+                dateTime: { $in: potentialBookings } 
+            }).select('dateTime'); // Only fetch the dateTime field, we don't need the rest
+            
+            const bookedTimeSet = new Set(bookedDocs.map(doc => doc.dateTime));
+            
             const slots = availableTimes.map(time => ({
                 time: String(time).trim(),
-                isBooked: bookedTimeStrings.includes(`${date}T${String(time).trim()}`)
+                isBooked: bookedTimeSet.has(`${date}T${String(time).trim()}`)
             }));
             res.json({ isClosed: false, slots });
         } catch (error) {
@@ -106,23 +126,60 @@ async function startServer() {
         const { name, phone, email, service, date, time, telegramId } = req.body;
         if (!name || !phone || !email || !date || !time) return res.status(400).json({ error: 'Missing fields' });
 
-        // Save pending booking info to help with contact matching later
+        // Save booking immediately (Auto-confirm)
         const dateTime = `${date}T${time}`;
         try {
-            // We don't mark it as fully booked yet, but we store the info
-            // If it's already booked, we might want to handle that, but for now let's just store the request
             await BookedSlot.findOneAndUpdate(
                 { dateTime }, 
                 { clientName: name, clientPhone: phone, clientEmail: email, clientTelegramId: telegramId, service: service }, 
                 { upsert: true }
             );
-        } catch (e) { console.error("Error saving pending booking", e); }
+        } catch (e) { console.error("Error saving booking", e); }
 
         const [year, month, day] = date.split('-');
         const formattedDate = `${day}.${month}.${year}`;
 
+        // 1. Send Email to Client Immediately
+        if (email) {
+            const htmlContent = `
+            <div style="background-color: #f5f5f0; padding: 40px; font-family: sans-serif; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <h2 style="color: #c5a059; text-align: center; margin-bottom: 30px; font-weight: 300; text-transform: uppercase; letter-spacing: 2px;">Ваша зустріч підтверджена!</h2>
+                    
+                    <p style="text-align: center; font-size: 16px; line-height: 1.6; margin-bottom: 30px; color: #555;">
+                        Світлана Мазур чекає на вас.
+                    </p>
+
+                    <div style="background-color: #fafafa; padding: 20px; border-radius: 6px; border: 1px solid #eee;">
+                        <p style="margin: 10px 0; font-size: 15px;">✂️ <strong>Послуга:</strong> ${service}</p>
+                        <p style="margin: 10px 0; font-size: 15px;">📅 <strong>Дата:</strong> ${formattedDate}</p>
+                        <p style="margin: 10px 0; font-size: 15px;">⏰ <strong>Час:</strong> ${time}</p>
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; font-size: 14px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
+                        <p>📍 м. Вінниця, вул. Князів Коріатовичів, 106</p>
+                        <p><a href="https://svetlana-mazur.vercel.app" style="color: #c5a059; text-decoration: none;">svetlana-mazur.vercel.app</a></p>
+                    </div>
+                </div>
+            </div>
+            `;
+
+            try {
+                await transporter.sendMail({
+                    from: `"Svetlana Mazur" <${EMAIL_USER}>`,
+                    to: email,
+                    subject: 'Підтвердження запису | Svetlana Mazur',
+                    html: htmlContent
+                });
+                console.log(`✅ Email sent to ${email}`);
+            } catch (emailErr) {
+                console.error('❌ Email error:', emailErr);
+            }
+        }
+
+        // 2. Notify Admin (Info only, with Cancel option)
         const message = `
-🌟 <b>Новий запит з сайту!</b>
+✅ <b>Новий запис (Автоматично підтверджено)!</b>
 
 👤 <b>Клієнт:</b> ${name}
 📞 <b>Телефон:</b> ${phone}
@@ -132,7 +189,7 @@ async function startServer() {
 ⏰ <b>Час:</b> ${time}
 ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
 
-<i>Очікує підтвердження...</i>
+<i>Лист клієнту вже відправлено.</i>
         `.trim();
 
         try {
@@ -141,8 +198,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "✅ Погодитись", callback_data: `approve_${date}_${time}_${telegramId || 'none'}` },
-                            { text: "❌ Відхилити", callback_data: `decline_${date}_${time}` }
+                            { text: "❌ Скасувати запис", callback_data: `cancel_${date}_${time}` }
                         ]
                     ]
                 }
@@ -150,9 +206,7 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
             res.json({ success: true });
         } catch (error: any) {
             console.error('Error sending message to admin:', error);
-            // If it's a Telegram error, we should probably still consider the booking "received" but warn the user?
-            // Or fail completely. For now, let's return the specific error so the user knows.
-            res.status(500).json({ error: `Помилка Telegram: ${error.message || 'Невідома помилка'}` });
+            res.status(500).json({ error: `Помилка Telegram: ${error.message}` });
         }
     });
 
@@ -432,85 +486,26 @@ ${telegramId ? `🆔 <b>Telegram ID:</b> <code>${telegramId}</code>` : ''}
 
         if (String(chatId) !== ADMIN_CHAT_ID) return;
 
-        if (action?.startsWith('approve_')) {
+        if (action?.startsWith('cancel_')) {
             const parts = action.split('_');
             const date = parts[1];
             const time = parts[2];
             const dateTime = `${date}T${time}`;
 
             try {
-                // Find booking to get latest data
-                let booking = await BookedSlot.findOne({ dateTime });
-                if (!booking) {
-                    booking = await BookedSlot.create({ dateTime });
-                }
+                // Delete booking from DB
+                await BookedSlot.findOneAndDelete({ dateTime });
 
-                const service = booking.service || "Перукарські послуги";
-                const clientEmail = booking.clientEmail;
-
-                let notificationStatus = "";
-                
-                if (clientEmail) {
-                    try {
-                        const [year, month, day] = date.split('-');
-                        const formattedDate = `${day}.${month}.${year}`;
-
-                        const htmlContent = `
-                        <div style="background-color: #f5f5f0; padding: 40px; font-family: sans-serif; color: #333;">
-                            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                                <h2 style="color: #c5a059; text-align: center; margin-bottom: 30px; font-weight: 300; text-transform: uppercase; letter-spacing: 2px;">Ваша зустріч підтверджена!</h2>
-                                
-                                <p style="text-align: center; font-size: 16px; line-height: 1.6; margin-bottom: 30px; color: #555;">
-                                    Світлана Мазур чекає на вас.
-                                </p>
-
-                                <div style="background-color: #fafafa; padding: 20px; border-radius: 6px; border: 1px solid #eee;">
-                                    <p style="margin: 10px 0; font-size: 15px;">✂️ <strong>Послуга:</strong> ${service}</p>
-                                    <p style="margin: 10px 0; font-size: 15px;">📅 <strong>Дата:</strong> ${formattedDate}</p>
-                                    <p style="margin: 10px 0; font-size: 15px;">⏰ <strong>Час:</strong> ${time}</p>
-                                </div>
-
-                                <div style="margin-top: 30px; text-align: center; font-size: 14px; color: #888; border-top: 1px solid #eee; padding-top: 20px;">
-                                    <p>📍 м. Вінниця, вул. Князів Коріатовичів, 106</p>
-                                    <p><a href="https://svetlana-mazur.vercel.app" style="color: #c5a059; text-decoration: none;">svetlana-mazur.vercel.app</a></p>
-                                </div>
-                            </div>
-                        </div>
-                        `;
-
-                        await transporter.sendMail({
-                            from: `"Svetlana Mazur" <${EMAIL_USER}>`,
-                            to: clientEmail,
-                            subject: 'Підтвердження запису | Svetlana Mazur',
-                            html: htmlContent
-                        });
-                        
-                        notificationStatus = "\n📧 Лист надіслано!";
-                    } catch (emailErr) {
-                        console.error('Email error:', emailErr);
-                        notificationStatus = "\n⚠️ Помилка відправки листа.";
-                    }
-                } else {
-                    notificationStatus = "\nℹ️ Email не вказано.";
-                }
-
-                await bot.editMessageText(`${msg.text}\n\n✅ ЗАПИС ПІДТВЕРДЖЕНО\nКлієнта записано на ${time}.${notificationStatus}`, {
+                await bot.editMessageText(`${msg.text}\n\n❌ ЗАПИС СКАСОВАНО`, {
                     chat_id: chatId,
                     message_id: messageId,
                     parse_mode: 'HTML'
                 });
-                await bot.answerCallbackQuery(query.id, { text: "Готово" });
+                await bot.answerCallbackQuery(query.id, { text: "Запис видалено" });
             } catch (error) {
                 console.error(error);
                 await bot.answerCallbackQuery(query.id, { text: "Помилка БД!", show_alert: true });
             }
-        } else if (action?.startsWith('decline_')) {
-            await bot.editMessageText(`${msg.text}\n\n❌ ЗАПИС ВІДХИЛЕНО`, {
-                chat_id: chatId,
-                message_id: messageId,
-                parse_mode: 'HTML'
-            });
-            await bot.answerCallbackQuery(query.id, { text: "Відхилено" });
         }
     });
 
