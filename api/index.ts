@@ -139,8 +139,8 @@ const generateEmailHtml = (customerName: string, serviceName: string, date: stri
                 <p class="address">Будь ласка, приходьте за 5-10 хвилин до початку. <br> Якщо ваші плани зміняться, повідомте нас заздалегідь.</p>
             </div>
             <div class="footer">
-                <a href="https://instagram.com/svitlana_mazur_beauty" class="social-link">Instagram</a>
-                <a href="tel:+380930000000" class="phone">+38 (093) 000-00-00</a>
+                <a href="https://www.instagram.com/svet.mazur.hair?igsh=MTY4b2RqdGs0Yzc4cQ==" class="social-link">Instagram</a>
+                <a href="tel:+380979112015" class="phone">+380 97 911 2015</a>
             </div>
         </div>
     </body>
