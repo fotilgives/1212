@@ -213,16 +213,21 @@ const BookingForm: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
             className="w-full bg-neutral-50/50 border-b border-neutral-100 px-6 py-5 outline-none focus:border-black transition-all text-lg font-light text-neutral-800 appearance-none cursor-pointer focus:bg-white"
           >
-            <option value="Складні техніки фарбування">Складні техніки фарбування (від 3000₴)</option>
-            <option value="Фарбування тон в тон">Фарбування тон в тон (від 2000₴)</option>
-            <option value="Тонування">Тонування (від 1200₴)</option>
-            <option value="Вихід з чорного">Вихід з чорного (від 3500₴)</option>
-            <option value="Відновлення волосся">Відновлення волосся (від 1500₴)</option>
+            <option value="Складні техніки фарбування">Складні техніки фарбування (від 3500₴)</option>
+            <option value="Фарбування тон в тон">Фарбування тон в тон (від 2500₴)</option>
+            <option value="Тонування">Тонування (від 1500₴)</option>
+            <option value="Вихід з чорного">Вихід з чорного (від 4500₴)</option>
+            <option value="Відновлення волосся">Відновлення волосся (від 2000₴)</option>
           </select>
           <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
+        {(formData.service === 'Складні техніки фарбування' || formData.service === 'Вихід з чорного') && (
+          <p className="text-[10px] text-neutral-400 mt-2 ml-4 italic leading-relaxed">
+            ✨ Порада: краще приходити з митою головою (1-2 дні). Це захищає шкіру голови під час фарбування.
+          </p>
+        )}
       </div>
 
       {/* Date & Time */}

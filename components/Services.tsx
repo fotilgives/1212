@@ -4,33 +4,33 @@ import React from 'react';
 const services = [
   {
     title: 'Складні техніки фарбування',
-    price: 'від 3000 ₴',
+    price: 'від 3500 ₴',
     desc: 'Airtouch, балаяж, шатуш, рельєфне фарбування, мікромілірування.',
     image: 'https://image2url.com/r2/default/images/1771679276482-7434c1f2-e1fb-47ed-bf1a-c06638740a3c.jpg',
   },
   {
     title: 'Фарбування тон в тон',
-    price: 'від 2000 ₴',
+    price: 'від 2500 ₴',
     desc: 'Ідеальне вирівнювання кольору та надання блиску.',
     image: 'https://iq13.com.ua/storage/media/ae8e4227-e112-48fd-b2d3-cf49907488f3.jpeg',
   },
   {
     title: 'Тонування',
-    price: 'від 1200 ₴',
+    price: 'від 1500 ₴',
     desc: 'Корекція відтінку та оновлення кольору без пошкодження.',
     image: 'https://fastlinestudio.pl/wp-content/webp-express/webp-images/uploads/2023/12/img_809-0.jpg.webp',
   },
   {
     title: 'Вихід з чорного',
-    price: 'від 3500 ₴',
+    price: 'від 4500 ₴',
     desc: 'Професійне та безпечне освітлення темних відтінків.',
     image: 'https://i.pinimg.com/736x/cd/88/d4/cd88d406c350fd817ebcb9501085caad.jpg',
   },
   {
     title: 'Відновлення волосся',
-    price: 'від 1500 ₴',
+    price: 'від 2000 ₴',
     desc: 'Процедури Lanza, Screen, Sensus для глибокої реконструкції.',
-    image: 'https://ruki-nozhnitsi.com.ua/wp-content/uploads/2024/10/img_0348.jpg',
+    image: 'https://crystal.lviv.ua/wp-content/uploads/2024/06/6ba5db5b-5d58-462d-b434-09f25eb617d4.jpg',
   },
 ];
 

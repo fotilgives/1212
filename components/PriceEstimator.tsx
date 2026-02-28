@@ -14,10 +14,10 @@ const PriceEstimator: React.FC = () => {
     
     // Base prices for services
     switch (service) {
-      case 'complex': basePrice = 3000; break;
-      case 'toning': basePrice = 1200; break;
-      case 'exit_black': basePrice = 3500; break;
-      case 'recovery': basePrice = 1500; break;
+      case 'complex': basePrice = 3500; break;
+      case 'toning': basePrice = 1500; break;
+      case 'exit_black': basePrice = 4500; break;
+      case 'recovery': basePrice = 2000; break;
     }
 
     // Length multiplier

@@ -6,12 +6,47 @@ import cors from 'cors';
 import nodemailer from 'nodemailer';
 
 // --- CONFIGURATION ---
-const TOKEN = process.env.BOT_TOKEN || "8299961218:AAEanmyul1h3efDzXJZGICJYxQlKf5ERKJg";
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "8200508213";
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://artemkamazur12_db_user:Svetlana2026@cluster0.ujv7pgy.mongodb.net/beauty_salon?appName=Cluster0";
-const EMAIL_USER = process.env.EMAIL_USER || "svitlanamazur222@gmail.com";
-const EMAIL_PASS = process.env.EMAIL_PASS || "lvcb tlfq spmm fjaa";
+const TOKEN = process.env.BOT_TOKEN;
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+const MONGO_URI = process.env.MONGO_URI;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
 const APP_URL = process.env.APP_URL || "https://svetlana-mazur.vercel.app";
+
+if (!TOKEN) {
+    console.error("❌ ERROR: BOT_TOKEN is missing in environment variables!");
+}
+
+// --- HELPERS ---
+const sendTelegramMessage = async (chatId: string | number, text: string, parseMode: 'HTML' | 'Markdown' = 'HTML') => {
+    if (!TOKEN) {
+        console.error("⚠️ Cannot send Telegram message: BOT_TOKEN is missing.");
+        return;
+    }
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text,
+                parse_mode: parseMode
+            })
+        });
+        const data: any = await response.json();
+        if (!data.ok) {
+            console.error("❌ Telegram API Error:", data.description);
+            if (data.error_code === 401) {
+                console.error("⚠️ BOT_TOKEN is invalid. Please check your environment variables.");
+            }
+        } else {
+            console.log(`✅ Telegram message sent to ${chatId}`);
+        }
+        return data;
+    } catch (err: any) {
+        console.error("❌ Network error sending to Telegram:", err.message);
+    }
+};
 
 // --- DATABASE MODELS ---
 const scheduleSchema = new mongoose.Schema({
@@ -38,7 +73,7 @@ app.use(cors());
 app.use(express.json());
 
 // Initialize Bot (Webhook mode for Vercel)
-const bot = new TelegramBot(TOKEN);
+const bot = new TelegramBot(TOKEN || "");
 
 // Initialize Nodemailer
 const transporter = nodemailer.createTransport({
@@ -174,11 +209,13 @@ app.post('/api/book', async (req, res) => {
             });
         }
 
-        // Notify Admin
+        // Notify Admin via Telegram (Direct Fetch)
         if (ADMIN_CHAT_ID) {
-            await bot.sendMessage(ADMIN_CHAT_ID, `✅ <b>Новий запис!</b>\n\n👤 ${name}\n📞 ${phone}\n✂️ ${service}\n📅 ${formattedDate}\n⏰ ${time}`, { parse_mode: 'HTML' });
+            const telegramMessage = `🔔 <b>НОВИЙ ЗАПИС</b>\n\n👤 <b>Клієнт:</b> ${name}\n📞 <b>Телефон:</b> ${phone}\n📅 <b>Дата/Час:</b> ${formattedDate} о ${time}\n💅 <b>Послуга:</b> ${service}`;
+            sendTelegramMessage(ADMIN_CHAT_ID, telegramMessage);
         }
 
+        // We return success even if Telegram fails, as long as the database and email worked
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Booking failed' });
@@ -202,26 +239,26 @@ app.post('/api/webhook', async (req, res) => {
                 if (date && timesStr) {
                     const times = timesStr.split(',').map((t: string) => t.trim());
                     await Schedule.findOneAndUpdate({ date }, { times, isClosed: false }, { upsert: true });
-                    await bot.sendMessage(chatId, `✅ Слоти додано на ${date}`);
+                    await sendTelegramMessage(chatId, `✅ Слоти додано на ${date}`);
                 } else {
-                    await bot.sendMessage(chatId, "⚠️ Формат: /add_slots YYYY-MM-DD 10:00,12:00");
+                    await sendTelegramMessage(chatId, "⚠️ Формат: /add_slots YYYY-MM-DD 10:00,12:00");
                 }
             } else if (text?.startsWith('/close_day')) {
                 const date = text.split(/\s+/)[1];
                 if (date) {
                     await Schedule.findOneAndUpdate({ date }, { isClosed: true, times: [] }, { upsert: true });
-                    await bot.sendMessage(chatId, `🔒 День ${date} закрито для запису`);
+                    await sendTelegramMessage(chatId, `🔒 День ${date} закрито для запису`);
                 } else {
-                    await bot.sendMessage(chatId, "⚠️ Формат: /close_day YYYY-MM-DD");
+                    await sendTelegramMessage(chatId, "⚠️ Формат: /close_day YYYY-MM-DD");
                 }
             } else if (text?.startsWith('/delete_day')) {
                 const date = text.split(/\s+/)[1];
                 if (date) {
                     await Schedule.findOneAndDelete({ date });
                     await BookedSlot.deleteMany({ dateTime: { $regex: `^${date}` } });
-                    await bot.sendMessage(chatId, `🗑 День ${date} та всі записи видалено`);
+                    await sendTelegramMessage(chatId, `🗑 День ${date} та всі записи видалено`);
                 } else {
-                    await bot.sendMessage(chatId, "⚠️ Формат: /delete_day YYYY-MM-DD");
+                    await sendTelegramMessage(chatId, "⚠️ Формат: /delete_day YYYY-MM-DD");
                 }
             } else if (text?.startsWith('/unbook')) {
                 const parts = text.split(/\s+/);
@@ -229,29 +266,29 @@ app.post('/api/webhook', async (req, res) => {
                 const time = parts[2];
                 if (date && time) {
                     await BookedSlot.findOneAndDelete({ dateTime: `${date}T${time}` });
-                    await bot.sendMessage(chatId, `🔓 Слот ${date} о ${time} тепер вільний`);
+                    await sendTelegramMessage(chatId, `🔓 Слот ${date} о ${time} тепер вільний`);
                 } else {
-                    await bot.sendMessage(chatId, "⚠️ Формат: /unbook YYYY-MM-DD HH:mm");
+                    await sendTelegramMessage(chatId, "⚠️ Формат: /unbook YYYY-MM-DD HH:mm");
                 }
             } else if (text?.startsWith('/check')) {
                 const date = text.split(/\s+/)[1];
                 if (date) {
                     const schedule = await Schedule.findOne({ date });
                     if (!schedule) {
-                        await bot.sendMessage(chatId, `📅 На ${date} розкладу немає`);
+                        await sendTelegramMessage(chatId, `📅 На ${date} розкладу немає`);
                     } else {
                         const bookings = await BookedSlot.find({ dateTime: { $regex: `^${date}` } });
                         const bookedTimes = new Set(bookings.map(b => b.dateTime.split('T')[1]));
                         const list = schedule.times.map((t: string) => `${t} ${bookedTimes.has(t) ? '🔴' : '🟢'}`).join('\n');
-                        await bot.sendMessage(chatId, `📅 Розклад на ${date}:\n\n${list}`);
+                        await sendTelegramMessage(chatId, `📅 Розклад на ${date}:\n\n${list}`);
                     }
                 } else {
-                    await bot.sendMessage(chatId, "⚠️ Формат: /check YYYY-MM-DD");
+                    await sendTelegramMessage(chatId, "⚠️ Формат: /check YYYY-MM-DD");
                 }
             } else if (text?.startsWith('/booked')) {
                 const bookings = await BookedSlot.find({}).sort({ dateTime: 1 });
                 const list = bookings.map((b: any) => `${b.dateTime.replace('T', ' ')} - ${b.clientName}`).join('\n') || "Нічого не знайдено";
-                await bot.sendMessage(chatId, `📕 Зайняті слоти:\n\n${list}`);
+                await sendTelegramMessage(chatId, `📕 Зайняті слоти:\n\n${list}`);
             } else if (text === '/start') {
                 const adminMsg = `
 👋 <b>Вітаю, Адмін!</b>
@@ -266,11 +303,11 @@ app.post('/api/webhook', async (req, res) => {
 /check YYYY-MM-DD
 /booked
                 `.trim();
-                await bot.sendMessage(chatId, adminMsg, { parse_mode: 'HTML' });
+                await sendTelegramMessage(chatId, adminMsg);
             }
         }
  else if (text === '/start') {
-            await bot.sendMessage(chatId, "👋 Вітаємо! Записуйтесь онлайн: " + APP_URL);
+            await sendTelegramMessage(chatId, "👋 Вітаємо! Записуйтесь онлайн: " + APP_URL);
         }
     }
 
@@ -279,8 +316,11 @@ app.post('/api/webhook', async (req, res) => {
         if (action?.startsWith('cancel_')) {
             const dateTime = action.replace('cancel_', '').replace('_', 'T');
             await BookedSlot.findOneAndDelete({ dateTime });
-            await bot.answerCallbackQuery(callback_query.id, { text: "Запис скасовано" });
-            await bot.sendMessage(callback_query.message.chat.id, "❌ Запис видалено");
+            // We still use bot for answerCallbackQuery as it's more convenient, but we could fetch it too
+            try {
+                await bot.answerCallbackQuery(callback_query.id, { text: "Запис скасовано" });
+            } catch (e) {}
+            await sendTelegramMessage(callback_query.message.chat.id, "❌ Запис видалено");
         }
     }
 
@@ -290,6 +330,12 @@ app.post('/api/webhook', async (req, res) => {
 // Setup Webhook helper
 app.get('/api/setup-bot', async (req, res) => {
     try {
+        if (!TOKEN) throw new Error("BOT_TOKEN is missing");
+        
+        // Verify token first
+        const me = await bot.getMe();
+        console.log(`✅ Bot verified: @${me.username}`);
+
         const url = `${APP_URL}/api/webhook`;
         await bot.setWebHook(url);
         

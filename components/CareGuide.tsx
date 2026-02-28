@@ -29,12 +29,12 @@ const CareGuide: React.FC = () => {
 
   const getRecommendation = (type: string, prob: string) => {
     if (type === 'Blonde') {
-      if (prob === 'Yellowing') return 'Тонування + Відновлення';
-      if (prob === 'Dryness') return 'Кератинове відновлення + Глибоке зволоження';
+      if (prob === 'Yellowing') return 'Тонування';
+      if (prob === 'Dryness') return 'Глибоке зволоження + Відновлення';
       if (prob === 'Roots') return 'Корекція коренів + Тонування';
     } else if (type === 'Brunette') {
       if (prob === 'Dullness') return 'Тонування тон в тон для блиску';
-      if (prob === 'Redness') return 'Холодне тонування + Нейтралізація';
+      if (prob === 'Redness') return 'Тонування (нейтралізація)';
       if (prob === 'Change') return 'AirTouch або Balayage (Складні техніки)';
     } else { // Natural
       if (prob === 'Change') return 'Складні техніки фарбування (AirTouch)';
@@ -47,10 +47,10 @@ const CareGuide: React.FC = () => {
   const calculatePrice = () => {
     let basePrice = 0;
     switch (service) {
-      case 'complex': basePrice = 3000; break;
-      case 'toning': basePrice = 1200; break;
-      case 'exit_black': basePrice = 3500; break;
-      case 'recovery': basePrice = 1500; break;
+      case 'complex': basePrice = 3500; break;
+      case 'toning': basePrice = 1500; break;
+      case 'exit_black': basePrice = 4500; break;
+      case 'recovery': basePrice = 2000; break;
     }
     let lengthMultiplier = 1;
     if (length === 'short') lengthMultiplier = 0.8;
