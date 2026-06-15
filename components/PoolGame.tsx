@@ -5,6 +5,8 @@ import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import AnimatedNumber from './AnimatedNumber';
 import Confetti from './Confetti';
+import AuthModal from './AuthModal';
+import { LogIn } from 'lucide-react';
 
 type Move = 'rock' | 'scissors' | 'paper';
 
@@ -40,6 +42,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number; isBluff: boolean } | null>(null);
   const [lastWin, setLastWin] = useState<Move | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
 
   // Блеф доступний, лише якщо останній результат — виграш, і пропущено < 2 раундів.
   const skipped = round && account.lastBetRound != null ? round.id - account.lastBetRound - 1 : 99;
@@ -224,16 +227,35 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
         </div>
 
         <div className="p-6">
-          {/* Nickname */}
-          <div className="mb-6 flex items-center gap-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">Імʼя</label>
+          {/* Nickname + account */}
+          <div className="mb-2 flex items-center gap-2">
             <input
               value={account.nickname}
               onChange={(e) => account.setNickname(e.target.value.slice(0, 20))}
               className="flex-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               placeholder="Твоє імʼя у грі"
             />
+            {account.isAccount ? (
+              <button
+                onClick={account.logout}
+                className="shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+              >
+                Вийти
+              </button>
+            ) : (
+              <button
+                onClick={() => setAuthOpen(true)}
+                className="flex shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+              >
+                <LogIn className="h-3.5 w-3.5" /> Увійти
+              </button>
+            )}
           </div>
+          <p className="mb-5 text-[11px] text-slate-400">
+            {account.isAccount
+              ? '✓ Ти в акаунті — баланс зберігається на будь-якому пристрої.'
+              : 'Граєш як гість (баланс лише в цьому браузері). Увійди, щоб зберігати скрізь.'}
+          </p>
 
           {/* Timer ring + stats */}
           <div className="mb-6 flex items-center justify-center gap-6 sm:gap-10">
@@ -570,6 +592,8 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
           </p>
         </div>
       </motion.div>
+
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} account={account} />
     </section>
   );
 };

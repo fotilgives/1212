@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-const ID_KEY = 'rps_player_id';
+const GUEST_KEY = 'rps_player_id';
+const ACCOUNT_KEY = 'rps_account_id';
 const NICK_KEY = 'rps_nickname';
 
 function uuid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  // Запасний варіант для старих/незахищених середовищ.
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
@@ -14,19 +14,21 @@ function uuid(): string {
   });
 }
 
-function getOrCreateId(): string {
-  let id = localStorage.getItem(ID_KEY);
+function getGuestId(): string {
+  let id = localStorage.getItem(GUEST_KEY);
   if (!id) {
     id = uuid();
-    localStorage.setItem(ID_KEY, id);
+    localStorage.setItem(GUEST_KEY, id);
   }
   return id;
 }
 
+function initialId(): string {
+  return localStorage.getItem(ACCOUNT_KEY) || getGuestId();
+}
+
 function initialNick(): string {
-  const saved = localStorage.getItem(NICK_KEY);
-  if (saved) return saved;
-  return 'Гравець-' + Math.floor(1000 + Math.random() * 9000);
+  return localStorage.getItem(NICK_KEY) || 'Гравець-' + Math.floor(1000 + Math.random() * 9000);
 }
 
 export interface Account {
@@ -36,15 +38,20 @@ export interface Account {
   wins: number;
   bluffReady: boolean;
   lastBetRound: number | null;
+  isAccount: boolean;
   ready: boolean;
   setNickname: (n: string) => void;
   refresh: () => Promise<void>;
   topUp: (amount: number) => Promise<void>;
   donate: (amount: number) => Promise<boolean>;
+  login: (loginStr: string, password: string) => Promise<string | null>;
+  signup: (loginStr: string, password: string, nick: string) => Promise<string | null>;
+  logout: () => void;
 }
 
 export function useAccount(): Account {
-  const [playerId] = useState(getOrCreateId);
+  const [playerId, setPlayerId] = useState(initialId);
+  const [isAccount, setIsAccount] = useState(() => !!localStorage.getItem(ACCOUNT_KEY));
   const [nickname, setNicknameState] = useState(initialNick);
   const [balance, setBalance] = useState(0);
   const [wins, setWins] = useState(0);
@@ -130,5 +137,57 @@ export function useAccount(): Account {
     [playerId, refresh]
   );
 
-  return { playerId, nickname, balance, wins, bluffReady, lastBetRound, ready, setNickname, refresh, topUp, donate };
+  const applyAccount = (id: string, nick: string) => {
+    localStorage.setItem(ACCOUNT_KEY, id);
+    localStorage.setItem(NICK_KEY, nick);
+    setNicknameState(nick);
+    setIsAccount(true);
+    setPlayerId(id); // re-runs the effect -> register + subscribe + refresh
+  };
+
+  const login = useCallback(async (loginStr: string, password: string): Promise<string | null> => {
+    const { data, error } = await supabase.rpc('rps_login', { p_login: loginStr, p_password: password });
+    if (error || !data) return 'Невірний логін або пароль';
+    const d = data as { id: string; nickname: string };
+    applyAccount(d.id, d.nickname);
+    return null;
+  }, []);
+
+  const signup = useCallback(async (loginStr: string, password: string, nick: string): Promise<string | null> => {
+    const { data, error } = await supabase.rpc('rps_signup', { p_login: loginStr, p_password: password, p_nick: nick });
+    if (error) {
+      const m = error.message || '';
+      if (m.includes('login taken')) return 'Такий логін уже зайнятий';
+      if (m.includes('login short')) return 'Логін — мінімум 3 символи';
+      if (m.includes('password short')) return 'Пароль — мінімум 4 символи';
+      return 'Не вдалося створити акаунт';
+    }
+    const d = data as { id: string; nickname: string };
+    applyAccount(d.id, d.nickname);
+    return null;
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem(ACCOUNT_KEY);
+    setIsAccount(false);
+    setPlayerId(getGuestId());
+  }, []);
+
+  return {
+    playerId,
+    nickname,
+    balance,
+    wins,
+    bluffReady,
+    lastBetRound,
+    isAccount,
+    ready,
+    setNickname,
+    refresh,
+    topUp,
+    donate,
+    login,
+    signup,
+    logout,
+  };
 }
