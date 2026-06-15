@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Coins } from 'lucide-react';
-import type { Wallet } from '../hooks/useWallet';
+import type { Account } from '../hooks/useAccount';
 
 interface Props {
-  wallet: Wallet;
+  account: Account;
   onTopUp: () => void;
 }
 
 const AMOUNTS = [20, 50, 100, 200];
 
-const Donate: React.FC<Props> = ({ wallet, onTopUp }) => {
+const Donate: React.FC<Props> = ({ account, onTopUp }) => {
   const [amount, setAmount] = useState(50);
   const [thanks, setThanks] = useState(false);
 
-  const donate = () => {
-    if (wallet.balance < amount) {
+  const donate = async () => {
+    if (account.balance < amount) {
       onTopUp();
       return;
     }
-    if (wallet.donate(amount)) {
+    if (await account.donate(amount)) {
       setThanks(true);
       window.setTimeout(() => setThanks(false), 2500);
     }
@@ -33,8 +33,8 @@ const Donate: React.FC<Props> = ({ wallet, onTopUp }) => {
         </span>
         <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900">Підтримати реабілітолога</h2>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
-          Монетами зі свого балансу можна підтримати роботу спеціаліста. Усього задонатено:{' '}
-          <span className="font-bold text-emerald-700">{wallet.donated} монет</span>.
+          Монетами зі свого балансу можна підтримати роботу спеціаліста. Це демо: згодом донати
+          можна буде спрямовувати реабілітологу напряму.
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2">

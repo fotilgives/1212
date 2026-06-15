@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, Check } from 'lucide-react';
-import type { Wallet } from '../hooks/useWallet';
+import type { Account } from '../hooks/useAccount';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  wallet: Wallet;
+  account: Account;
 }
 
 // 1 грн = 1 монета (демо-курс).
@@ -17,15 +17,15 @@ const PACKS = [
   { uah: 500, coins: 600, bonus: '+20%' },
 ];
 
-const ExchangeModal: React.FC<Props> = ({ open, onClose, wallet }) => {
+const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [done, setDone] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) setDone(null);
   }, [open]);
 
-  const buy = (coins: number) => {
-    wallet.deposit(coins);
+  const buy = async (coins: number) => {
+    await account.topUp(coins);
     setDone(coins);
     window.setTimeout(onClose, 1200);
   };
@@ -63,7 +63,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, wallet }) => {
                   <Check className="h-7 w-7" />
                 </span>
                 <p className="text-lg font-bold text-slate-900">Зараховано {done} монет</p>
-                <p className="text-sm text-slate-500">Новий баланс: {wallet.balance}</p>
+                <p className="text-sm text-slate-500">Новий баланс: {account.balance}</p>
               </div>
             ) : (
               <>

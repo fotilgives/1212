@@ -15,5 +15,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["App.tsx", "index.tsx", "components", "hooks"]
+  "include": ["App.tsx", "index.tsx", "components", "hooks", "lib"]
 }
