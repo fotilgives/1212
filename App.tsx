@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import Game from './components/Game';
+import PoolGame from './components/PoolGame';
 import Donate from './components/Donate';
 import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
@@ -20,7 +20,7 @@ const App: React.FC = () => {
       <main>
         <Hero onPlay={() => document.getElementById('game')?.scrollIntoView({ behavior: 'smooth' })} onExchange={() => setExchangeOpen(true)} />
         <HowItWorks />
-        <Game wallet={wallet} onTopUp={() => setExchangeOpen(true)} />
+        <PoolGame wallet={wallet} onTopUp={() => setExchangeOpen(true)} />
         <Donate wallet={wallet} onTopUp={() => setExchangeOpen(true)} />
       </main>
 
