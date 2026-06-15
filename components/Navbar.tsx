@@ -22,11 +22,14 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-        <a href="#top" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
+        <a href="#top" className="flex items-center gap-2.5">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white">
             <HeartPulse className="h-5 w-5" />
           </span>
-          RehabPlay
+          <span className="leading-tight">
+            <span className="block text-lg font-extrabold tracking-tight">RehabPlay</span>
+            <span className="hidden text-[11px] font-medium text-slate-400 sm:block">грай · підтримуй · одужуй</span>
+          </span>
         </a>
 
         <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
