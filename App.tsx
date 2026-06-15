@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PoolGame from './components/PoolGame';
@@ -6,9 +6,11 @@ import Donate from './components/Donate';
 import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
 import ExchangeModal from './components/ExchangeModal';
-import ChatWidget from './components/ChatWidget';
 import Background from './components/Background';
 import { useAccount } from './hooks/useAccount';
+
+// Чат не критичний для першого екрана — вантажимо окремо, після основного контенту.
+const ChatWidget = lazy(() => import('./components/ChatWidget'));
 
 const App: React.FC = () => {
   const account = useAccount();
@@ -32,7 +34,9 @@ const App: React.FC = () => {
       <Footer />
 
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} />
-      <ChatWidget />
+      <Suspense fallback={null}>
+        <ChatWidget />
+      </Suspense>
     </div>
   );
 };
