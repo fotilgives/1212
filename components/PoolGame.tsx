@@ -101,13 +101,28 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   }, [round, loadCurrent]);
 
   const [botBusy, setBotBusy] = useState(false);
-  const addBots = async () => {
-    if (botBusy || remaining <= 1) return;
+  const [autoFill, setAutoFill] = useState(true);
+  const filledRef = useRef<number | null>(null);
+
+  const fillRound = useCallback(async () => {
     setBotBusy(true);
-    await supabase.rpc('rps_add_bots', { p_count: 3 + Math.floor(Math.random() * 5) });
+    await supabase.rpc('rps_fill', { p_target: 20 });
     if (roundIdRef.current) await fetchBets(roundIdRef.current);
     setBotBusy(false);
-  };
+  }, [fetchBets]);
+
+  // Auto-fill each new round up to 20 players so the lobby is never empty.
+  useEffect(() => {
+    if (!autoFill || !round || round.status !== 'betting') return;
+    if (filledRef.current === round.id) return;
+    filledRef.current = round.id;
+    const t = window.setTimeout(() => {
+      supabase.rpc('rps_fill', { p_target: 20 }).then(() => {
+        if (roundIdRef.current === round.id) fetchBets(round.id);
+      });
+    }, 400 + Math.random() * 900);
+    return () => window.clearTimeout(t);
+  }, [round, autoFill, fetchBets]);
 
   const myBet = bets.find((b) => b.player_id === account.playerId) || null;
   const potOf = (m: Move) => bets.filter((b) => b.move === m).reduce((s, b) => s + b.stake, 0);
@@ -203,13 +218,22 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
             />
           </div>
 
-          <div className="mb-5 flex justify-end">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-500">
+              <input
+                type="checkbox"
+                checked={autoFill}
+                onChange={(e) => setAutoFill(e.target.checked)}
+                className="h-3.5 w-3.5 accent-emerald-600"
+              />
+              Авто-боти (до 20 щораунду)
+            </label>
             <button
-              onClick={addBots}
+              onClick={fillRound}
               disabled={botBusy || remaining <= 1}
               className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-50"
             >
-              <Bot className="h-3.5 w-3.5" /> {botBusy ? 'Додаю…' : '+ Демо-гравці'}
+              <Bot className="h-3.5 w-3.5" /> {botBusy ? 'Додаю…' : 'Заповнити до 20'}
             </button>
           </div>
 
