@@ -41,6 +41,7 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
         <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
           <a href="#how" className="transition hover:text-emerald-700">Як це працює</a>
           <a href="#game" className="transition hover:text-emerald-700">Гра</a>
+          <a href="#leaders" className="transition hover:text-emerald-700">Лідери</a>
           <a href="#donate" className="transition hover:text-emerald-700">Підтримати</a>
         </nav>
 

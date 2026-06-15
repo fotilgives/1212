@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import PoolGame from './components/PoolGame';
+import Leaderboard from './components/Leaderboard';
 import Donate from './components/Donate';
 import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
@@ -28,6 +29,7 @@ const App: React.FC = () => {
         />
         <HowItWorks />
         <PoolGame account={account} onTopUp={() => setExchangeOpen(true)} />
+        <Leaderboard account={account} />
         <Donate account={account} onTopUp={() => setExchangeOpen(true)} />
       </main>
 

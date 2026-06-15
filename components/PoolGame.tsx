@@ -4,6 +4,7 @@ import { Coins, Users, Bot, Wifi } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import AnimatedNumber from './AnimatedNumber';
+import Confetti from './Confetti';
 
 type Move = 'rock' | 'scissors' | 'paper';
 
@@ -38,6 +39,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [err, setErr] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number; isBluff: boolean } | null>(null);
   const [lastWin, setLastWin] = useState<Move | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
 
   // Блеф доступний, лише якщо останній результат — виграш, і пропущено < 2 раундів.
   const skipped = round && account.lastBetRound != null ? round.id - account.lastBetRound - 1 : 99;
@@ -94,6 +96,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
         const b = p.new as BetRow;
         if (b.player_id === account.playerId) {
           setLastResult({ net: b.payout - b.stake, payout: b.payout, move: b.move as Move, stake: b.stake, isBluff: b.is_bluff });
+          if (b.payout > b.stake) {
+            setCelebrate(true);
+            window.setTimeout(() => setCelebrate(false), 2600);
+          }
           account.refresh();
         }
       })
@@ -191,8 +197,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-80px' }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="glass overflow-hidden rounded-[2rem] shadow-2xl shadow-emerald-900/5 ring-1 ring-white/60"
+        className="glass relative overflow-hidden rounded-[2rem] shadow-2xl shadow-emerald-900/5 ring-1 ring-white/60"
       >
+        <AnimatePresence>{celebrate && <Confetti />}</AnimatePresence>
+
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 via-teal-400/5 to-transparent px-6 py-4">
           <div>
