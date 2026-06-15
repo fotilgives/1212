@@ -11,7 +11,7 @@ const MOVES: { id: Move; label: string; emoji: string }[] = [
   { id: 'scissors', label: 'Ножиці', emoji: '✌️' },
   { id: 'paper', label: 'Папір', emoji: '✋' },
 ];
-const STAKES = [50, 100, 200, 500];
+const STAKE = 100; // фіксована ставка раунду
 const ROUND_SECONDS = 25;
 const beatenBy: Record<Move, Move> = { rock: 'paper', scissors: 'rock', paper: 'scissors' };
 
@@ -28,7 +28,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [bets, setBets] = useState<BetRow[]>([]);
   const [remaining, setRemaining] = useState(ROUND_SECONDS);
   const [move, setMove] = useState<Move>('rock');
-  const [stake, setStake] = useState(100);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number } | null>(null);
@@ -130,7 +129,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
 
   const placeBet = async () => {
     if (busy || myBet) return;
-    if (account.balance < stake) {
+    if (account.balance < STAKE) {
       onTopUp();
       return;
     }
@@ -140,7 +139,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
       p_id: account.playerId,
       p_nick: account.nickname,
       p_move: move,
-      p_stake: stake,
+      p_stake: STAKE,
     });
     if (error) {
       const msg = error.message || '';
@@ -313,18 +312,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                 </div>
 
                 <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
-                <div className="flex flex-wrap gap-2">
-                  {STAKES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setStake(s)}
-                      className={`flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                        stake === s ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      <Coins className="h-3.5 w-3.5" /> {s}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3">
+                  <Coins className="h-5 w-5 text-amber-500" />
+                  <span className="text-lg font-extrabold text-slate-900">{STAKE}</span>
+                  <span className="text-sm text-slate-500">монет — фіксована для всіх</span>
                 </div>
 
                 <button
@@ -332,11 +323,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   disabled={busy || remaining <= 1}
                   className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50"
                 >
-                  {account.balance < stake
+                  {account.balance < STAKE
                     ? 'Поповнити баланс'
                     : remaining <= 1
                     ? 'Раунд закінчується…'
-                    : `Поставити ${stake} монет`}
+                    : `Поставити ${STAKE} монет`}
                 </button>
                 {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
               </>
