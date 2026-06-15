@@ -9,17 +9,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     target: 'es2020',
-    cssCodeSplit: true,
-    rollupOptions: {
-      output: {
-        // Окремі кешовані чанки -> паралельне завантаження й кращий кеш між деплоями.
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          motion: ['framer-motion'],
-          supabase: ['@supabase/supabase-js'],
-        },
-      },
-    },
+    // Без ручного manualChunks: воно створювало циклічну залежність
+    // react ↔ framer-motion між чанками й ламало запуск у Safari.
+    // Стандартне пакування Vite надійне; чат усе одно вантажиться lazy.
+    chunkSizeWarningLimit: 900,
   },
   server: {
     port: 3000,
