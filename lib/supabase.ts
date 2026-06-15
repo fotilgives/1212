@@ -25,4 +25,5 @@ export interface BetRow {
   move: 'rock' | 'scissors' | 'paper';
   stake: number;
   payout: number;
+  is_bluff: boolean;
 }

@@ -31,9 +31,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [bets, setBets] = useState<BetRow[]>([]);
   const [remaining, setRemaining] = useState(ROUND_SECONDS);
   const [move, setMove] = useState<Move>('rock');
+  const [bluff, setBluff] = useState(false);
+  const [shownMove, setShownMove] = useState<Move>('paper');
+  const [myPlay, setMyPlay] = useState<{ real: Move; shown: Move; bluff: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number; isBluff: boolean } | null>(null);
+
+  const canBluff = account.wins >= 1;
 
   const roundIdRef = useRef<number | null>(null);
   const advancing = useRef(false);
@@ -62,6 +67,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
         roundIdRef.current = r.id;
         setRound(r);
         setBets([]);
+        setMyPlay(null);
         advancing.current = false;
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_rounds' }, (p) => {
@@ -77,7 +83,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_bets' }, (p) => {
         const b = p.new as BetRow;
         if (b.player_id === account.playerId) {
-          setLastResult({ net: b.payout - b.stake, payout: b.payout, move: b.move as Move, stake: b.stake });
+          setLastResult({ net: b.payout - b.stake, payout: b.payout, move: b.move as Move, stake: b.stake, isBluff: b.is_bluff });
           account.refresh();
         }
       })
@@ -136,6 +142,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
       onTopUp();
       return;
     }
+    const useBluff = bluff && canBluff && shownMove !== move;
     setBusy(true);
     setErr(null);
     const { error } = await supabase.rpc('rps_place_bet', {
@@ -143,10 +150,13 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
       p_nick: account.nickname,
       p_move: move,
       p_stake: STAKE,
+      p_shown_move: useBluff ? shownMove : move,
+      p_is_bluff: useBluff,
     });
     if (error) {
       const msg = error.message || '';
       if (msg.includes('insufficient')) onTopUp();
+      else if (msg.includes('bluff locked')) setErr('Блеф відкриється після першої перемоги 🔒');
       else if (msg.includes('round closed')) {
         setErr('Раунд щойно завершився — зачекай наступний 🙂');
         loadCurrent();
@@ -154,6 +164,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
       else setErr('Не вдалося поставити. Спробуй ще раз.');
     } else {
       setLastResult(null);
+      setMyPlay({ real: move, shown: useBluff ? shownMove : move, bluff: useBluff });
       await account.refresh();
       if (roundIdRef.current) await fetchBets(roundIdRef.current);
     }
@@ -349,12 +360,13 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                       {i % 2 ? '🪙' : '🎉'}
                     </motion.span>
                   ))}
-                Минулий раунд: {emojiOf(lastResult.move)}{' '}
+                Минулий раунд: {emojiOf(lastResult.move)}
+                {lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}{' '}
                 {lastResult.net > 0
-                  ? `виграш +${lastResult.net} монет 🎉`
+                  ? `· виграш +${lastResult.net} монет 🎉`
                   : lastResult.net < 0
-                  ? `програш ${lastResult.net} монет`
-                  : 'ставку повернено'}
+                  ? `· програш ${lastResult.net} монет`
+                  : '· ставку повернено'}
               </motion.div>
             )}
           </AnimatePresence>
@@ -370,10 +382,24 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   exit={{ opacity: 0 }}
                   className="rounded-2xl bg-emerald-50/80 p-4 text-center ring-1 ring-emerald-100"
                 >
-                  <p className="text-sm font-semibold text-emerald-800">
-                    Ставку прийнято: {emojiOf(myBet.move as Move)} {labelOf(myBet.move as Move)} · {myBet.stake} монет
-                  </p>
-                  <p className="mt-1 text-xs text-emerald-700">Чекаємо завершення раунду… результат прийде автоматично.</p>
+                  {myPlay?.bluff ? (
+                    <>
+                      <p className="text-sm font-semibold text-emerald-800">
+                        Ставку прийнято 🤫 Блеф · {myBet.stake} монет
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-700">
+                        Суперники бачать {emojiOf(myPlay.shown)} {labelOf(myPlay.shown)}, а зіграє твій справжній{' '}
+                        {emojiOf(myPlay.real)} {labelOf(myPlay.real)}.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold text-emerald-800">
+                        Ставку прийнято: {emojiOf(myBet.move as Move)} {labelOf(myBet.move as Move)} · {myBet.stake} монет
+                      </p>
+                      <p className="mt-1 text-xs text-emerald-700">Чекаємо завершення раунду… результат прийде автоматично.</p>
+                    </>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -384,7 +410,12 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                         key={m.id}
                         whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.96 }}
-                        onClick={() => setMove(m.id)}
+                        onClick={() => {
+                          setMove(m.id);
+                          if (bluff && shownMove === m.id) {
+                            setShownMove(MOVES.find((x) => x.id !== m.id)!.id);
+                          }
+                        }}
                         className={`flex flex-col items-center gap-1 rounded-2xl border py-4 transition ${
                           move === m.id
                             ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
@@ -396,6 +427,68 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                       </motion.button>
                     ))}
                   </div>
+
+                  {/* Bluff */}
+                  {canBluff ? (
+                    <div className="mt-4 rounded-2xl bg-violet-50/80 p-3 ring-1 ring-violet-200">
+                      <label className="flex cursor-pointer items-center justify-between">
+                        <span className="flex items-center gap-1.5 text-sm font-semibold text-violet-700">
+                          🤫 Блеф
+                          <span className="font-normal text-violet-400">— показати інший хід</span>
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={bluff}
+                          onChange={(e) => {
+                            setBluff(e.target.checked);
+                            if (e.target.checked && shownMove === move) {
+                              setShownMove(MOVES.find((m) => m.id !== move)!.id);
+                            }
+                          }}
+                          className="h-4 w-4 accent-violet-600"
+                        />
+                      </label>
+                      <AnimatePresence>
+                        {bluff && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-violet-400">
+                              Показати суперникам як
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              {MOVES.map((m) => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => setShownMove(m.id)}
+                                  disabled={m.id === move}
+                                  className={`rounded-xl border py-2 text-sm font-semibold transition ${
+                                    m.id === move
+                                      ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
+                                      : shownMove === m.id
+                                      ? 'border-violet-400 bg-violet-100 text-violet-700'
+                                      : 'border-slate-200 bg-white/70 text-slate-600 hover:border-violet-300'
+                                  }`}
+                                >
+                                  {m.emoji} {m.label}
+                                </button>
+                              ))}
+                            </div>
+                            <p className="mt-2 text-[11px] text-violet-500">
+                              Усі бачитимуть {emojiOf(shownMove)}, а зіграє твій справжній {emojiOf(move)} 🤫
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-center text-xs font-medium text-slate-400 ring-1 ring-slate-100">
+                      🔒 Блеф відкриється після першої перемоги
+                    </div>
+                  )}
 
                   <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
                   <div className="flex items-center gap-2 rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-slate-200">
@@ -439,6 +532,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                     }`}
                   >
                     {emojiOf(b.move as Move)} {b.nickname}
+                    {b.is_bluff && round?.status === 'settled' && <span className="ml-0.5">🤫</span>}
                   </motion.span>
                 ))}
               </AnimatePresence>

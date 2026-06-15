@@ -33,6 +33,7 @@ export interface Account {
   playerId: string;
   nickname: string;
   balance: number;
+  wins: number;
   ready: boolean;
   setNickname: (n: string) => void;
   refresh: () => Promise<void>;
@@ -44,6 +45,7 @@ export function useAccount(): Account {
   const [playerId] = useState(getOrCreateId);
   const [nickname, setNicknameState] = useState(initialNick);
   const [balance, setBalance] = useState(0);
+  const [wins, setWins] = useState(0);
   const [ready, setReady] = useState(false);
   const nickRef = useRef(nickname);
   nickRef.current = nickname;
@@ -56,10 +58,13 @@ export function useAccount(): Account {
   const refresh = useCallback(async () => {
     const { data } = await supabase
       .from('rps_profiles')
-      .select('balance,nickname')
+      .select('balance,nickname,wins')
       .eq('id', playerId)
       .maybeSingle();
-    if (data) setBalance(data.balance);
+    if (data) {
+      setBalance(data.balance);
+      setWins(data.wins ?? 0);
+    }
   }, [playerId]);
 
   useEffect(() => {
@@ -78,8 +83,9 @@ export function useAccount(): Account {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rps_profiles', filter: `id=eq.${playerId}` },
         (payload) => {
-          const b = (payload.new as { balance?: number })?.balance;
-          if (typeof b === 'number') setBalance(b);
+          const row = payload.new as { balance?: number; wins?: number };
+          if (typeof row?.balance === 'number') setBalance(row.balance);
+          if (typeof row?.wins === 'number') setWins(row.wins);
         }
       )
       .subscribe();
@@ -111,5 +117,5 @@ export function useAccount(): Account {
     [playerId, refresh]
   );
 
-  return { playerId, nickname, balance, ready, setNickname, refresh, topUp, donate };
+  return { playerId, nickname, balance, wins, ready, setNickname, refresh, topUp, donate };
 }
