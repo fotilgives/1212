@@ -14,6 +14,7 @@ const orbs = [
 const Background: React.FC = () => {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-slate-50">
+      <div className="bg-grid absolute inset-0" />
       {orbs.map((o, i) => (
         <motion.div
           key={i}

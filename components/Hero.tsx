@@ -1,16 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Gamepad2, Wallet, Shield, Coins, Heart } from 'lucide-react';
+import { Sparkles, Gamepad2, Wallet } from 'lucide-react';
 
 interface Props {
   onPlay: () => void;
   onExchange: () => void;
 }
 
-const chips = [
-  { icon: Coins, label: 'Монети замість грошей' },
-  { icon: Shield, label: 'Чесний розрахунок' },
-  { icon: Heart, label: 'Підтримка реабілітолога' },
+const stats = [
+  { v: '30с', l: 'раунд' },
+  { v: 'до 20', l: 'гравців' },
+  { v: '🪙 100', l: 'ставка' },
 ];
 
 // Декоративні емодзі по кутах — лише на десктопі (sm+).
@@ -30,6 +30,9 @@ const item = {
 const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
   return (
     <section id="top" className="relative overflow-hidden">
+      {/* М'яке світіння за заголовком */}
+      <div className="pointer-events-none absolute left-1/2 top-20 -z-0 h-72 w-[40rem] max-w-[92vw] -translate-x-1/2 rounded-full bg-gradient-to-r from-emerald-200/45 via-teal-200/35 to-sky-200/45 blur-3xl" />
+
       {floats.map((f, i) => (
         <motion.div
           key={i}
@@ -115,19 +118,16 @@ const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
             </motion.button>
           </motion.div>
 
-          <motion.div variants={item} className="mt-7 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-            {chips.map(({ icon: Icon, label }) => (
-              <span
-                key={label}
-                className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-slate-600 ring-1 ring-slate-100"
-              >
-                <Icon className="h-3.5 w-3.5 text-emerald-600" />
-                {label}
-              </span>
+          <motion.div variants={item} className="mx-auto mt-9 grid max-w-md grid-cols-3 gap-3">
+            {stats.map((s) => (
+              <div key={s.l} className="card-glow rounded-2xl px-2 py-3 text-center ring-1 ring-white/60">
+                <div className="text-lg font-extrabold tracking-tight text-slate-900">{s.v}</div>
+                <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{s.l}</div>
+              </div>
             ))}
           </motion.div>
 
-          <motion.p variants={item} className="mt-5 text-xs text-slate-400">
+          <motion.p variants={item} className="mt-6 text-xs text-slate-400">
             Демо-режим на віртуальних монетах. Реальні гроші не стягуються.
           </motion.p>
         </motion.div>

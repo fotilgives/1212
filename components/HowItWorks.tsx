@@ -23,15 +23,18 @@ const steps = [
 const HowItWorks: React.FC = () => {
   return (
     <section id="how" className="mx-auto max-w-6xl px-5 py-16">
-      <motion.h2
+      <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="text-center text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl"
+        className="flex flex-col items-center text-center"
       >
-        Як це працює
-      </motion.h2>
+        <span className="eyebrow">✨ Як це працює</span>
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
+          Три кроки до гри
+        </h2>
+      </motion.div>
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         {steps.map(({ icon: Icon, title, text }, i) => (
           <motion.div

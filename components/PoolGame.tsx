@@ -280,6 +280,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   strokeWidth="8"
                   strokeLinecap="round"
                   strokeDasharray={CIRC}
+                  style={{ filter: `drop-shadow(0 0 6px ${low ? 'rgba(244,63,94,.55)' : 'rgba(16,185,129,.5)'})` }}
                   animate={{ strokeDashoffset: CIRC * (1 - progress) }}
                   transition={{ ease: 'linear', duration: 0.25 }}
                 />
