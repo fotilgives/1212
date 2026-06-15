@@ -42,10 +42,10 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
           </div>
           <button
             onClick={onExchange}
-            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
           >
             <Plus className="h-4 w-4" />
-            Поповнити
+            <span className="hidden sm:inline">Поповнити</span>
           </button>
         </div>
       </div>
