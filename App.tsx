@@ -1,43 +1,33 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
-import Services from './components/Services';
-import About from './components/About';
-import Gallery from './components/Gallery';
-import Contact from './components/Contact';
+import Game from './components/Game';
+import Donate from './components/Donate';
+import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
-import CareGuide from './components/CareGuide';
-import BeforeAfterSlider from './components/BeforeAfterSlider';
-import VisitPrep from './components/VisitPrep';
-import PriceEstimator from './components/PriceEstimator';
+import ExchangeModal from './components/ExchangeModal';
+import ChatWidget from './components/ChatWidget';
+import { useWallet } from './hooks/useWallet';
 
 const App: React.FC = () => {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const wallet = useWallet();
+  const [exchangeOpen, setExchangeOpen] = useState(false);
 
   return (
-    <div className="min-h-screen relative overflow-x-hidden selection:bg-pink-100 selection:text-pink-900 bg-white">
-      <Navbar scrolled={scrolled} />
-      
+    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+      <Navbar balance={wallet.balance} onExchange={() => setExchangeOpen(true)} />
+
       <main>
-        <Hero />
-        <About />
-        <Services />
-        <CareGuide />
-        <Gallery />
-        <VisitPrep />
-        <Contact />
+        <Hero onPlay={() => document.getElementById('game')?.scrollIntoView({ behavior: 'smooth' })} onExchange={() => setExchangeOpen(true)} />
+        <HowItWorks />
+        <Game wallet={wallet} onTopUp={() => setExchangeOpen(true)} />
+        <Donate wallet={wallet} onTopUp={() => setExchangeOpen(true)} />
       </main>
 
       <Footer />
+
+      <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} wallet={wallet} />
+      <ChatWidget />
     </div>
   );
 };

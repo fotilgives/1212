@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -9,8 +8,7 @@ if (!rootElement) {
   throw new Error("Target container 'root' not found");
 }
 
-const root = createRoot(rootElement);
-root.render(
+createRoot(rootElement).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>

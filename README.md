@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# RehabPlay 🪨✂️📄
 
-# Run and deploy your AI Studio app
+Демо-сайт для реабілітолога: відвідувачі поповнюють баланс ігровими монетами,
+грають у **камінь-ножиці-папір** і за бажанням донатять монети на підтримку
+роботи спеціаліста. Є вбудований чат-помічник.
 
-This contains everything you need to run your app locally.
+> ⚠️ Це демонстраційний макет (MVP). Реальні платежі не проводяться — монети
+> нараховуються миттєво у демо-режимі. Платіжну систему (LiqPay / Stripe) та
+> справжній чат можна під'єднати пізніше.
 
-View your app in AI Studio: https://ai.studio/apps/529e06dc-8c5a-4670-bc19-5cbca13b35d7
+## Що всередині
 
-## Run Locally
+- **Гра камінь-ножиці-папір** зі ставками монетами (виграш подвоює ставку).
+- **Поповнення балансу** — обмін гривень на ігрові монети (демо).
+- **Донати** — підтримка реабілітолога монетами з балансу.
+- **Чат-віджет** — швидкі відповіді помічника.
+- Баланс зберігається у `localStorage` браузера.
 
-**Prerequisites:**  Node.js
+## Технології
 
+React 19 + TypeScript + Vite + Tailwind CSS v4 + Framer Motion.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Запуск локально
+
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+
+## Збірка
+
+```bash
+npm run build    # результат у dist/
+npm run preview
+```
+
+## Деплой
+
+Проєкт готовий до деплою на **Vercel** (фреймворк визначається автоматично:
+build → `vite build`, output → `dist`).

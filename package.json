@@ -1,42 +1,27 @@
 {
-  "name": "svetlana-mazur-beauty",
+  "name": "rehab-coins-game",
   "type": "module",
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "dev": "tsx server.ts",
-    "start": "node server.ts",
+    "dev": "vite",
     "build": "vite build",
-    "lint": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.2.0",
-    "axios": "^1.13.5",
-    "clsx": "^2.1.1",
-    "cors": "^2.8.5",
-    "dotenv": "^17.3.1",
-    "express": "^4.18.2",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.460.0",
-    "mongoose": "^8.2.0",
-    "node-telegram-bot-api": "^0.64.0",
-    "nodemailer": "^8.0.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.4",
-    "tailwindcss": "^4.2.0",
-    "tsx": "^4.21.0",
-    "vite": "^6.0.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node-telegram-bot-api": "^0.64.13",
-    "@types/nodemailer": "^7.0.11",
+    "@tailwindcss/vite": "^4.2.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.3"
+    "tailwindcss": "^4.2.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
   }
 }
