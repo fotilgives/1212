@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Users, Timer, Trophy, ArrowRight, Wifi } from 'lucide-react';
+import { Coins, Users, Timer, Trophy, Bot, Wifi } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 
@@ -100,6 +100,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
     return () => window.clearInterval(id);
   }, [round, loadCurrent]);
 
+  const [botBusy, setBotBusy] = useState(false);
+  const addBots = async () => {
+    if (botBusy || remaining <= 1) return;
+    setBotBusy(true);
+    await supabase.rpc('rps_add_bots', { p_count: 3 + Math.floor(Math.random() * 5) });
+    if (roundIdRef.current) await fetchBets(roundIdRef.current);
+    setBotBusy(false);
+  };
+
   const myBet = bets.find((b) => b.player_id === account.playerId) || null;
   const potOf = (m: Move) => bets.filter((b) => b.move === m).reduce((s, b) => s + b.stake, 0);
   const bank = bets.reduce((s, b) => s + b.stake, 0);
@@ -187,11 +196,21 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
             </div>
           </div>
 
-          <div className="mb-5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
             <div
               className="h-full bg-emerald-500 transition-all duration-300 ease-linear"
               style={{ width: `${Math.min(100, (remaining / ROUND_SECONDS) * 100)}%` }}
             />
+          </div>
+
+          <div className="mb-5 flex justify-end">
+            <button
+              onClick={addBots}
+              disabled={botBusy || remaining <= 1}
+              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-50"
+            >
+              <Bot className="h-3.5 w-3.5" /> {botBusy ? 'Додаю…' : '+ Демо-гравці'}
+            </button>
           </div>
 
           {/* Pools */}
