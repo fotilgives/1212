@@ -13,17 +13,15 @@ const chips = [
   { icon: Heart, label: 'Підтримка реабілітолога' },
 ];
 
+// Декоративні емодзі по кутах — лише на десктопі (sm+).
 const floats = [
-  { e: '✊', x: '6%', y: '18%', d: 0 },
-  { e: '✌️', x: '88%', y: '22%', d: 0.6 },
+  { e: '✊', x: '6%', y: '20%', d: 0 },
+  { e: '✌️', x: '88%', y: '24%', d: 0.6 },
   { e: '✋', x: '12%', y: '70%', d: 1.2 },
-  { e: '🪙', x: '84%', y: '68%', d: 0.3 },
+  { e: '🪙', x: '85%', y: '66%', d: 0.3 },
 ];
 
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
-};
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } } };
 const item = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
@@ -32,7 +30,6 @@ const item = {
 const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
   return (
     <section id="top" className="relative overflow-hidden">
-      {/* Floating emojis */}
       {floats.map((f, i) => (
         <motion.div
           key={i}
@@ -51,8 +48,31 @@ const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
         </motion.div>
       ))}
 
-      <div className="mx-auto max-w-6xl px-5 pb-12 pt-16 sm:pb-16 sm:pt-24 md:pt-28">
+      <div className="mx-auto max-w-6xl px-5 pb-12 pt-12 sm:pb-16 sm:pt-24 md:pt-28">
         <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-2xl text-center">
+          {/* Фокусний блок з емодзі — головна окраса на мобільному */}
+          <motion.div variants={item} className="mx-auto mb-7 flex w-fit justify-center sm:hidden">
+            <div className="relative">
+              <motion.div
+                className="absolute inset-0 -z-10 rounded-full bg-emerald-300/40 blur-2xl"
+                animate={{ scale: [1, 1.12, 1], opacity: [0.6, 0.9, 0.6] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <div className="glass flex items-end gap-2.5 rounded-[1.75rem] px-6 py-4 shadow-xl shadow-emerald-200/50 ring-1 ring-white/60">
+                {['✊', '✌️', '✋'].map((e, i) => (
+                  <motion.span
+                    key={i}
+                    className="text-5xl"
+                    animate={{ y: [0, -10, 0], rotate: [0, i % 2 ? 10 : -10, 0] }}
+                    transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut', delay: i * 0.18 }}
+                  >
+                    {e}
+                  </motion.span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
           <motion.span
             variants={item}
             className="glass inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-100"
@@ -65,22 +85,21 @@ const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
 
           <motion.h1
             variants={item}
-            className="mt-6 text-[2.1rem] font-extrabold leading-[1.08] tracking-tight text-slate-900 sm:text-5xl md:text-6xl"
+            className="mt-5 text-[2rem] font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:mt-6 sm:text-5xl md:text-6xl"
           >
             Грай у <span className="text-gradient">камінь-ножиці-папір</span> та підтримуй реабілітацію
           </motion.h1>
 
-          <motion.p variants={item} className="mx-auto mt-5 max-w-xl text-base text-slate-600 sm:text-lg">
-            Заходь в онлайн-раунд, став монети разом з іншими гравцями та забирай спільний банк.
-            Просто, живо й красиво.
+          <motion.p variants={item} className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-slate-600 sm:mt-5 sm:text-lg">
+            Заходь в онлайн-раунд, став монети разом з іншими гравцями та забирай спільний банк. Просто, живо й красиво.
           </motion.p>
 
-          <motion.div variants={item} className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <motion.div variants={item} className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-3">
             <motion.button
               onClick={onPlay}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="shine flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-emerald-300/50 transition hover:bg-emerald-700 sm:w-auto"
+              className="shine flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-7 py-4 text-base font-semibold text-white shadow-xl shadow-emerald-300/50 transition hover:bg-emerald-700 sm:w-auto sm:py-3.5"
             >
               <Gamepad2 className="h-5 w-5" />
               Грати зараз
@@ -89,14 +108,14 @@ const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
               onClick={onExchange}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
-              className="glass flex w-full items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:ring-emerald-300 sm:w-auto"
+              className="glass flex w-full items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-slate-700 ring-1 ring-slate-200 transition hover:ring-emerald-300 sm:w-auto sm:py-3.5"
             >
               <Wallet className="h-5 w-5" />
               Поповнити баланс
             </motion.button>
           </motion.div>
 
-          <motion.div variants={item} className="mt-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          <motion.div variants={item} className="mt-7 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             {chips.map(({ icon: Icon, label }) => (
               <span
                 key={label}
