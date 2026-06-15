@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  // Relative base so the build works both at a domain root (Vercel)
-  // and under a sub-path (GitHub Pages: /<repo>/).
-  base: './',
+  // Absolute base (served at domain root on Vercel). Required for correct
+  // code-split chunk resolution — relative base breaks dynamic imports.
+  base: '/',
   plugins: [react(), tailwindcss()],
   build: {
     target: 'es2020',

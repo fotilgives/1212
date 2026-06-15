@@ -4,10 +4,20 @@ import { supabase } from '../lib/supabase';
 const ID_KEY = 'rps_player_id';
 const NICK_KEY = 'rps_nickname';
 
+function uuid(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  // Запасний варіант для старих/незахищених середовищ.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function getOrCreateId(): string {
   let id = localStorage.getItem(ID_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = uuid();
     localStorage.setItem(ID_KEY, id);
   }
   return id;
