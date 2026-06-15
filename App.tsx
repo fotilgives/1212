@@ -7,6 +7,7 @@ import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
 import ExchangeModal from './components/ExchangeModal';
 import ChatWidget from './components/ChatWidget';
+import Background from './components/Background';
 import { useAccount } from './hooks/useAccount';
 
 const App: React.FC = () => {
@@ -14,7 +15,8 @@ const App: React.FC = () => {
   const [exchangeOpen, setExchangeOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="min-h-screen text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+      <Background />
       <Navbar balance={account.balance} onExchange={() => setExchangeOpen(true)} />
 
       <main>

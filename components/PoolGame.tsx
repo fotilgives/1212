@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Users, Timer, Trophy, Bot, Wifi } from 'lucide-react';
+import { Coins, Users, Bot, Wifi } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
+import AnimatedNumber from './AnimatedNumber';
 
 type Move = 'rock' | 'scissors' | 'paper';
 
@@ -13,10 +14,12 @@ const MOVES: { id: Move; label: string; emoji: string }[] = [
 ];
 const STAKE = 100; // фіксована ставка раунду
 const ROUND_SECONDS = 25;
-const beatenBy: Record<Move, Move> = { rock: 'paper', scissors: 'rock', paper: 'scissors' };
 
 const emojiOf = (m: Move) => MOVES.find((x) => x.id === m)!.emoji;
 const labelOf = (m: Move) => MOVES.find((x) => x.id === m)!.label;
+
+const RING = 46;
+const CIRC = 2 * Math.PI * RING;
 
 interface Props {
   account: Account;
@@ -95,7 +98,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
         advancing.current = true;
         loadCurrent().finally(() => window.setTimeout(() => (advancing.current = false), 2000));
       }
-    }, 300);
+    }, 250);
     return () => window.clearInterval(id);
   }, [round, loadCurrent]);
 
@@ -157,66 +160,102 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
     setBusy(false);
   };
 
+  const low = remaining <= 5;
+  const progress = Math.min(1, Math.max(0, remaining / ROUND_SECONDS));
+
   return (
-    <section id="game" className="mx-auto max-w-3xl px-5 py-14">
-      <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-md">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-white px-6 py-4">
+    <section id="game" className="mx-auto max-w-3xl px-5 py-16">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-80px' }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="glass overflow-hidden rounded-[2rem] shadow-2xl shadow-emerald-900/5 ring-1 ring-white/60"
+      >
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 via-teal-400/5 to-transparent px-6 py-4">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-slate-900">
               Онлайн-раунд
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                <motion.span
+                  animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.4, repeat: Infinity }}
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
+                />
                 <Wifi className="h-3 w-3" /> наживо
               </span>
             </h2>
-            <p className="text-xs text-slate-500">Грай разом з іншими · спільний банк · камінь→ножиці→папір→камінь</p>
+            <p className="text-xs text-slate-500">Спільний банк · камінь→ножиці→папір→камінь</p>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-700 ring-1 ring-amber-200">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-bold text-amber-600 ring-1 ring-amber-200">
             <Coins className="h-4 w-4" />
-            {account.balance}
+            <AnimatedNumber value={account.balance} />
           </div>
         </div>
 
         <div className="p-6">
           {/* Nickname */}
-          <div className="mb-5 flex items-center gap-2">
+          <div className="mb-6 flex items-center gap-2">
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-400">Імʼя</label>
             <input
               value={account.nickname}
               onChange={(e) => account.setNickname(e.target.value.slice(0, 20))}
-              className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+              className="flex-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               placeholder="Твоє імʼя у грі"
             />
           </div>
 
-          {/* Stats */}
-          <div className="mb-5 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-2xl bg-slate-50 py-3">
+          {/* Timer ring + stats */}
+          <div className="mb-6 flex items-center justify-center gap-6 sm:gap-10">
+            <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <Users className="h-3.5 w-3.5" /> Гравців
               </div>
-              <div className="mt-1 text-xl font-extrabold text-slate-900">{bets.length}</div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 py-3">
-              <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <Trophy className="h-3.5 w-3.5" /> Банк
+              <div className="mt-1 text-3xl font-extrabold text-slate-900">
+                <AnimatedNumber value={bets.length} />
               </div>
-              <div className="mt-1 text-xl font-extrabold text-emerald-600">{bank}</div>
             </div>
-            <div className="rounded-2xl bg-slate-50 py-3">
-              <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <Timer className="h-3.5 w-3.5" /> Час
+
+            <div className="relative h-28 w-28 shrink-0">
+              <svg className="h-full w-full -rotate-90" viewBox="0 0 110 110">
+                <circle cx="55" cy="55" r={RING} fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                <motion.circle
+                  cx="55"
+                  cy="55"
+                  r={RING}
+                  fill="none"
+                  stroke={low ? '#f43f5e' : '#10b981'}
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={CIRC}
+                  animate={{ strokeDashoffset: CIRC * (1 - progress) }}
+                  transition={{ ease: 'linear', duration: 0.25 }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <motion.span
+                  key={remaining}
+                  initial={{ scale: low ? 1.3 : 1, opacity: 0.6 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className={`text-3xl font-extrabold tabular-nums ${low ? 'text-rose-500' : 'text-slate-900'}`}
+                >
+                  {round ? remaining : '…'}
+                </motion.span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">секунд</span>
               </div>
-              <div className="mt-1 text-xl font-extrabold text-slate-900">{round ? `${remaining}с` : '…'}</div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Банк</div>
+              <div className="mt-1 flex items-center justify-center gap-1 text-3xl font-extrabold text-emerald-600">
+                <AnimatedNumber value={bank} />
+              </div>
+              <div className="text-[11px] text-slate-400">монет</div>
             </div>
           </div>
 
-          <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-300 ease-linear"
-              style={{ width: `${Math.min(100, (remaining / ROUND_SECONDS) * 100)}%` }}
-            />
-          </div>
-
+          {/* Controls (top tools) */}
           <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
             <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-500">
               <input
@@ -227,34 +266,56 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
               />
               Авто-боти (до 20 щораунду)
             </label>
-            <button
+            <motion.button
+              whileTap={{ scale: 0.95 }}
               onClick={fillRound}
               disabled={botBusy || remaining <= 1}
-              className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:ring-emerald-300 disabled:opacity-50"
             >
               <Bot className="h-3.5 w-3.5" /> {botBusy ? 'Додаю…' : 'Заповнити до 20'}
-            </button>
+            </motion.button>
           </div>
 
           {/* Pools */}
           <div className="grid grid-cols-3 gap-3">
-            {MOVES.map((m) => {
+            {MOVES.map((m, i) => {
+              const pot = potOf(m.id);
+              const cnt = bets.filter((b) => b.move === m.id).length;
               const isMine = myBet?.move === m.id;
+              const share = bank > 0 ? pot / bank : 0;
               return (
-                <div
+                <motion.div
                   key={m.id}
-                  className={`rounded-2xl border p-4 text-center transition ${
-                    isMine ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white'
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className={`relative overflow-hidden rounded-2xl border p-4 text-center transition ${
+                    isMine
+                      ? 'border-emerald-400 bg-emerald-50/80 shadow-lg shadow-emerald-200/50'
+                      : 'border-slate-200 bg-white/70'
                   }`}
                 >
-                  <div className="text-4xl">{m.emoji}</div>
+                  <motion.div
+                    className="text-4xl"
+                    animate={isMine ? { scale: [1, 1.12, 1] } : {}}
+                    transition={{ duration: 1.6, repeat: Infinity }}
+                  >
+                    {m.emoji}
+                  </motion.div>
                   <div className="mt-1 text-sm font-semibold text-slate-700">{m.label}</div>
                   <div className="mt-2 flex items-center justify-center gap-1 text-sm font-bold text-emerald-600">
-                    <Coins className="h-3.5 w-3.5" /> {potOf(m.id)}
+                    <Coins className="h-3.5 w-3.5" /> <AnimatedNumber value={pot} />
                   </div>
-                  <div className="text-xs text-slate-400">{bets.filter((b) => b.move === m.id).length} гравц.</div>
-                  {isMine && <div className="mt-1 text-[11px] font-bold text-emerald-600">твоя ставка</div>}
-                </div>
+                  <div className="text-xs text-slate-400">{cnt} гравц.</div>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                    <motion.div
+                      className="h-full rounded-full bg-emerald-500"
+                      animate={{ width: `${share * 100}%` }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                    />
+                  </div>
+                  {isMine && <div className="mt-1.5 text-[11px] font-bold text-emerald-600">твоя ставка</div>}
+                </motion.div>
               );
             })}
           </div>
@@ -263,10 +324,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
           <AnimatePresence>
             {lastResult && (
               <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`mt-4 rounded-2xl p-4 text-center text-sm font-bold ${
+                initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                className={`relative mt-4 overflow-hidden rounded-2xl p-4 text-center text-sm font-bold ${
                   lastResult.net > 0
                     ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
                     : lastResult.net < 0
@@ -274,6 +336,19 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                     : 'bg-slate-100 text-slate-600'
                 }`}
               >
+                {lastResult.net > 0 &&
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <motion.span
+                      key={i}
+                      className="pointer-events-none absolute text-lg"
+                      style={{ left: `${10 + i * 10}%`, top: '50%' }}
+                      initial={{ y: 0, opacity: 1 }}
+                      animate={{ y: -60 - Math.random() * 30, opacity: 0, rotate: Math.random() * 180 }}
+                      transition={{ duration: 1.1, delay: i * 0.05 }}
+                    >
+                      {i % 2 ? '🪙' : '🎉'}
+                    </motion.span>
+                  ))}
                 Минулий раунд: {emojiOf(lastResult.move)}{' '}
                 {lastResult.net > 0
                   ? `виграш +${lastResult.net} монет 🎉`
@@ -286,70 +361,88 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
 
           {/* Controls */}
           <div className="mt-6">
-            {myBet ? (
-              <div className="rounded-2xl bg-emerald-50 p-4 text-center ring-1 ring-emerald-100">
-                <p className="text-sm font-semibold text-emerald-800">
-                  Ставку прийнято: {emojiOf(myBet.move as Move)} {labelOf(myBet.move as Move)} · {myBet.stake} монет
-                </p>
-                <p className="mt-1 text-xs text-emerald-700">Чекаємо завершення раунду… результат прийде автоматично.</p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Твій хід</div>
-                <div className="grid grid-cols-3 gap-3">
-                  {MOVES.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setMove(m.id)}
-                      className={`flex flex-col items-center gap-1 rounded-2xl border py-4 transition ${
-                        move === m.id ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'
-                      }`}
-                    >
-                      <span className="text-3xl">{m.emoji}</span>
-                      <span className="text-sm font-semibold text-slate-700">{m.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
-                <div className="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-3">
-                  <Coins className="h-5 w-5 text-amber-500" />
-                  <span className="text-lg font-extrabold text-slate-900">{STAKE}</span>
-                  <span className="text-sm text-slate-500">монет — фіксована для всіх</span>
-                </div>
-
-                <button
-                  onClick={placeBet}
-                  disabled={busy || remaining <= 1}
-                  className="mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.99] disabled:opacity-50"
+            <AnimatePresence mode="wait">
+              {myBet ? (
+                <motion.div
+                  key="placed"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="rounded-2xl bg-emerald-50/80 p-4 text-center ring-1 ring-emerald-100"
                 >
-                  {account.balance < STAKE
-                    ? 'Поповнити баланс'
-                    : remaining <= 1
-                    ? 'Раунд закінчується…'
-                    : `Поставити ${STAKE} монет`}
-                </button>
-                {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
-              </>
-            )}
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Ставку прийнято: {emojiOf(myBet.move as Move)} {labelOf(myBet.move as Move)} · {myBet.stake} монет
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-700">Чекаємо завершення раунду… результат прийде автоматично.</p>
+                </motion.div>
+              ) : (
+                <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Твій хід</div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {MOVES.map((m) => (
+                      <motion.button
+                        key={m.id}
+                        whileHover={{ scale: 1.05, y: -2 }}
+                        whileTap={{ scale: 0.96 }}
+                        onClick={() => setMove(m.id)}
+                        className={`flex flex-col items-center gap-1 rounded-2xl border py-4 transition ${
+                          move === m.id
+                            ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
+                            : 'border-slate-200 bg-white/70 hover:border-emerald-300'
+                        }`}
+                      >
+                        <span className="text-3xl">{m.emoji}</span>
+                        <span className="text-sm font-semibold text-slate-700">{m.label}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+
+                  <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
+                  <div className="flex items-center gap-2 rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-slate-200">
+                    <Coins className="h-5 w-5 text-amber-500" />
+                    <span className="text-lg font-extrabold text-slate-900">{STAKE}</span>
+                    <span className="text-sm text-slate-500">монет — фіксована для всіх</span>
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={placeBet}
+                    disabled={busy || remaining <= 1}
+                    className="shine mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {account.balance < STAKE
+                      ? 'Поповнити баланс'
+                      : remaining <= 1
+                      ? 'Раунд закінчується…'
+                      : `Поставити ${STAKE} монет`}
+                  </motion.button>
+                  {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Who's in */}
           {bets.length > 0 && (
             <div className="mt-5 flex flex-wrap gap-1.5">
-              {bets.slice(0, 12).map((b) => (
-                <span
-                  key={b.id}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    b.player_id === account.playerId
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {emojiOf(b.move as Move)} {b.nickname}
-                </span>
-              ))}
-              {bets.length > 12 && <span className="px-1 text-xs text-slate-400">+{bets.length - 12}</span>}
+              <AnimatePresence>
+                {bets.slice(0, 14).map((b) => (
+                  <motion.span
+                    key={b.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.4 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+                    className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                      b.player_id === account.playerId ? 'bg-emerald-600 text-white' : 'bg-white/70 text-slate-600 ring-1 ring-slate-200'
+                    }`}
+                  >
+                    {emojiOf(b.move as Move)} {b.nickname}
+                  </motion.span>
+                ))}
+              </AnimatePresence>
+              {bets.length > 14 && <span className="px-1 text-xs text-slate-400">+{bets.length - 14}</span>}
             </div>
           )}
 
@@ -358,7 +451,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
             або вивести. Поки що — демо на віртуальних монетах.
           </p>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 };

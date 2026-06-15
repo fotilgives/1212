@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Coins, HeartPulse, Plus } from 'lucide-react';
+import AnimatedNumber from './AnimatedNumber';
 
 interface Props {
   balance: number;
@@ -16,16 +18,20 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
   }, []);
 
   return (
-    <header
-      className={`sticky top-0 z-40 transition-all ${
-        scrolled ? 'bg-white/90 backdrop-blur border-b border-slate-100 shadow-sm' : 'bg-transparent'
-      }`}
+    <motion.header
+      initial={{ y: -60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className={`sticky top-0 z-40 transition-all ${scrolled ? 'glass border-b border-white/50 shadow-sm' : 'bg-transparent'}`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <a href="#top" className="flex items-center gap-2.5">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white">
+          <motion.span
+            whileHover={{ rotate: -10, scale: 1.08 }}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+          >
             <HeartPulse className="h-5 w-5" />
-          </span>
+          </motion.span>
           <span className="leading-tight">
             <span className="block text-lg font-extrabold tracking-tight">RehabPlay</span>
             <span className="hidden text-[11px] font-medium text-slate-400 sm:block">грай · підтримуй · одужуй</span>
@@ -33,26 +39,28 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
         </a>
 
         <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
-          <a href="#how" className="hover:text-emerald-700">Як це працює</a>
-          <a href="#game" className="hover:text-emerald-700">Гра</a>
-          <a href="#donate" className="hover:text-emerald-700">Підтримати</a>
+          <a href="#how" className="transition hover:text-emerald-700">Як це працює</a>
+          <a href="#game" className="transition hover:text-emerald-700">Гра</a>
+          <a href="#donate" className="transition hover:text-emerald-700">Підтримати</a>
         </nav>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-700 ring-1 ring-amber-200">
+          <div className="flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-bold text-amber-600 ring-1 ring-amber-200">
             <Coins className="h-4 w-4" />
-            {balance}
+            <AnimatedNumber value={balance} />
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.94 }}
             onClick={onExchange}
-            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
+            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Поповнити</span>
-          </button>
+          </motion.button>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };
 
