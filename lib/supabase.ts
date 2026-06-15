@@ -14,7 +14,8 @@ export interface RoundRow {
   status: 'betting' | 'settled';
   started_at: string;
   ends_at: string;
-  result: { rock: number; scissors: number; paper: number; players: number } | null;
+  win_move: 'rock' | 'scissors' | 'paper' | null;
+  result: Record<string, unknown> | null;
 }
 
 export interface BetRow {

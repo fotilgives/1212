@@ -13,7 +13,7 @@ const MOVES: { id: Move; label: string; emoji: string }[] = [
   { id: 'paper', label: 'Папір', emoji: '✋' },
 ];
 const STAKE = 100; // фіксована ставка раунду
-const ROUND_SECONDS = 25;
+const ROUND_SECONDS = 30;
 
 const emojiOf = (m: Move) => MOVES.find((x) => x.id === m)!.emoji;
 const labelOf = (m: Move) => MOVES.find((x) => x.id === m)!.label;
@@ -37,8 +37,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number; isBluff: boolean } | null>(null);
+  const [lastWin, setLastWin] = useState<Move | null>(null);
 
-  const canBluff = account.wins >= 1;
+  // Блеф доступний, лише якщо останній результат — виграш, і пропущено < 2 раундів.
+  const skipped = round && account.lastBetRound != null ? round.id - account.lastBetRound - 1 : 99;
+  const canBluff = account.bluffReady && account.lastBetRound != null && skipped < 2;
+
+  useEffect(() => {
+    if (!canBluff && bluff) setBluff(false);
+  }, [canBluff, bluff]);
 
   const roundIdRef = useRef<number | null>(null);
   const advancing = useRef(false);
@@ -72,7 +79,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_rounds' }, (p) => {
         const r = p.new as RoundRow;
-        if (r.id === roundIdRef.current) setRound(r);
+        if (r.id === roundIdRef.current) {
+          setRound(r);
+          if (r.status === 'settled' && r.win_move) setLastWin(r.win_move as Move);
+        }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_bets' }, (p) => {
         const b = p.new as BetRow;
@@ -197,7 +207,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                 <Wifi className="h-3 w-3" /> наживо
               </span>
             </h2>
-            <p className="text-xs text-slate-500">Спільний банк · камінь→ножиці→папір→камінь</p>
+            <p className="text-xs text-slate-500">Спільний банк · тестовий режим: переможний хід чергується щораунду 🔄</p>
           </div>
           <div className="flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-bold text-amber-600 ring-1 ring-amber-200">
             <Coins className="h-4 w-4" />
@@ -360,13 +370,18 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                       {i % 2 ? '🪙' : '🎉'}
                     </motion.span>
                   ))}
-                Минулий раунд: {emojiOf(lastResult.move)}
+                Твій хід {emojiOf(lastResult.move)}
                 {lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}{' '}
                 {lastResult.net > 0
                   ? `· виграш +${lastResult.net} монет 🎉`
                   : lastResult.net < 0
                   ? `· програш ${lastResult.net} монет`
                   : '· ставку повернено'}
+                {lastWin && (
+                  <div className="mt-1 text-xs font-medium opacity-80">
+                    Виграшний хід раунду: {emojiOf(lastWin)} {labelOf(lastWin)}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -431,23 +446,24 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   {/* Bluff */}
                   {canBluff ? (
                     <div className="mt-4 rounded-2xl bg-violet-50/80 p-3 ring-1 ring-violet-200">
-                      <label className="flex cursor-pointer items-center justify-between">
-                        <span className="flex items-center gap-1.5 text-sm font-semibold text-violet-700">
-                          🤫 Блеф
-                          <span className="font-normal text-violet-400">— показати інший хід</span>
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={bluff}
-                          onChange={(e) => {
-                            setBluff(e.target.checked);
-                            if (e.target.checked && shownMove === move) {
-                              setShownMove(MOVES.find((m) => m.id !== move)!.id);
-                            }
-                          }}
-                          className="h-4 w-4 accent-violet-600"
-                        />
-                      </label>
+                      <motion.button
+                        type="button"
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => {
+                          const next = !bluff;
+                          setBluff(next);
+                          if (next && shownMove === move) {
+                            setShownMove(MOVES.find((m) => m.id !== move)!.id);
+                          }
+                        }}
+                        className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition ${
+                          bluff
+                            ? 'bg-violet-600 text-white shadow-lg shadow-violet-300/50'
+                            : 'bg-white text-violet-700 ring-1 ring-violet-300 hover:bg-violet-100'
+                        }`}
+                      >
+                        🤫 {bluff ? 'Блеф увімкнено' : 'Блеф'}
+                      </motion.button>
                       <AnimatePresence>
                         {bluff && (
                           <motion.div
@@ -486,7 +502,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                     </div>
                   ) : (
                     <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-center text-xs font-medium text-slate-400 ring-1 ring-slate-100">
-                      🔒 Блеф відкриється після першої перемоги
+                      🔒 Блеф доступний після виграшу (програш або 2+ пропуски його знімають)
                     </div>
                   )}
 

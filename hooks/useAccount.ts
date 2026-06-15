@@ -34,6 +34,8 @@ export interface Account {
   nickname: string;
   balance: number;
   wins: number;
+  bluffReady: boolean;
+  lastBetRound: number | null;
   ready: boolean;
   setNickname: (n: string) => void;
   refresh: () => Promise<void>;
@@ -46,6 +48,8 @@ export function useAccount(): Account {
   const [nickname, setNicknameState] = useState(initialNick);
   const [balance, setBalance] = useState(0);
   const [wins, setWins] = useState(0);
+  const [bluffReady, setBluffReady] = useState(false);
+  const [lastBetRound, setLastBetRound] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const nickRef = useRef(nickname);
   nickRef.current = nickname;
@@ -58,12 +62,14 @@ export function useAccount(): Account {
   const refresh = useCallback(async () => {
     const { data } = await supabase
       .from('rps_profiles')
-      .select('balance,nickname,wins')
+      .select('balance,nickname,wins,bluff_ready,last_bet_round_id')
       .eq('id', playerId)
       .maybeSingle();
     if (data) {
       setBalance(data.balance);
       setWins(data.wins ?? 0);
+      setBluffReady(!!data.bluff_ready);
+      setLastBetRound(data.last_bet_round_id ?? null);
     }
   }, [playerId]);
 
@@ -83,9 +89,16 @@ export function useAccount(): Account {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rps_profiles', filter: `id=eq.${playerId}` },
         (payload) => {
-          const row = payload.new as { balance?: number; wins?: number };
+          const row = payload.new as {
+            balance?: number;
+            wins?: number;
+            bluff_ready?: boolean;
+            last_bet_round_id?: number | null;
+          };
           if (typeof row?.balance === 'number') setBalance(row.balance);
           if (typeof row?.wins === 'number') setWins(row.wins);
+          if (typeof row?.bluff_ready === 'boolean') setBluffReady(row.bluff_ready);
+          if (row && 'last_bet_round_id' in row) setLastBetRound(row.last_bet_round_id ?? null);
         }
       )
       .subscribe();
@@ -117,5 +130,5 @@ export function useAccount(): Account {
     [playerId, refresh]
   );
 
-  return { playerId, nickname, balance, wins, ready, setNickname, refresh, topUp, donate };
+  return { playerId, nickname, balance, wins, bluffReady, lastBetRound, ready, setNickname, refresh, topUp, donate };
 }
