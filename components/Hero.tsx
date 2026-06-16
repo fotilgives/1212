@@ -90,7 +90,7 @@ const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
             variants={item}
             className="mt-5 text-[2rem] font-extrabold leading-[1.1] tracking-tight text-slate-900 sm:mt-6 sm:text-5xl md:text-6xl"
           >
-            Грай у <span className="text-gradient">камінь-ножиці-папір</span> та підтримуй реабілітацію
+            Грай у <span className="text-gradient">камінь-ножиці-папір</span> та розвивай мислення
           </motion.h1>
 
           <motion.p variants={item} className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-slate-600 sm:mt-5 sm:text-lg">
