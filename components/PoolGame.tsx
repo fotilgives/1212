@@ -147,17 +147,33 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
     setBotBusy(false);
   }, [fetchBets]);
 
-  // Auto-fill each new round up to 20 players so the lobby is never empty.
+  // Auto-fill: боти заходять ПОСТУПОВО протягом раунду (живіше відчуття).
   useEffect(() => {
     if (!autoFill || !round || round.status !== 'betting') return;
     if (filledRef.current === round.id) return;
     filledRef.current = round.id;
-    const t = window.setTimeout(() => {
-      supabase.rpc('rps_fill', { p_target: 20 }).then(() => {
-        if (roundIdRef.current === round.id) fetchBets(round.id);
-      });
-    }, 400 + Math.random() * 900);
-    return () => window.clearTimeout(t);
+
+    const finalTarget = 14 + Math.floor(Math.random() * 7); // 14–20
+    let current = 2 + Math.floor(Math.random() * 3); // старт 2–4
+    let cancelled = false;
+    let timer = 0;
+
+    const step = async () => {
+      if (cancelled) return;
+      const t = Math.min(finalTarget, current);
+      await supabase.rpc('rps_fill', { p_target: t });
+      if (!cancelled && roundIdRef.current === round.id) fetchBets(round.id);
+      if (!cancelled && t < finalTarget) {
+        current += 2 + Math.floor(Math.random() * 3); // +2..4 щокроку
+        timer = window.setTimeout(step, 1500 + Math.random() * 1800);
+      }
+    };
+
+    timer = window.setTimeout(step, 500 + Math.random() * 700);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [round, autoFill, fetchBets]);
 
   const myBet = bets.find((b) => b.player_id === account.playerId) || null;
