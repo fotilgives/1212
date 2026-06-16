@@ -54,8 +54,8 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   };
 
   // Блеф доступний, лише якщо останній результат — виграш, і пропущено < 2 раундів.
-  const skipped = round && account.lastBetRound != null ? round.id - account.lastBetRound - 1 : 99;
-  const canBluff = account.bluffReady && account.lastBetRound != null && skipped < 2;
+  // Блеф завжди доступний — щоб бачити тип мислення гравця.
+  const canBluff = true;
 
   useEffect(() => {
     if (!canBluff && bluff) setBluff(false);
