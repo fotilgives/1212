@@ -475,67 +475,69 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   </div>
 
                   {/* Bluff */}
-                  {canBluff ? (
-                    <div className="mt-4 rounded-2xl bg-violet-50/80 p-3 ring-1 ring-violet-200">
-                      <motion.button
-                        type="button"
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => {
-                          const next = !bluff;
-                          setBluff(next);
-                          if (next && shownMove === move) {
-                            setShownMove(MOVES.find((m) => m.id !== move)!.id);
-                          }
-                        }}
-                        className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition ${
-                          bluff
-                            ? 'bg-violet-600 text-white shadow-lg shadow-violet-300/50'
-                            : 'bg-white text-violet-700 ring-1 ring-violet-300 hover:bg-violet-100'
-                        }`}
-                      >
-                        🤫 {bluff ? 'Блеф увімкнено' : 'Блеф'}
-                      </motion.button>
-                      <AnimatePresence>
-                        {bluff && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-violet-400">
-                              Показати суперникам як
-                            </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              {MOVES.map((m) => (
-                                <button
-                                  key={m.id}
-                                  onClick={() => setShownMove(m.id)}
-                                  disabled={m.id === move}
-                                  className={`rounded-xl border py-2 text-sm font-semibold transition ${
-                                    m.id === move
-                                      ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
-                                      : shownMove === m.id
-                                      ? 'border-violet-400 bg-violet-100 text-violet-700'
-                                      : 'border-slate-200 bg-white/70 text-slate-600 hover:border-violet-300'
-                                  }`}
-                                >
-                                  {m.emoji} {m.label}
-                                </button>
-                              ))}
-                            </div>
-                            <p className="mt-2 text-[11px] text-violet-500">
-                              Усі бачитимуть {emojiOf(shownMove)}, а зіграє твій справжній {emojiOf(move)} 🤫
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <div className="mt-4 rounded-2xl bg-slate-50 p-3 text-center text-xs font-medium text-slate-400 ring-1 ring-slate-100">
-                      🔒 Блеф доступний після виграшу (програш або 2+ пропуски його знімають)
-                    </div>
-                  )}
+                  <div className="mt-4 rounded-2xl bg-violet-50/80 p-3 ring-1 ring-violet-200">
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: canBluff ? 0.97 : 1 }}
+                      disabled={!canBluff}
+                      onClick={() => {
+                        const next = !bluff;
+                        setBluff(next);
+                        if (next && shownMove === move) {
+                          setShownMove(MOVES.find((m) => m.id !== move)!.id);
+                        }
+                      }}
+                      className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition ${
+                        !canBluff
+                          ? 'cursor-not-allowed bg-white/60 text-violet-300 ring-1 ring-violet-100'
+                          : bluff
+                          ? 'bg-violet-600 text-white shadow-lg shadow-violet-300/50'
+                          : 'bg-white text-violet-700 ring-1 ring-violet-300 hover:bg-violet-100'
+                      }`}
+                    >
+                      {!canBluff ? '🔒 Блеф (після виграшу)' : bluff ? '🤫 Блеф увімкнено' : '🤫 Блеф'}
+                    </motion.button>
+                    <AnimatePresence>
+                      {canBluff && bluff && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-wide text-violet-400">
+                            Показати суперникам як
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {MOVES.map((m) => (
+                              <button
+                                key={m.id}
+                                onClick={() => setShownMove(m.id)}
+                                disabled={m.id === move}
+                                className={`rounded-xl border py-2 text-sm font-semibold transition ${
+                                  m.id === move
+                                    ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
+                                    : shownMove === m.id
+                                    ? 'border-violet-400 bg-violet-100 text-violet-700'
+                                    : 'border-slate-200 bg-white/70 text-slate-600 hover:border-violet-300'
+                                }`}
+                              >
+                                {m.emoji} {m.label}
+                              </button>
+                            ))}
+                          </div>
+                          <p className="mt-2 text-[11px] text-violet-500">
+                            Усі бачитимуть {emojiOf(shownMove)}, а зіграє твій справжній {emojiOf(move)} 🤫
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    {!canBluff && (
+                      <p className="mt-2 text-center text-[11px] text-violet-400">
+                        Виграй раунд, щоб розблокувати блеф (програш або 2+ пропуски знімають доступ)
+                      </p>
+                    )}
+                  </div>
 
                   <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
                   <div className="flex items-center gap-2 rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-slate-200">
