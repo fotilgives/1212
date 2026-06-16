@@ -43,6 +43,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [lastWin, setLastWin] = useState<Move | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [forcing, setForcing] = useState(false);
+
+  const forceNext = async () => {
+    if (forcing) return;
+    setForcing(true);
+    await supabase.rpc('rps_force_tick');
+    await loadCurrent();
+    setForcing(false);
+  };
 
   // Блеф доступний, лише якщо останній результат — виграш, і пропущено < 2 раундів.
   const skipped = round && account.lastBetRound != null ? round.id - account.lastBetRound - 1 : 99;
@@ -446,6 +455,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                       <p className="mt-1 text-xs text-emerald-700">Чекаємо завершення раунду… результат прийде автоматично.</p>
                     </>
                   )}
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={forceNext}
+                    disabled={forcing}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {forcing ? 'Розігрую…' : '▶ Розіграти зараз'}
+                  </motion.button>
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
