@@ -1,15 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Coins, HeartPulse, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Coins, HeartPulse, Plus, Menu, X } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
+import type { Route } from '../hooks/useRoute';
 
 interface Props {
   balance: number;
+  route: Route;
   onExchange: () => void;
 }
 
-const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
+const LINKS: { to: Route; label: string; href: string }[] = [
+  { to: 'about', label: 'Про мене', href: '#/about' },
+  { to: 'services', label: 'Послуги', href: '#/services' },
+  { to: 'game', label: 'Гра', href: '#/game' },
+  { to: 'prizes', label: 'Призи', href: '#/prizes' },
+  { to: 'philosophy', label: 'Філософія', href: '#/philosophy' },
+];
+
+const Navbar: React.FC<Props> = ({ balance, route, onExchange }) => {
   const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -22,10 +33,10 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
       initial={{ y: -60, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className={`sticky top-0 z-40 transition-all ${scrolled ? 'glass border-b border-white/50 shadow-sm' : 'bg-transparent'}`}
+      className={`sticky top-0 z-40 transition-all ${scrolled || open ? 'glass border-b border-white/50 shadow-sm' : 'bg-transparent'}`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-        <a href="#top" className="flex items-center gap-2.5">
+        <a href="#/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
           <motion.span
             whileHover={{ rotate: -10, scale: 1.08 }}
             className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-200"
@@ -38,11 +49,16 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
           </span>
         </a>
 
-        <nav className="hidden items-center gap-7 text-sm font-medium text-slate-600 md:flex">
-          <a href="#how" className="transition hover:text-emerald-700">Як це працює</a>
-          <a href="#game" className="transition hover:text-emerald-700">Гра</a>
-          <a href="#leaders" className="transition hover:text-emerald-700">Лідери</a>
-          <a href="#donate" className="transition hover:text-emerald-700">Підтримати</a>
+        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+          {LINKS.map((l) => (
+            <a
+              key={l.to}
+              href={l.href}
+              className={`transition hover:text-emerald-700 ${route === l.to ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+            >
+              {l.label}
+            </a>
+          ))}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -59,8 +75,42 @@ const Navbar: React.FC<Props> = ({ balance, onExchange }) => {
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Поповнити</span>
           </motion.button>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-white/70 text-slate-600 ring-1 ring-slate-200 md:hidden"
+            aria-label="Меню"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      <AnimatePresence>
+        {open && (
+          <motion.nav
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-white/50 md:hidden"
+          >
+            <div className="mx-auto flex max-w-6xl flex-col px-5 py-2">
+              {LINKS.map((l) => (
+                <a
+                  key={l.to}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className={`rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                    route === l.to ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 };

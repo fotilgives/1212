@@ -47,6 +47,7 @@ export interface Account {
   login: (loginStr: string, password: string) => Promise<string | null>;
   signup: (loginStr: string, password: string, nick: string) => Promise<string | null>;
   logout: () => void;
+  redeem: (reward: string, cost: number) => Promise<string | null>;
 }
 
 export function useAccount(): Account {
@@ -173,6 +174,24 @@ export function useAccount(): Account {
     setPlayerId(getGuestId());
   }, []);
 
+  const redeem = useCallback(
+    async (reward: string, cost: number): Promise<string | null> => {
+      const { error } = await supabase.rpc('rps_redeem', {
+        p_id: playerId,
+        p_nick: nickRef.current,
+        p_reward: reward,
+        p_cost: cost,
+      });
+      await refresh();
+      if (error) {
+        if ((error.message || '').includes('insufficient')) return 'Недостатньо монет';
+        return 'Не вдалося оформити';
+      }
+      return null;
+    },
+    [playerId, refresh]
+  );
+
   return {
     playerId,
     nickname,
@@ -189,5 +208,6 @@ export function useAccount(): Account {
     login,
     signup,
     logout,
+    redeem,
   };
 }

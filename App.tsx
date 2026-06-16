@@ -1,37 +1,50 @@
 import React, { Suspense, lazy, useState } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import HowItWorks from './components/HowItWorks';
 import PoolGame from './components/PoolGame';
 import Leaderboard from './components/Leaderboard';
-import Donate from './components/Donate';
-import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
 import ExchangeModal from './components/ExchangeModal';
 import Background from './components/Background';
+import About from './components/pages/About';
+import Services from './components/pages/Services';
+import Prizes from './components/pages/Prizes';
+import Philosophy from './components/pages/Philosophy';
 import { useAccount } from './hooks/useAccount';
+import { useRoute, navigate } from './hooks/useRoute';
 
-// Чат не критичний для першого екрана — вантажимо окремо, після основного контенту.
 const ChatWidget = lazy(() => import('./components/ChatWidget'));
 
 const App: React.FC = () => {
   const account = useAccount();
+  const route = useRoute();
   const [exchangeOpen, setExchangeOpen] = useState(false);
+  const openExchange = () => setExchangeOpen(true);
 
   return (
     <div className="min-h-screen text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       <Background />
-      <Navbar balance={account.balance} onExchange={() => setExchangeOpen(true)} />
+      <Navbar balance={account.balance} route={route} onExchange={openExchange} />
 
-      <main>
-        <Hero
-          onPlay={() => document.getElementById('game')?.scrollIntoView({ behavior: 'smooth' })}
-          onExchange={() => setExchangeOpen(true)}
-        />
-        <HowItWorks />
-        <PoolGame account={account} onTopUp={() => setExchangeOpen(true)} />
-        <Leaderboard account={account} />
-        <Donate account={account} onTopUp={() => setExchangeOpen(true)} />
-      </main>
+      {route === 'home' && (
+        <main>
+          <Hero onPlay={() => navigate('game')} onExchange={openExchange} />
+          <HowItWorks />
+        </main>
+      )}
+
+      {route === 'game' && (
+        <main>
+          <PoolGame account={account} onTopUp={openExchange} />
+          <Leaderboard account={account} />
+        </main>
+      )}
+
+      {route === 'about' && <About />}
+      {route === 'services' && <Services />}
+      {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} />}
+      {route === 'philosophy' && <Philosophy />}
 
       <Footer />
 
