@@ -111,6 +111,30 @@ const RehabDetails: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+    if (isLeftSwipe) {
+      nextStory();
+    } else if (isRightSwipe) {
+      prevStory();
+    }
+  };
+
   const nextStory = () => setActiveStory((p) => (p + 1) % STORIES.length);
   const prevStory = () => setActiveStory((p) => (p - 1 + STORIES.length) % STORIES.length);
 
@@ -213,18 +237,10 @@ const RehabDetails: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -18 }}
                 transition={{ duration: 0.32 }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.4}
-                onDragEnd={(e, info) => {
-                  const swipeThreshold = 50;
-                  if (info.offset.x < -swipeThreshold) {
-                    nextStory();
-                  } else if (info.offset.x > swipeThreshold) {
-                    prevStory();
-                  }
-                }}
-                className="grid gap-6 p-6 sm:grid-cols-[180px_1fr] sm:gap-8 sm:p-8 touch-pan-y cursor-grab active:cursor-grabbing"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="grid gap-6 p-6 sm:grid-cols-[180px_1fr] sm:gap-8 sm:p-8"
               >
                 {/* Portrait */}
                 <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-center sm:gap-0">

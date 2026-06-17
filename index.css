@@ -10,6 +10,7 @@
 }
 
 html {
+  height: 100%;
 }
 
 body {
@@ -17,6 +18,11 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  /* Дозволяємо вертикальний скрол завжди */
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100%;
 }
 
 /* Анімований градієнтний текст */
