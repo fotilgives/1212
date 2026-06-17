@@ -10,7 +10,11 @@
 }
 
 html {
-  height: 100%;
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 body {
@@ -19,10 +23,10 @@ body {
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
-  /* Дозволяємо вертикальний скрол завжди */
   overflow-y: auto !important;
   height: auto !important;
   min-height: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Анімований градієнтний текст */
@@ -280,4 +284,21 @@ body {
   letter-spacing: -0.02em;
   color: #0f172a;
 }
+
+/* Performant CSS Ticker */
+.ticker-container {
+  display: flex;
+  width: max-content;
+  animation: ticker-slide 10s linear infinite;
+  will-change: transform;
+}
+@keyframes ticker-slide {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
 

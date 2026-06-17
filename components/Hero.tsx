@@ -16,7 +16,6 @@ import {
   Activity,
   ShieldCheck
 } from 'lucide-react';
-import ZoomImage from './ZoomImage';
 import SmartImage from './SmartImage';
 
 // ─── Scrolling ticker ────────────────────────────────────────────────────────
@@ -393,11 +392,15 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
 
               {/* Photo */}
               <div className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80">
-                <ZoomImage
+                <SmartImage
                   src="/images/about.jpg"
                   alt="Володимир Мальцев — масажист-реабілітолог"
-                  caption="Фото Володимира Мальцева"
-                  ratio="aspect-[3/4]"
+                  className="w-full aspect-[3/4] object-cover"
+                  fallback={
+                    <div className="flex h-[400px] w-full items-center justify-center bg-slate-100 text-6xl">
+                      👨‍⚕️
+                    </div>
+                  }
                 />
                 {/* Name badge */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
@@ -525,11 +528,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
             SCROLLING TICKER (all screens)
         ═════════════════════════════════════════════════════ */}
         <div className="relative overflow-hidden border-y border-slate-100 bg-white py-3">
-          <motion.div
-            className="flex gap-8 whitespace-nowrap"
-            animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-          >
+          <div className="ticker-container flex gap-8 whitespace-nowrap">
             {/* Doubled for seamless loop */}
             {[...TICKER, ...TICKER].map((item, i) => (
               <span key={i} className="shrink-0 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center">
@@ -537,7 +536,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 <span className="mx-4 text-emerald-300 font-bold">·</span>
               </span>
             ))}
-          </motion.div>
+          </div>
         </div>
 
         {/* ════════════════════════════════════════════════════
