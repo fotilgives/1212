@@ -16,14 +16,18 @@ const BrandMark: React.FC<Props> = ({ size = 36, className = '' }) => {
   const px = `${size}px`;
   return (
     <span
-      className={`grid place-items-center overflow-hidden rounded-xl bg-emerald-600 text-white shadow-lg shadow-emerald-200 ${className}`}
+      className={`grid place-items-center overflow-hidden rounded-xl shadow-lg shadow-emerald-200 ${className}`}
       style={{ height: px, width: px }}
     >
       <SmartImage
         src="/images/logo.png"
         alt="Логотип — Центр розвитку та здоров'я"
-        className="h-full w-full object-cover"
-        fallback={<HeartPulse style={{ height: size * 0.55, width: size * 0.55 }} />}
+        className="h-full w-full object-contain"
+        fallback={
+          <span className="grid h-full w-full place-items-center bg-emerald-600 text-white">
+            <HeartPulse style={{ height: size * 0.55, width: size * 0.55 }} />
+          </span>
+        }
       />
     </span>
   );
