@@ -528,7 +528,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
           <motion.div
             className="flex gap-8 whitespace-nowrap"
             animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
           >
             {/* Doubled for seamless loop */}
             {[...TICKER, ...TICKER].map((item, i) => (
