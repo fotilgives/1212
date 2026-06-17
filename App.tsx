@@ -12,6 +12,7 @@ import About from './components/pages/About';
 import Services from './components/pages/Services';
 import Prizes from './components/pages/Prizes';
 import Philosophy from './components/pages/Philosophy';
+import FloatingContact from './components/FloatingContact';
 import { useAccount } from './hooks/useAccount';
 import { useRoute, navigate } from './hooks/useRoute';
 
@@ -64,6 +65,7 @@ const App: React.FC = () => {
 
       <Footer />
 
+      <FloatingContact />
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} />
       <Suspense fallback={null}>
         <ChatWidget />
