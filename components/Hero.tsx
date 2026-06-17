@@ -193,7 +193,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
   );
 
   return (
-    <section id="top" className="relative overflow-x-hidden">
+    <section id="top" className="relative">
 
       {/* ── Background (shared) ───────────────────────────── */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-slate-50 via-white to-emerald-50/20" />
@@ -216,15 +216,10 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
         {/* ════════════════════════════════════════════════════
             MOBILE layout (hidden on lg+)
         ═════════════════════════════════════════════════════ */}
-        <div className="lg:hidden pt-6 pb-10 space-y-6">
+        <div className="lg:hidden pt-6 pb-10 space-y-6" style={{ touchAction: 'pan-y' }}>
 
           {/* ── Profile banner card: Large premium portrait (identical to PC style) ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-            className="relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
-          >
+          <div className="relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80">
             <SmartImage
               src="/images/about.jpg"
               alt="Володимир Мальцев — масажист-реабілітолог"
@@ -270,14 +265,10 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* ── Stats row ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.55 }}
-            className="grid grid-cols-3 gap-3"
+          <div className="grid grid-cols-3 gap-3"
           >
             {STATS.map((s) => {
               const Icon = s.icon;
@@ -293,27 +284,17 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </div>
               );
             })}
-          </motion.div>
+          </div>
 
           {/* ── Bio text ── */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-sm leading-relaxed text-slate-600"
-          >
+          <p className="text-sm leading-relaxed text-slate-600">
             Спеціаліст із фізичної реабілітації з понад{' '}
             <b className="text-slate-800">15 роками практичного досвіду</b>. Допомагаю відновити{' '}
             <b className="text-slate-800">свободу руху та баланс всього тіла</b>, працюючи з першопричиною больового синдрому.
-          </motion.p>
+          </p>
 
           {/* ── Credential badges ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.25, duration: 0.5 }}
-            className="flex flex-wrap gap-2"
-          >
+          <div className="flex flex-wrap gap-2">
             {BADGES.map((b) => {
               const Icon = b.icon;
               return (
@@ -326,15 +307,10 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </span>
               );
             })}
-          </motion.div>
+          </div>
 
           {/* ── Expandable cards ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="space-y-2.5"
-          >
+          <div className="space-y-2.5">
             {CARDS.map((card) => (
               <ExpandCard
                 key={card.id}
@@ -343,16 +319,12 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 onToggle={() => toggle(card.id)}
               />
             ))}
-          </motion.div>
+          </div>
 
           {/* ── CTAs ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.5 }}
-          >
+          <div>
             {CTAs}
-          </motion.div>
+          </div>
         </div>
 
         {/* ════════════════════════════════════════════════════
