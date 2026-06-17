@@ -165,7 +165,7 @@ const Philosophy: React.FC<Props> = ({ embedded = false }) => {
       <Section delay={0.1}>
         <p className="mx-auto mt-10 max-w-2xl text-center text-lg font-medium leading-relaxed text-slate-700">
           Саме цей баланс - твердості, гнучкості й точності - лежить в основі здорового руху, тілесної роботи та внутрішньої
-          рівноваги. 🌿
+          рівноваги.
         </p>
       </Section>
     </Wrapper>

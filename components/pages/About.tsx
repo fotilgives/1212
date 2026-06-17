@@ -42,7 +42,7 @@ const About: React.FC<Props> = ({ embedded = false }) => {
     <Wrapper className={embedded ? '' : 'mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16'}>
       {!embedded && (
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center">
-          <span className="eyebrow">👋 Про мене</span>
+          <span className="eyebrow">Про мене</span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
             Володимир <span className="text-gradient">Мальцев</span>
           </h1>
