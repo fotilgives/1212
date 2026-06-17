@@ -219,7 +219,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
         ═════════════════════════════════════════════════════ */}
         <div className="lg:hidden pt-6 pb-10 space-y-6">
 
-          {/* ── Profile banner card: Large premium portrait ── */}
+          {/* ── Profile banner card: Large premium portrait (identical to PC style) ── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -237,26 +237,37 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
               }
             />
 
-            {/* Availability badge */}
+            {/* Availability badge (Top Left) */}
             <div className="absolute top-4 left-4 z-10">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/50 backdrop-blur px-3 py-1.5 text-[11px] font-bold text-white ring-1 ring-white/20">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/40 backdrop-blur px-3 py-1.5 text-[11px] font-bold text-white ring-1 ring-white/20">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 Запис відкрито
               </span>
             </div>
 
-            {/* Name + Title overlay at bottom */}
-            <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent">
-              <div className="glass rounded-2xl px-4 py-3.5 ring-1 ring-white/60 shadow-lg text-slate-950">
-                <h1 className="text-lg font-black leading-tight text-slate-900">
-                  Володимир Мальцев
-                </h1>
-                <div className="mt-0.5 text-xs font-bold text-emerald-700">
-                  Масажист-реабілітолог
-                </div>
-                <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
-                  <MapPin className="h-3.5 w-3.5 text-emerald-600" />
-                  Вінниця, Україна — ✦ Рух · Баланс · Відновлення ✦
+            {/* Stat pill (Top Right) */}
+            <div className="absolute -right-1 -top-1 z-20 scale-85 origin-top-right glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80">
+              <div className="text-2xl font-black leading-none text-emerald-600">15+</div>
+              <div className="mt-1 text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">
+                років
+                <br />
+                досвіду
+              </div>
+            </div>
+
+            {/* Name + Title overlay at bottom (identical to PC card) */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
+              <div className="glass rounded-2xl px-4 py-3 ring-1 ring-white/70 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                  <div>
+                    <div className="text-sm font-extrabold text-slate-900 leading-tight">
+                      Володимир Мальцев
+                    </div>
+                    <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                      Масажист-реабілітолог
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -517,7 +528,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
           <motion.div
             className="flex gap-8 whitespace-nowrap"
             animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
           >
             {/* Doubled for seamless loop */}
             {[...TICKER, ...TICKER].map((item, i) => (
