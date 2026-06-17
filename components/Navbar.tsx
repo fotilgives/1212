@@ -34,7 +34,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange }) => {
       initial={{ y: -60, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className={`sticky top-0 z-40 transition-all ${scrolled || open ? 'glass border-b border-white/50 shadow-sm' : 'bg-transparent'}`}
+      className={`md:sticky md:top-0 z-40 transition-all ${scrolled || open ? 'glass border-b border-white/50 shadow-sm' : 'bg-transparent'}`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <a href="#/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">

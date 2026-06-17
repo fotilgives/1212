@@ -16,10 +16,15 @@ export function useRoute(): Route {
   const [route, setRoute] = useState<Route>(parse);
   useEffect(() => {
     const onChange = () => {
-      setRoute(parse());
-      setTimeout(() => {
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      }, 0);
+      const next = parse();
+      setRoute((prev) => {
+        if (prev !== next) {
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+          }, 0);
+        }
+        return next;
+      });
     };
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
