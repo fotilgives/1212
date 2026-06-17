@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarCheck, Check, Sparkles, Hand, Activity, Flower2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import PhotoFrame from '../PhotoFrame';
+import ZoomImage from '../ZoomImage';
 
 const services = [
   { icon: Hand, title: 'Масаж', items: ['Лікувальний та оздоровчий', 'Тайський масаж', 'Фасціальні техніки', 'Вакуумні банки'] },
-  { icon: Activity, title: 'Реабілітація', items: ['Юмейхо-терапія', 'DNS — нейром’язова стабілізація', 'Redcord-терапія', 'Blomberg Therapy', 'Лікувальна фізкультура'] },
+  { icon: Activity, title: 'Реабілітація', items: ['Юмейхо-терапія', 'DNS - нейром’язова стабілізація', 'Redcord-терапія', 'Blomberg Therapy', 'Лікувальна фізкультура'] },
   { icon: Flower2, title: 'Йога та практики', items: ['Індивідуальні заняття', 'Тілесні практики', 'Пресролінг'] },
   { icon: Sparkles, title: 'Навчання', items: ['Курси з йоги', 'Курси масажу', 'Онлайн-курси та програми'] },
 ];
@@ -23,7 +23,7 @@ const SERVICE_OPTIONS = [
 ];
 
 interface Props {
-  /** true — компонент рендериться всередині акордеону на головній. */
+  /** true - компонент рендериться всередині акордеону на головній. */
   embedded?: boolean;
 }
 
@@ -61,7 +61,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
         <div className="text-center">
           <span className="eyebrow">🤲 Послуги</span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Послуги та курси</h1>
-          <p className="mx-auto mt-3 max-w-xl text-slate-600">Оберіть напрямок і запишіться — підберемо зручний час.</p>
+          <p className="mx-auto mt-3 max-w-xl text-slate-600">Оберіть напрямок і запишіться - підберемо зручний час.</p>
         </div>
       )}
 
@@ -69,7 +69,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "0px 0px -40px 0px" }}
         transition={{ duration: 0.55 }}
         className="mt-6 grid items-stretch gap-5 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
       >
@@ -82,7 +82,15 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             М'яко, усвідомлено та з турботою про тіло. Підходить як початківцям, так і тим, хто хоче поглибити практику.
           </p>
         </div>
-        <PhotoFrame src="/images/yoga.jpg" alt="Курс з йоги" caption="Фото курсу з йоги" ratio="aspect-video" className="min-h-[180px]" />
+        <div className="relative w-full overflow-hidden rounded-3xl aspect-[3/4] sm:aspect-auto">
+          <ZoomImage
+            src="/images/yoga.jpg"
+            alt="Курс з йоги"
+            caption="Фото курсу з йоги"
+            ratio="aspect-[3/4]"
+            className="absolute inset-0 h-full w-full sm:aspect-auto sm:h-full sm:w-full"
+          />
+        </div>
       </motion.div>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -91,7 +99,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             key={title}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, margin: "0px 0px -40px 0px" }}
             transition={{ duration: 0.5, delay: i * 0.06 }}
             className="glass rounded-3xl p-6 ring-1 ring-white/60"
           >
@@ -116,7 +124,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
         id="book"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "0px 0px -40px 0px" }}
         className="card-glow mx-auto mt-6 max-w-xl rounded-3xl p-7 ring-1 ring-white/60"
       >
         <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900">

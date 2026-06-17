@@ -7,7 +7,7 @@ import AnimatedNumber from '../AnimatedNumber';
 interface Props {
   account: Account;
   onTopUp: () => void;
-  /** true — компонент рендериться всередині акордеону на головній. */
+  /** true - компонент рендериться всередині акордеону на головній. */
   embedded?: boolean;
 }
 
@@ -52,7 +52,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
           </>
         )}
         <p className={`mx-auto max-w-xl text-slate-600 ${embedded ? '' : 'mt-3'}`}>
-          Зароблені у грі монети можна обміняти на послуги, знижки, сертифікати та курси. Без виводу коштів — лише корисні нагороди.
+          Зароблені у грі монети можна обміняти на послуги, знижки, сертифікати та курси. Без виводу коштів - лише корисні нагороди.
         </p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-base font-bold text-amber-600 ring-1 ring-amber-200">
           <Coins className="h-5 w-5" /> Твій баланс: <AnimatedNumber value={account.balance} />
@@ -67,7 +67,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
               key={r.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
               whileHover={{ y: -5 }}
               className="card-glow flex flex-col rounded-3xl p-6 ring-1 ring-white/60"
@@ -111,7 +111,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
             className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-2xl"
           >
             <Check className="h-5 w-5" />
-            Готово! «{claimed}» — заявку прийнято <Gift className="h-4 w-4" />
+            Готово! «{claimed}» - заявку прийнято <Gift className="h-4 w-4" />
           </motion.div>
         )}
       </AnimatePresence>

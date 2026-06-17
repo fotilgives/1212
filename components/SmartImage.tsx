@@ -11,7 +11,7 @@ interface Props {
 /**
  * Картинка з «м'якою» поведінкою: якщо файл ще не покладено в /public/images,
  * замість «битої» іконки показуємо охайну заглушку (fallback).
- * Щойно ви додасте реальний файл — він з'явиться автоматично.
+ * Щойно ви додасте реальний файл - він з'явиться автоматично.
  */
 const SmartImage: React.FC<Props> = ({ src, alt, className, fallback = null }) => {
   const [failed, setFailed] = useState(false);

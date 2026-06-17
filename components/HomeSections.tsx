@@ -14,7 +14,7 @@ interface Props {
 }
 
 const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
-  // Які секції розгорнуті. За замовчуванням відкрита перша — «Про мене».
+  // Які секції розгорнуті. За замовчуванням відкрита перша - «Про мене».
   const [open, setOpen] = useState<string | null>('about');
 
   const sections = [
@@ -55,13 +55,13 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "-40px" }}
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center text-center"
       >
         <span className="eyebrow">📂 Усе в одному місці</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
-          Натисни кнопку — і розкриється
+          Натисни кнопку - і розкриється
         </h2>
         <p className="mt-2 max-w-md text-sm text-slate-500">
           Обери розділ, щоб дізнатися більше. Усе зручно зібрано тут, без зайвих переходів.
@@ -121,12 +121,12 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
           );
         })}
 
-        {/* Гра — окрема яскрава кнопка */}
+        {/* Гра - окрема яскрава кнопка */}
         <motion.button
           onClick={() => navigate('game')}
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.45, delay: 0.24 }}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}

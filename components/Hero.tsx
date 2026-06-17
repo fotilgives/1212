@@ -13,7 +13,7 @@ const stats = [
   { v: '🪙 100', l: 'ставка' },
 ];
 
-// Декоративні емодзі по кутах — лише на десктопі (sm+).
+// Декоративні емодзі по кутах - лише на десктопі (sm+).
 const floats = [
   { e: '✊', x: '6%', y: '20%', d: 0 },
   { e: '✌️', x: '88%', y: '24%', d: 0.6 },
@@ -53,7 +53,7 @@ const Hero: React.FC<Props> = ({ onPlay, onExchange }) => {
 
       <div className="mx-auto max-w-6xl px-5 pb-12 pt-12 sm:pb-16 sm:pt-24 md:pt-28">
         <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-2xl text-center">
-          {/* Фокусний блок з емодзі — головна окраса на мобільному */}
+          {/* Фокусний блок з емодзі - головна окраса на мобільному */}
           <motion.div variants={item} className="mx-auto mb-7 flex w-fit justify-center sm:hidden">
             <div className="relative">
               <motion.div

@@ -32,7 +32,7 @@ const fade = {
 };
 
 interface Props {
-  /** true — компонент рендериться всередині акордеону на головній. */
+  /** true - компонент рендериться всередині акордеону на головній. */
   embedded?: boolean;
 }
 
@@ -58,10 +58,10 @@ const About: React.FC<Props> = ({ embedded = false }) => {
         variants={fade}
         initial="hidden"
         whileInView="show"
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "-40px" }}
         className="mt-6 grid items-center gap-6 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]"
       >
-        <PhotoFrame src="/images/about.jpg" alt="Володимир Мальцев — масажист-реабілітолог" caption="Фото «про мене»" ratio="aspect-[4/5]" />
+        <PhotoFrame src="/images/about.jpg" alt="Володимир Мальцев - масажист-реабілітолог" caption="Фото «про мене»" ratio="aspect-[4/5]" />
         <div className="card-glow rounded-3xl p-6 ring-1 ring-white/60">
           {embedded && (
             <h2 className="text-2xl font-extrabold tracking-tight text-slate-900">
@@ -73,14 +73,14 @@ const About: React.FC<Props> = ({ embedded = false }) => {
           </span>
           <p className="mt-4 leading-relaxed text-slate-600">
             Масажист-реабілітолог із понад <b className="text-slate-800">15-річним досвідом</b>. У своїй практиці поєдную
-            сучасні реабілітаційні підходи, мануальні техніки та роботу з тілом через рух. Моя мета — не просто тимчасово
+            сучасні реабілітаційні підходи, мануальні техніки та роботу з тілом через рух. Моя мета - не просто тимчасово
             зняти біль, а допомогти організму відновити <b className="text-slate-800">баланс, стабільність та свободу руху</b>.
           </p>
         </div>
       </motion.div>
 
       <div className="mt-6 grid gap-5 md:grid-cols-2">
-        <motion.section custom={2} variants={fade} initial="hidden" whileInView="show" viewport={{ once: true }} className="glass rounded-3xl p-6 ring-1 ring-white/60">
+        <motion.section custom={2} variants={fade} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-40px" }} className="glass rounded-3xl p-6 ring-1 ring-white/60">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <Dumbbell className="h-5 w-5 text-emerald-600" /> Напрямки роботи
           </h2>
@@ -94,7 +94,7 @@ const About: React.FC<Props> = ({ embedded = false }) => {
           </ul>
         </motion.section>
 
-        <motion.section custom={3} variants={fade} initial="hidden" whileInView="show" viewport={{ once: true }} className="glass rounded-3xl p-6 ring-1 ring-white/60">
+        <motion.section custom={3} variants={fade} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-40px" }} className="glass rounded-3xl p-6 ring-1 ring-white/60">
           <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
             <GraduationCap className="h-5 w-5 text-emerald-600" /> Навчання та курси
           </h2>
@@ -117,13 +117,13 @@ const About: React.FC<Props> = ({ embedded = false }) => {
         variants={fade}
         initial="hidden"
         whileInView="show"
-        viewport={{ once: true }}
+        viewport={{ once: true, margin: "-40px" }}
         className="mt-6 flex flex-col items-center gap-3 rounded-3xl bg-emerald-600 p-7 text-center text-white shadow-xl shadow-emerald-300/40"
       >
         <CalendarCheck className="h-8 w-8" />
         <h2 className="text-xl font-extrabold">Записатися на прийом</h2>
         <p className="max-w-md text-sm text-emerald-50">
-          Оберіть послугу та залиште контакти — я зв'яжуся з вами, щоб підібрати зручний час.
+          Оберіть послугу та залиште контакти - я зв'яжуся з вами, щоб підібрати зручний час.
         </p>
         <button
           onClick={() => navigate('services')}
