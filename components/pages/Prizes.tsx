@@ -7,6 +7,8 @@ import AnimatedNumber from '../AnimatedNumber';
 interface Props {
   account: Account;
   onTopUp: () => void;
+  /** true — компонент рендериться всередині акордеону на головній. */
+  embedded?: boolean;
 }
 
 const REWARDS = [
@@ -18,7 +20,7 @@ const REWARDS = [
   { emoji: '✨', title: 'Корисний бонус / товар', cost: 300 },
 ];
 
-const Prizes: React.FC<Props> = ({ account, onTopUp }) => {
+const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
   const [busy, setBusy] = useState<string | null>(null);
   const [claimed, setClaimed] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -39,12 +41,17 @@ const Prizes: React.FC<Props> = ({ account, onTopUp }) => {
     }
   };
 
+  const Wrapper: any = embedded ? 'div' : 'main';
   return (
-    <main className="mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16">
+    <Wrapper className={embedded ? '' : 'mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16'}>
       <div className="text-center">
-        <span className="eyebrow">🎁 Призи</span>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Обмін монет на призи</h1>
-        <p className="mx-auto mt-3 max-w-xl text-slate-600">
+        {!embedded && (
+          <>
+            <span className="eyebrow">🎁 Призи</span>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Обмін монет на призи</h1>
+          </>
+        )}
+        <p className={`mx-auto max-w-xl text-slate-600 ${embedded ? '' : 'mt-3'}`}>
           Зароблені у грі монети можна обміняти на послуги, знижки, сертифікати та курси. Без виводу коштів — лише корисні нагороди.
         </p>
         <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-base font-bold text-amber-600 ring-1 ring-amber-200">
@@ -52,7 +59,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp }) => {
         </div>
       </div>
 
-      <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {REWARDS.map((r, i) => {
           const enough = account.balance >= r.cost;
           return (
@@ -108,7 +115,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
+    </Wrapper>
   );
 };
 

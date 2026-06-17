@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CalendarCheck, Check, Sparkles, Hand, Activity, Flower2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import PhotoFrame from '../PhotoFrame';
 
 const services = [
   { icon: Hand, title: 'Масаж', items: ['Лікувальний та оздоровчий', 'Тайський масаж', 'Фасціальні техніки', 'Вакуумні банки'] },
@@ -21,7 +22,12 @@ const SERVICE_OPTIONS = [
   'Інше',
 ];
 
-const Services: React.FC = () => {
+interface Props {
+  /** true — компонент рендериться всередині акордеону на головній. */
+  embedded?: boolean;
+}
+
+const Services: React.FC<Props> = ({ embedded = false }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [service, setService] = useState(SERVICE_OPTIONS[0]);
@@ -48,15 +54,38 @@ const Services: React.FC = () => {
     else setDone(true);
   };
 
+  const Wrapper: any = embedded ? 'div' : 'main';
   return (
-    <main className="mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16">
-      <div className="text-center">
-        <span className="eyebrow">🤲 Послуги</span>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Послуги та курси</h1>
-        <p className="mx-auto mt-3 max-w-xl text-slate-600">Оберіть напрямок і запишіться — підберемо зручний час.</p>
-      </div>
+    <Wrapper className={embedded ? '' : 'mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16'}>
+      {!embedded && (
+        <div className="text-center">
+          <span className="eyebrow">🤲 Послуги</span>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Послуги та курси</h1>
+          <p className="mx-auto mt-3 max-w-xl text-slate-600">Оберіть напрямок і запишіться — підберемо зручний час.</p>
+        </div>
+      )}
 
-      <div className="mt-9 grid gap-5 sm:grid-cols-2">
+      {/* Банер курсу з йоги */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.55 }}
+        className="mt-6 grid items-stretch gap-5 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]"
+      >
+        <div className="flex flex-col justify-center rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-600 p-7 text-white shadow-xl shadow-emerald-300/40">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+            <Flower2 className="h-3.5 w-3.5" /> Йога
+          </span>
+          <h2 className="mt-3 text-2xl font-extrabold">Курс з йоги та тілесних практик</h2>
+          <p className="mt-2 text-sm leading-relaxed text-emerald-50">
+            М'яко, усвідомлено та з турботою про тіло. Підходить як початківцям, так і тим, хто хоче поглибити практику.
+          </p>
+        </div>
+        <PhotoFrame src="/images/yoga.jpg" alt="Курс з йоги" caption="Фото курсу з йоги" ratio="aspect-video" className="min-h-[180px]" />
+      </motion.div>
+
+      <div className="mt-6 grid gap-5 sm:grid-cols-2">
         {services.map(({ icon: Icon, title, items }, i) => (
           <motion.div
             key={title}
@@ -88,7 +117,7 @@ const Services: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="card-glow mx-auto mt-10 max-w-xl rounded-3xl p-7 ring-1 ring-white/60"
+        className="card-glow mx-auto mt-6 max-w-xl rounded-3xl p-7 ring-1 ring-white/60"
       >
         <h2 className="flex items-center gap-2 text-xl font-extrabold text-slate-900">
           <CalendarCheck className="h-6 w-6 text-emerald-600" /> Запис на сесію
@@ -144,7 +173,7 @@ const Services: React.FC = () => {
           </div>
         )}
       </motion.div>
-    </main>
+    </Wrapper>
   );
 };
 

@@ -61,12 +61,18 @@ const Section: React.FC<{ children: React.ReactNode; delay?: number }> = ({ chil
   </motion.div>
 );
 
-const Philosophy: React.FC = () => {
+interface Props {
+  /** true — компонент рендериться всередині акордеону на головній. */
+  embedded?: boolean;
+}
+
+const Philosophy: React.FC<Props> = ({ embedded = false }) => {
+  const Wrapper: any = embedded ? 'div' : 'main';
   return (
-    <main className="mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16">
+    <Wrapper className={embedded ? '' : 'mx-auto max-w-4xl px-5 pb-20 pt-12 sm:pt-16'}>
       <div className="text-center">
-        <span className="eyebrow">🧠 Філософія</span>
-        <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+        {!embedded && <span className="eyebrow">🧠 Філософія</span>}
+        <h1 className={`text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl ${embedded ? '' : 'mt-4'}`}>
           Камінь · Ножиці · <span className="text-gradient">Папір</span>
         </h1>
         <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-slate-600">
@@ -162,7 +168,7 @@ const Philosophy: React.FC = () => {
           рівноваги. 🌿
         </p>
       </Section>
-    </main>
+    </Wrapper>
   );
 };
 
