@@ -12,16 +12,25 @@ const orbs = [
 ];
 
 const Background: React.FC = () => {
+  const [isMobile, setIsMobile] = React.useState(true);
+
+  React.useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-slate-50">
       <div className="bg-grid absolute inset-0" />
       {orbs.map((o, i) => (
         <motion.div
           key={i}
-          className={`absolute rounded-full blur-[90px] ${o.c} ${o.s}`}
+          className={`absolute rounded-full blur-[60px] md:blur-[90px] ${o.c} ${o.s}`}
           style={{ willChange: 'transform' }}
-          animate={{ x: o.x, y: o.y }}
-          transition={{ duration: o.d, repeat: Infinity, ease: 'easeInOut' }}
+          animate={isMobile ? undefined : { x: o.x, y: o.y }}
+          transition={isMobile ? undefined : { duration: o.d, repeat: Infinity, ease: 'easeInOut' }}
         />
       ))}
     </div>

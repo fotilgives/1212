@@ -12,19 +12,19 @@ const contacts = [
   {
     label: 'Telegram',
     emoji: '✈️',
-    href: 'https://t.me/your_handle',
+    href: 'https://t.me/+380638069916',
     bg: 'bg-sky-50 text-sky-700 ring-sky-200 hover:bg-sky-100',
   },
   {
     label: 'Viber',
     emoji: '📱',
-    href: 'viber://chat?number=%2B380XXXXXXXXX',
+    href: 'viber://chat?number=%2B380638069916',
     bg: 'bg-violet-50 text-violet-700 ring-violet-200 hover:bg-violet-100',
   },
   {
     label: 'Телефон',
     emoji: '📞',
-    href: 'tel:+380XXXXXXXXX',
+    href: 'tel:+380638069916',
     bg: 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100',
   },
 ];

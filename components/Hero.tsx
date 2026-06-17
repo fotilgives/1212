@@ -219,60 +219,46 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
         ═════════════════════════════════════════════════════ */}
         <div className="lg:hidden pt-6 pb-10 space-y-6">
 
-          {/* ── Profile banner card ── */}
+          {/* ── Profile banner card: Large premium portrait ── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-700 p-6 text-white shadow-2xl shadow-emerald-900/15"
+            className="relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
           >
-            {/* Soft glow blob */}
-            <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-8 -left-8 h-36 w-36 rounded-full bg-teal-400/20 blur-2xl" />
+            <SmartImage
+              src="/images/about.jpg"
+              alt="Володимир Мальцев — масажист-реабілітолог"
+              className="w-full aspect-[4/5] object-cover"
+              fallback={
+                <div className="flex h-[320px] w-full items-center justify-center bg-slate-100 text-6xl">
+                  👨‍⚕️
+                </div>
+              }
+            />
 
             {/* Availability badge */}
-            <div className="mb-4 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-emerald-50 ring-1 ring-white/20">
-                <CalendarCheck className="h-3 w-3" />
+            <div className="absolute top-4 left-4 z-10">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/50 backdrop-blur px-3 py-1.5 text-[11px] font-bold text-white ring-1 ring-white/20">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
                 Запис відкрито
               </span>
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
             </div>
 
-            {/* Photo + Name row */}
-            <div className="flex items-center gap-4">
-              {/* Circular photo */}
-              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full ring-4 ring-white/30 shadow-xl bg-slate-100">
-                <SmartImage
-                  src="/images/about.jpg"
-                  alt="Володимир Мальцев"
-                  className="h-full w-full object-cover"
-                  fallback={
-                    <div className="flex h-full w-full items-center justify-center bg-white/20 text-3xl">
-                      👨‍⚕️
-                    </div>
-                  }
-                />
-              </div>
-              <div>
-                <h1 className="text-xl font-black leading-tight">
-                  Володимир
-                  <br />
-                  Мальцев
+            {/* Name + Title overlay at bottom */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-slate-950/80 via-slate-950/40 to-transparent">
+              <div className="glass rounded-2xl px-4 py-3.5 ring-1 ring-white/60 shadow-lg text-slate-950">
+                <h1 className="text-lg font-black leading-tight text-slate-900">
+                  Володимир Мальцев
                 </h1>
-                <div className="mt-1 text-sm font-semibold text-emerald-200">
+                <div className="mt-0.5 text-xs font-bold text-emerald-700">
                   Масажист-реабілітолог
                 </div>
-                <div className="mt-1.5 flex items-center gap-1 text-xs text-emerald-200/80">
-                  <MapPin className="h-3 w-3" />
-                  Вінниця, Україна
+                <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500">
+                  <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                  Вінниця, Україна — ✦ Рух · Баланс · Відновлення ✦
                 </div>
               </div>
-            </div>
-
-            {/* Subtitle */}
-            <div className="mt-4 text-[10px] font-bold text-emerald-200/70 uppercase tracking-widest">
-              ✦ РУХ · БАЛАНС · ВІДНОВЛЕННЯ ✦
             </div>
           </motion.div>
 
@@ -527,11 +513,11 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
         {/* ════════════════════════════════════════════════════
             SCROLLING TICKER (all screens)
         ═════════════════════════════════════════════════════ */}
-        <div className="relative overflow-hidden border-y border-slate-100 bg-white/50 py-3 backdrop-blur-sm">
+        <div className="relative overflow-hidden border-y border-slate-100 bg-white py-3">
           <motion.div
             className="flex gap-8 whitespace-nowrap"
             animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
           >
             {/* Doubled for seamless loop */}
             {[...TICKER, ...TICKER].map((item, i) => (

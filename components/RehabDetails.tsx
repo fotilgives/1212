@@ -213,11 +213,22 @@ const RehabDetails: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -18 }}
                 transition={{ duration: 0.32 }}
-                className="grid gap-6 p-6 sm:grid-cols-[180px_1fr] sm:gap-8 sm:p-8"
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.4}
+                onDragEnd={(e, info) => {
+                  const swipeThreshold = 50;
+                  if (info.offset.x < -swipeThreshold) {
+                    nextStory();
+                  } else if (info.offset.x > swipeThreshold) {
+                    prevStory();
+                  }
+                }}
+                className="grid gap-6 p-6 sm:grid-cols-[180px_1fr] sm:gap-8 sm:p-8 touch-pan-y cursor-grab active:cursor-grabbing"
               >
                 {/* Portrait */}
-                <div className="flex flex-col items-center">
-                  <div className="h-36 w-36 overflow-hidden rounded-2xl bg-slate-100 shadow-md ring-1 ring-slate-100 sm:h-40 sm:w-40">
+                <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-center sm:gap-0">
+                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-md ring-1 ring-slate-100 sm:h-40 sm:w-40">
                     <img
                       src={STORIES[activeStory].photo}
                       alt={STORIES[activeStory].name}
@@ -226,12 +237,14 @@ const RehabDetails: React.FC = () => {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <p className="mt-3 text-center text-sm font-extrabold text-slate-900">
-                    {STORIES[activeStory].name}
-                  </p>
-                  <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 ring-1 ring-emerald-100">
-                    {STORIES[activeStory].condition}
-                  </span>
+                  <div className="flex flex-col sm:items-center">
+                    <p className="text-base font-extrabold text-slate-900 sm:mt-3 sm:text-center sm:text-sm">
+                      {STORIES[activeStory].name}
+                    </p>
+                    <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-800 ring-1 ring-emerald-100 sm:self-auto self-start">
+                      {STORIES[activeStory].condition}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Content */}
