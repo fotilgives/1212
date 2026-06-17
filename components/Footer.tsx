@@ -29,13 +29,13 @@ const Footer: React.FC = () => {
               Масаж, фізична реабілітація, йога та навчання. Допомагаємо тілу відновити баланс, стабільність і свободу руху.
             </p>
             <div className="mt-5 flex items-center gap-2.5">
-              <a href="#" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-emerald-600 hover:text-white">
+              <a href="https://instagram.com/center_rozvutky_vi" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-emerald-600 hover:text-white">
                 <Instagram className="h-4.5 w-4.5" />
               </a>
               <a href="#" aria-label="Telegram" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-emerald-600 hover:text-white">
                 <Send className="h-4.5 w-4.5" />
               </a>
-              <a href="tel:+380000000000" aria-label="Телефон" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-emerald-600 hover:text-white">
+              <a href="tel:+380638069916" aria-label="Телефон" className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-emerald-600 hover:text-white">
                 <Phone className="h-4.5 w-4.5" />
               </a>
             </div>
@@ -71,7 +71,7 @@ const Footer: React.FC = () => {
             <ul className="mt-4 space-y-3 text-sm text-slate-600">
               <li className="flex items-start gap-2.5">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                <a href="tel:+380000000000" className="transition hover:text-emerald-700">+38 (000) 000-00-00</a>
+                <a href="tel:+380638069916" className="transition hover:text-emerald-700">+38 (063) 806-99-16</a>
               </li>
               <li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
