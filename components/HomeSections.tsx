@@ -48,7 +48,23 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
     },
   ];
 
-  const toggle = (id: string) => setOpen((cur) => (cur === id ? null : id));
+  const toggle = (id: string) => {
+    setOpen((cur) => {
+      const next = cur === id ? null : id;
+      if (next) {
+        // Smooth scroll to the expanded section with navbar offset
+        setTimeout(() => {
+          const el = document.getElementById(`section-${id}`);
+          if (el) {
+            const yOffset = -90; // sticky header padding
+            const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }
+        }, 200);
+      }
+      return next;
+    });
+  };
 
   return (
     <section id="sections" className="mx-auto max-w-4xl px-5 py-14">
@@ -61,10 +77,10 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
       >
         <span className="eyebrow">📂 Усе в одному місці</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
-          Натисни кнопку - і розкриється
+          Твій простір здоров'я та балансу
         </h2>
-        <p className="mt-2 max-w-md text-sm text-slate-500">
-          Обери розділ, щоб дізнатися більше. Усе зручно зібрано тут, без зайвих переходів.
+        <p className="mt-2 max-w-xl text-sm text-slate-500">
+          Дізнайтеся більше про мої методики відновлення, оберіть потрібну послугу або обміняйте ігрові монети на корисні бонуси.
         </p>
       </motion.div>
 
@@ -74,6 +90,7 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
           return (
             <motion.div
               key={id}
+              id={`section-${id}`}
               initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
