@@ -280,7 +280,7 @@ body {
 .ticker-container {
   display: flex;
   width: max-content;
-  animation: ticker-slide 10s linear infinite;
+  animation: ticker-slide 20s linear infinite;
   will-change: transform;
 }
 @keyframes ticker-slide {
