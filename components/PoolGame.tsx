@@ -508,28 +508,34 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   </div>
 
                   {/* Bluff */}
-                  <div className="mt-4 rounded-2xl bg-violet-50/80 p-3 ring-1 ring-violet-200">
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: canBluff ? 0.97 : 1 }}
-                      disabled={!canBluff}
-                      onClick={() => {
-                        const next = !bluff;
-                        setBluff(next);
-                        if (next && shownMove === move) {
-                          setShownMove(MOVES.find((m) => m.id !== move)!.id);
-                        }
-                      }}
-                      className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold transition ${
-                        !canBluff
-                          ? 'cursor-not-allowed bg-white/60 text-violet-300 ring-1 ring-violet-100'
-                          : bluff
-                          ? 'bg-violet-600 text-white shadow-lg shadow-violet-300/50'
-                          : 'bg-white text-violet-700 ring-1 ring-violet-300 hover:bg-violet-100'
-                      }`}
-                    >
-                      {!canBluff ? '🔒 Блеф (після виграшу)' : bluff ? '🤫 Блеф увімкнено' : '🤫 Блеф'}
-                    </motion.button>
+                  <div className="mt-4">
+                    <div className="flex justify-center">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: canBluff ? 1.05 : 1, y: canBluff ? -2 : 0 }}
+                        whileTap={{ scale: canBluff ? 0.96 : 1 }}
+                        disabled={!canBluff}
+                        onClick={() => {
+                          const next = !bluff;
+                          setBluff(next);
+                          if (next && shownMove === move) {
+                            setShownMove(MOVES.find((m) => m.id !== move)!.id);
+                          }
+                        }}
+                        className={`flex flex-col items-center gap-1 rounded-2xl border px-10 py-4 transition ${
+                          !canBluff
+                            ? 'cursor-not-allowed border-slate-100 bg-slate-50'
+                            : bluff
+                            ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
+                            : 'border-slate-200 bg-white/70 hover:border-emerald-300'
+                        }`}
+                      >
+                        <span className="text-3xl">🤫</span>
+                        <span className="text-sm font-semibold text-slate-700">
+                          {!canBluff ? 'Блеф 🔒' : bluff ? 'Блеф увімкнено' : 'Блеф'}
+                        </span>
+                      </motion.button>
+                    </div>
                     <AnimatePresence>
                       {canBluff && bluff && (
                         <motion.div

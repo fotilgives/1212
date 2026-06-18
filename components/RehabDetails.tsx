@@ -1,73 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Brain,
-  Activity,
-  Heart,
-  Flame,
   ChevronLeft,
   ChevronRight,
   ArrowRight,
   Send,
   Check,
-  Sparkles,
-  ShieldAlert,
-  GraduationCap,
-  Zap,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-
-// ─── Specializations ────────────────────────────────────────────────────────
-const SPECIALIZATIONS = [
-  {
-    icon: Brain,
-    title: 'Інсульт',
-    desc: 'Нейрореабілітація, відновлення рухових функцій та чутливості, соціально-побутова адаптація.',
-    ring: 'ring-blue-100 hover:ring-blue-300',
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-  },
-  {
-    icon: ShieldAlert,
-    title: 'Черепно-мозкова травма',
-    desc: "Комплексне відновлення координації, рівноваги, м'язового тонусу та когнітивних навичок.",
-    ring: 'ring-amber-100 hover:ring-amber-300',
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
-  },
-  {
-    icon: Activity,
-    title: 'Розсіяний склероз',
-    desc: 'Підтримка та відновлення рухової активності, мінімізація спастики, покращення якості життя.',
-    ring: 'ring-emerald-100 hover:ring-emerald-300',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
-  },
-  {
-    icon: Flame,
-    title: 'Травма хребта',
-    desc: "Спеціалізовані тренування для зміцнення м'язового корсета та покращення пропріоцепції.",
-    ring: 'ring-rose-100 hover:ring-rose-300',
-    bg: 'bg-rose-50',
-    text: 'text-rose-600',
-  },
-  {
-    icon: Zap,
-    title: 'Ендопротезування',
-    desc: 'Рання та пізня розробка суглобів після заміни, відновлення стереотипу ходьби.',
-    ring: 'ring-cyan-100 hover:ring-cyan-300',
-    bg: 'bg-cyan-50',
-    text: 'text-cyan-600',
-  },
-  {
-    icon: Heart,
-    title: 'Онкологія',
-    desc: "М'яка відновлювальна терапія, лімфодренаж, підтримання загального фізичного тонусу.",
-    ring: 'ring-violet-100 hover:ring-violet-300',
-    bg: 'bg-violet-50',
-    text: 'text-violet-600',
-  },
-];
 
 // ─── Patient Success Stories — real Unsplash portraits ──────────────────────
 // All photos: professional-looking, warm, realistic individuals from Unsplash
@@ -176,58 +116,19 @@ const RehabDetails: React.FC = () => {
   return (
     <div className="space-y-20 py-8">
 
-      {/* ── SECTION 1: Specializations Grid ────────────────────────── */}
-      <motion.section
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-60px' }}
-        transition={{ duration: 0.55 }}
-        className="mx-auto max-w-5xl px-5"
-      >
-        <div className="mb-10 text-center">
-          <span className="eyebrow">Спеціалізації</span>
-          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Проводимо реабілітацію після:
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-sm text-slate-500">
-            Індивідуальні програми фізичного та нейрологічного відновлення для різних діагнозів.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SPECIALIZATIONS.map(({ icon: Icon, title, desc, ring, bg, text }, idx) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-20px' }}
-              transition={{ duration: 0.4, delay: idx * 0.06 }}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className={`flex flex-col rounded-2xl border bg-white p-5 shadow-sm ring-1 transition-all hover:shadow-md ${ring}`}
-            >
-              <span className={`mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl ${bg} ${text}`}>
-                <Icon className="h-5 w-5" />
-              </span>
-              <h3 className="font-bold text-slate-900">{title}</h3>
-              <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* ── SECTION 2: Patient Success Stories ──────────────────────── */}
+      {/* ── SECTION: Patient Success Stories ──────────────────────── */}
       <section className="bg-gradient-to-b from-slate-50/70 to-white py-14">
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
+          initial={{ opacity: 0, y: 22 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-4xl px-5"
         >
           <div className="mb-10 text-center">
-            <span className="eyebrow">Результати</span>
+            <span className="eyebrow">💬 Відгуки</span>
             <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Історії наших пацієнтів
+              Відгуки наших клієнтів
             </h2>
           </div>
 
@@ -314,10 +215,10 @@ const RehabDetails: React.FC = () => {
       {/* ── SECTION 3: Multi-step Consultation Form ─────────────────── */}
       <motion.section
         id="consultation-section"
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 22 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-50px' }}
-        transition={{ duration: 0.55 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         className="mx-auto max-w-lg px-5"
       >
         <div className="card-glow rounded-3xl p-6 ring-1 ring-white/60 shadow-xl sm:p-8">

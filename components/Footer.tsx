@@ -1,5 +1,5 @@
 import React from 'react';
-import { Instagram, Send, Phone, MapPin, Heart } from 'lucide-react';
+import { Instagram, Send, Phone, MapPin, Heart, Clock } from 'lucide-react';
 import BrandMark from './BrandMark';
 
 const navLinks: { label: string; href: string }[] = [
@@ -78,6 +78,28 @@ const Footer: React.FC = () => {
                 <span>Україна · запис онлайн</span>
               </li>
             </ul>
+
+            {/* Графік роботи */}
+            <div className="mt-5 rounded-2xl bg-emerald-50/70 p-4 ring-1 ring-emerald-100">
+              <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <Clock className="h-4 w-4 text-emerald-600" /> Графік роботи
+              </div>
+              <dl className="mt-3 space-y-1.5 text-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-slate-500">Пн – Пт</dt>
+                  <dd className="font-semibold text-slate-800">9:00 – 18:00</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-slate-500">Сб</dt>
+                  <dd className="font-semibold text-slate-800">9:00 – 13:00</dd>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <dt className="text-slate-500">Нд</dt>
+                  <dd className="font-medium text-slate-400">вихідний</dd>
+                </div>
+              </dl>
+            </div>
+
             <a
               href="#/services"
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"

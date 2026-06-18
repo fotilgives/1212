@@ -18,6 +18,30 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Плавніший момент-скрол на iOS і без зайвого «відскоку», що збиває анімації */
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Прибираємо сіре підсвічування при тапі — відчуття «нативного» застосунку */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Універсальний м'який перехід для інтерактивних елементів */
+a,
+button {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Преміум-ховер: легке підняття картки */
+.lift {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.lift:hover {
+  transform: translateY(-4px);
 }
 
 /* Анімований градієнтний текст */

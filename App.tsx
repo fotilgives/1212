@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
@@ -14,6 +15,9 @@ import Prizes from './components/pages/Prizes';
 import Philosophy from './components/pages/Philosophy';
 import FloatingContact from './components/FloatingContact';
 import RehabDetails from './components/RehabDetails';
+import ScrollProgress from './components/ScrollProgress';
+import BackToTop from './components/BackToTop';
+import FinalCTA from './components/FinalCTA';
 import { useAccount } from './hooks/useAccount';
 import { useRoute, navigate } from './hooks/useRoute';
 
@@ -29,33 +33,46 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+      <ScrollProgress />
       <Background />
       <Navbar balance={account.balance} route={route} onExchange={openExchange} />
 
-      {route === 'home' && (
-        <main>
-          <Hero onPlay={() => navigate('game')} onExchange={openExchange} />
-          <HowItWorks />
-          <RehabDetails />
-          <HomeSections account={account} onExchange={openExchange} />
-        </main>
-      )}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={route}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {route === 'home' && (
+            <main>
+              <Hero onPlay={() => navigate('game')} onExchange={openExchange} />
+              <HowItWorks />
+              <RehabDetails />
+              <HomeSections account={account} onExchange={openExchange} />
+              <FinalCTA />
+            </main>
+          )}
 
-      {route === 'game' && (
-        <main>
-          <PoolGame account={account} onTopUp={openExchange} />
-          <Leaderboard account={account} />
-        </main>
-      )}
+          {route === 'game' && (
+            <main>
+              <PoolGame account={account} onTopUp={openExchange} />
+              <Leaderboard account={account} />
+            </main>
+          )}
 
-      {route === 'about' && <About />}
-      {route === 'services' && <Services />}
-      {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} />}
-      {route === 'philosophy' && <Philosophy />}
+          {route === 'about' && <About />}
+          {route === 'services' && <Services />}
+          {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} />}
+          {route === 'philosophy' && <Philosophy />}
+        </motion.div>
+      </AnimatePresence>
 
       <Footer />
 
       <FloatingContact />
+      <BackToTop />
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} />
       <Suspense fallback={null}>
         <ChatWidget />

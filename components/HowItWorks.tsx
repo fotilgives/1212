@@ -22,7 +22,7 @@ const steps = [
 
 const HowItWorks: React.FC = () => {
   return (
-    <section id="how" className="mx-auto max-w-6xl px-5 py-16">
+    <section id="how" className="mx-auto max-w-5xl px-5 py-12">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -30,12 +30,12 @@ const HowItWorks: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center text-center"
       >
-        <span className="eyebrow">✨ Як це працює</span>
+        <span className="eyebrow">✨ Правила гри</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
-          Три кроки до гри
+          Бонусна гра
         </h2>
       </motion.div>
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
         {steps.map(({ icon: Icon, title, text }, i) => (
           <motion.div
             key={title}
@@ -43,17 +43,17 @@ const HowItWorks: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
-            whileHover={{ y: -6 }}
-            className="glass rounded-3xl p-6 shadow-sm ring-1 ring-white/60 transition hover:shadow-xl hover:shadow-emerald-900/5"
+            whileHover={{ y: -5 }}
+            className="glass rounded-2xl p-4 shadow-sm ring-1 ring-white/60 transition hover:shadow-lg hover:shadow-emerald-900/5"
           >
             <motion.span
               whileHover={{ rotate: -8, scale: 1.08 }}
-              className="grid h-12 w-12 place-items-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-200"
+              className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-200"
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
             </motion.span>
-            <h3 className="mt-4 text-lg font-bold text-slate-900">{title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">{text}</p>
+            <h3 className="mt-3 text-sm font-bold text-slate-900">{title}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{text}</p>
           </motion.div>
         ))}
       </div>
