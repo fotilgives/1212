@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Phone, CalendarCheck, Sparkles } from 'lucide-react';
-import { navigate } from '../hooks/useRoute';
+import { goToBooking } from '../hooks/useRoute';
 import Reveal from './Reveal';
 
 /**
@@ -39,7 +39,7 @@ const FinalCTA: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('services')}
+            onClick={goToBooking}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-bold text-emerald-700 shadow-lg transition hover:bg-emerald-50 sm:w-auto"
           >
             <CalendarCheck className="h-5 w-5" /> Записатися на прийом

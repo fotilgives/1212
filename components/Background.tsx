@@ -2,13 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 /**
- * Анімований фон сайту: плавно «дихаючі» кольорові плями.
- * Анімуємо лише transform (translate) -> дешево для GPU й плавно навіть на телефоні.
+ * Мінімалістичний преміум-фон: м'який верхній світловий ореол,
+ * делікатна сітка-крапки й кілька «дихаючих» кольорових плям.
+ * Анімуємо лише transform -> дешево для GPU. На мобільних рух вимкнено.
  */
 const orbs = [
-  { c: 'bg-emerald-300/25', s: 'left-[-12%] top-[-10%] h-[440px] w-[440px]', x: [0, 50, 0], y: [0, 30, 0], d: 22 },
-  { c: 'bg-teal-300/20', s: 'right-[-12%] top-[12%] h-[400px] w-[400px]', x: [0, -40, 0], y: [0, 50, 0], d: 26 },
-  { c: 'bg-amber-200/25', s: 'bottom-[-8%] left-[18%] h-[380px] w-[380px]', x: [0, 36, 0], y: [0, -30, 0], d: 24 },
+  { c: 'from-emerald-300/30 to-teal-200/10', s: 'left-[-10%] top-[6%] h-[420px] w-[420px]', x: [0, 40, 0], y: [0, 26, 0], d: 24 },
+  { c: 'from-sky-200/25 to-emerald-200/5', s: 'right-[-12%] top-[28%] h-[380px] w-[380px]', x: [0, -34, 0], y: [0, 40, 0], d: 28 },
+  { c: 'from-amber-200/20 to-rose-100/5', s: 'bottom-[-6%] left-[22%] h-[340px] w-[340px]', x: [0, 30, 0], y: [0, -26, 0], d: 26 },
 ];
 
 const Background: React.FC = () => {
@@ -25,12 +26,18 @@ const Background: React.FC = () => {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-slate-50">
-      <div className="bg-grid absolute inset-0" />
+    <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-white via-slate-50 to-emerald-50/30">
+      {/* Верхній м'який ореол */}
+      <div className="absolute left-1/2 top-[-12%] h-[460px] w-[820px] max-w-[120vw] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.16),transparent_70%)] blur-2xl" />
+
+      {/* Сітка-крапки */}
+      <div className="bg-grid absolute inset-0 opacity-70" />
+
+      {/* Кольорові плями */}
       {orbs.map((o, i) => (
         <motion.div
           key={i}
-          className={`absolute rounded-full blur-[60px] md:blur-[90px] ${o.c} ${o.s}`}
+          className={`absolute rounded-full bg-gradient-to-br blur-[70px] md:blur-[100px] ${o.c} ${o.s}`}
           style={{ willChange: 'transform' }}
           animate={isMobile ? undefined : { x: o.x, y: o.y }}
           transition={isMobile ? undefined : { duration: o.d, repeat: Infinity, ease: 'easeInOut' }}

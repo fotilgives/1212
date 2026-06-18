@@ -1,6 +1,7 @@
 import React from 'react';
 import { Instagram, Send, Phone, MapPin, Heart, Clock } from 'lucide-react';
 import BrandMark from './BrandMark';
+import { goToBooking } from '../hooks/useRoute';
 
 const navLinks: { label: string; href: string }[] = [
   { label: 'Про мене', href: '#/about' },
@@ -100,12 +101,12 @@ const Footer: React.FC = () => {
               </dl>
             </div>
 
-            <a
-              href="#/services"
+            <button
+              onClick={goToBooking}
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
             >
               Записатися
-            </a>
+            </button>
           </div>
         </div>
 

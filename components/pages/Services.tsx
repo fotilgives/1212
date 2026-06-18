@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarCheck, Check, ArrowRight, X, ShieldAlert, Activity, Heart, Eye } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -126,6 +126,23 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
   // Selected service for detail modal
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
+  // Якщо прийшли сюди через кнопку «Записатися» — плавно прокрутити до форми.
+  useEffect(() => {
+    let flagged = false;
+    try {
+      flagged = sessionStorage.getItem('rps_scroll_book') === '1';
+      if (flagged) sessionStorage.removeItem('rps_scroll_book');
+    } catch {
+      /* ignore */
+    }
+    if (flagged) {
+      const t = setTimeout(() => {
+        document.getElementById('book-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 250);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   const submit = async () => {
     setErr(null);
     if (name.trim().length < 2 || phone.trim().length < 5) {
@@ -167,7 +184,13 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
         <div className="text-center mb-10">
           <span className="eyebrow">🤲 Наші послуги</span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Послуги та напрямки відновлення</h1>
-          <p className="mx-auto mt-3 max-w-xl text-slate-500 text-sm">Оберіть напрямок реабілітації для отримання кваліфікованої допомоги.</p>
+          <p className="mx-auto mt-3 max-w-xl text-slate-500 text-sm">Оберіть напрямок реабілітації або одразу залиште заявку — підберемо програму під вас.</p>
+          <button
+            onClick={() => document.getElementById('book-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="shine mt-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+          >
+            <CalendarCheck className="h-5 w-5" /> Записатися на прийом
+          </button>
         </div>
       )}
 

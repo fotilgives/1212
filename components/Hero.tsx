@@ -99,6 +99,13 @@ const REASONS = [
   { icon: Sparkles, title: 'Комплексна система', desc: 'Масаж + ЛФК + йога — єдина система відновлення здоров’я.' },
 ];
 
+// ─── Reveal variants (узгоджена плавна поява без ривків) ───────────────────────
+const groupV = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } } };
+const itemV = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
+};
+
 // ─── Color map ────────────────────────────────────────────────────────────────
 const colorMap = {
   emerald: { active: 'bg-emerald-600 text-white', idle: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500' },
@@ -514,13 +521,13 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
             WHY CHOOSE ME (all screens)
         ═════════════════════════════════════════════════════ */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 0.6 }}
+          variants={groupV}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
           className="py-12 sm:py-16"
         >
-          <div className="mb-8 text-center">
+          <motion.div variants={itemV} className="mb-8 text-center">
             <span className="eyebrow">📋 Переваги роботи</span>
             <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
               Чому обирають мій кабінет
@@ -528,17 +535,14 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
             <p className="mt-2 text-xs text-slate-500">
               Поєднання перевірених міжнародних протоколів та індивідуального плану супроводу
             </p>
-          </div>
+          </motion.div>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {REASONS.map(({ icon: Icon, title, desc }, i) => (
+            {REASONS.map(({ icon: Icon, title, desc }) => (
               <motion.div
                 key={title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-30px' }}
-                transition={{ duration: 0.45, delay: i * 0.07 }}
+                variants={itemV}
                 whileHover={{ y: -4 }}
-                className="glass rounded-3xl p-5 border border-slate-100 shadow-sm transition-all hover:shadow-md hover:shadow-emerald-900/5 bg-white/60"
+                className="lift glass rounded-3xl p-5 border border-slate-100 shadow-sm transition-shadow hover:shadow-md hover:shadow-emerald-900/5 bg-white/60"
               >
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                   <Icon className="h-5 w-5" />

@@ -12,6 +12,25 @@ export function navigate(to: Route) {
   window.location.hash = to === 'home' ? '/' : `/${to}`;
 }
 
+/**
+ * Перехід на сторінку «Послуги» з автопрокруткою до форми запису.
+ * Робить навігацію передбачуваною: кнопка «Записатися» завжди веде до форми.
+ */
+export function goToBooking() {
+  try {
+    sessionStorage.setItem('rps_scroll_book', '1');
+  } catch {
+    /* ignore */
+  }
+  if (parse() === 'services') {
+    // Уже на сторінці — просто прокрутити до форми.
+    const el = document.getElementById('book-section');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else {
+    navigate('services');
+  }
+}
+
 export function useRoute(): Route {
   const [route, setRoute] = useState<Route>(parse);
   useEffect(() => {
