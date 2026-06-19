@@ -54,7 +54,7 @@ const MEMBERS: Member[] = [
 
 const Team: React.FC = () => {
   return (
-    <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
+    <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
       {MEMBERS.map((m, i) => {
         const Icon = m.icon;
         return (
