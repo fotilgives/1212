@@ -245,7 +245,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
       )}
 
       {/* Преміум-сітка послуг — image-forward картки */}
-      <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
         {SERVICES_DATA.map((item, idx) => (
           <motion.button
             key={item.title}
@@ -280,13 +280,13 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             )}
 
             {/* Текст */}
-            <div className="relative z-10 p-4">
-              <h3 className="text-[15px] font-extrabold leading-tight text-white drop-shadow-sm sm:text-base">
+            <div className="relative z-10 p-3 sm:p-4">
+              <h3 className="text-[13px] font-extrabold leading-tight text-white drop-shadow-sm sm:text-base">
                 {item.title}
               </h3>
-              <p className="mt-1.5 line-clamp-2 text-[11px] leading-relaxed text-white/75">{item.short}</p>
-              <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300">
-                Докладніше <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+              <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-white/75 sm:mt-1.5 sm:text-[11px]">{item.short}</p>
+              <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300 sm:mt-3 sm:text-[11px]">
+                Докладніше <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform group-hover:translate-x-1" />
               </span>
             </div>
           </motion.button>
@@ -306,17 +306,17 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
         >
           <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
           <div className="relative">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
-              <CalendarCheck className="h-5 w-5" />
+            <span className="inline-flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+              <CalendarCheck className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
-            <h3 className="mt-5 text-lg font-extrabold leading-tight">Безкоштовна консультація</h3>
-            <p className="mt-2 text-xs leading-relaxed text-emerald-50">
+            <h3 className="mt-3 sm:mt-5 text-[13px] sm:text-lg font-extrabold leading-tight">Безкоштовна консультація</h3>
+            <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs leading-relaxed text-emerald-50">
               Допоможемо розібратися зі станом та скласти покроковий план відновлення.
             </p>
           </div>
-          <div className="relative mt-4 flex items-center justify-between border-t border-white/15 pt-3 text-xs font-bold">
+          <div className="relative mt-3 sm:mt-4 flex items-center justify-between border-t border-white/15 pt-2.5 sm:pt-3 text-[10px] sm:text-xs font-bold">
             <span>Залишити опис стану</span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1" />
           </div>
         </motion.button>
       </div>

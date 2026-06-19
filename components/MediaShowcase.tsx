@@ -171,51 +171,48 @@ const MediaShowcase: React.FC = () => {
         </p>
       </motion.div>
 
-      <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
+      <div className="mt-12 space-y-14 sm:space-y-20">
         {ITEMS.map((item, idx) => {
+          const reverse = idx % 2 === 1;
           return (
             <motion.div
               key={item.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 28 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-20px' }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
-              className="flex flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-slate-100 shadow-xl shadow-slate-200/50"
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12"
             >
               {/* Media */}
-              <div className="p-2 sm:p-3 pb-0">
-                <MediaBlock item={item} />
+              <div className={reverse ? 'lg:order-2' : 'lg:order-1'}>
+                <div className="mx-auto w-full max-w-[300px] sm:max-w-[340px]">
+                  <MediaBlock item={item} />
+                </div>
               </div>
 
               {/* Text */}
-              <div className="flex flex-1 flex-col p-3 sm:p-5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 sm:text-xs">
-                  {item.tag}
-                </span>
-                <h3 className="mt-1.5 text-sm font-extrabold leading-tight text-slate-900 sm:text-lg">
+              <div className={reverse ? 'lg:order-1' : 'lg:order-2'}>
+                <span className="eyebrow">{item.tag}</span>
+                <h3 className="mt-3 text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-[11px] leading-relaxed text-slate-600 line-clamp-3 sm:text-sm sm:line-clamp-4">
-                  {item.desc}
-                </p>
-                <ul className="mt-4 hidden flex-col gap-2 sm:flex">
-                  {item.bullets.slice(0, 2).map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-xs text-slate-700">
-                      <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600">
-                        <Check className="h-2.5 w-2.5" />
+                <p className="mt-3 text-sm leading-relaxed text-slate-600">{item.desc}</p>
+                <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                  {item.bullets.map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-sm text-slate-700">
+                      <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+                        <Check className="h-3 w-3" />
                       </span>
-                      <span className="leading-tight">{b}</span>
+                      {b}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-auto pt-4 sm:pt-5">
-                  <button
-                    onClick={goToBooking}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 sm:py-2.5 sm:text-sm"
-                  >
-                    <CalendarCheck className="h-3.5 w-3.5" /> Записатися
-                  </button>
-                </div>
+                <button
+                  onClick={goToBooking}
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+                >
+                  <CalendarCheck className="h-4 w-4" /> Записатися
+                </button>
               </div>
             </motion.div>
           );
