@@ -1,14 +1,14 @@
 import React from 'react';
 import { Instagram, Send, Phone, MapPin, Heart, Clock } from 'lucide-react';
 import BrandMark from './BrandMark';
-import { goToBooking } from '../hooks/useRoute';
+import { goToBooking, navigate } from '../hooks/useRoute';
 
-const navLinks: { label: string; href: string }[] = [
-  { label: 'Про мене', href: '#/about' },
-  { label: 'Послуги', href: '#/services' },
-  { label: 'Гра', href: '#/game' },
-  { label: 'Призи', href: '#/prizes' },
-  { label: 'Філософія', href: '#/philosophy' },
+const navLinks: { label: string; route: 'about' | 'services' | 'game' | 'prizes' | 'philosophy' | 'prices' | 'location' }[] = [
+  { label: 'Про мене', route: 'about' },
+  { label: 'Послуги', route: 'services' },
+  { label: 'Гра', route: 'game' },
+  { label: 'Призи', route: 'prizes' },
+  { label: 'Філософія', route: 'philosophy' },
 ];
 
 const services = ['Лікувальний масаж', 'Реабілітація', 'Йога та практики', 'Курси й навчання'];
@@ -54,17 +54,30 @@ const Footer: React.FC = () => {
             <h3 className="text-sm font-bold uppercase tracking-wide text-emerald-400">Розділи</h3>
             <ul className="mt-4 space-y-2.5">
               {navLinks.map((l) => (
-                <li key={l.href}>
-                  <a href={l.href} className="text-sm text-slate-300 transition hover:text-emerald-400">
+                <li key={l.route}>
+                  <button
+                    onClick={() => navigate(l.route)}
+                    className="text-sm text-slate-300 transition hover:text-emerald-400 text-left"
+                  >
                     {l.label}
-                  </a>
+                  </button>
                 </li>
               ))}
               <li>
-                <a href="#/prices" className="text-sm text-slate-300 transition hover:text-emerald-400">Ціни</a>
+                <button
+                  onClick={() => navigate('prices')}
+                  className="text-sm text-slate-300 transition hover:text-emerald-400 text-left"
+                >
+                  Ціни
+                </button>
               </li>
               <li>
-                <a href="#/location" className="text-sm text-slate-300 transition hover:text-emerald-400">Як нас знайти</a>
+                <button
+                  onClick={() => navigate('location')}
+                  className="text-sm text-slate-300 transition hover:text-emerald-400 text-left"
+                >
+                  Як нас знайти
+                </button>
               </li>
             </ul>
           </div>
@@ -73,9 +86,18 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wide text-emerald-400">Послуги</h3>
             <ul className="mt-4 space-y-2.5">
-              {services.map((s) => (
-                <li key={s} className="text-sm text-slate-300">{s}</li>
-              ))}
+              <li>
+                <button onClick={() => navigate('services')} className="text-sm text-slate-300 transition hover:text-emerald-400 text-left">Лікувальний масаж</button>
+              </li>
+              <li>
+                <button onClick={() => navigate('services')} className="text-sm text-slate-300 transition hover:text-emerald-400 text-left">Реабілітація</button>
+              </li>
+              <li>
+                <button onClick={() => navigate('services')} className="text-sm text-slate-300 transition hover:text-emerald-400 text-left">Йога та практики</button>
+              </li>
+              <li>
+                <button onClick={() => navigate('services')} className="text-sm text-slate-300 transition hover:text-emerald-400 text-left">Курси й навчання</button>
+              </li>
             </ul>
           </div>
 
