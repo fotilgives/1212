@@ -106,15 +106,15 @@ const itemV = {
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
 };
 
-// ─── Hero entrance (преміум поява блоків зі стаґером) ─────────────────────────
-const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.11, delayChildren: 0.08 } } };
+// ─── Hero entrance (швидка й чиста поява зі стаґером) ─────────────────────────
+const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.02 } } };
 const heroItem = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 };
 const heroPhoto = {
-  hidden: { opacity: 0, y: 30, scale: 0.94 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } },
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
 };
 
 // ─── Color map ────────────────────────────────────────────────────────────────
@@ -246,30 +246,15 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
             variants={heroPhoto}
             className="group relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
           >
-            <motion.div
-              initial={{ scale: 1.12 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-              className="h-full w-full"
-            >
-              <SmartImage
-                src="/images/about.jpg"
-                alt="Володимир Мальцев — масажист-реабілітолог"
-                className="w-full aspect-[4/5] object-cover"
-                fallback={
-                  <div className="flex h-[320px] w-full items-center justify-center bg-slate-100 text-6xl">
-                    👨‍⚕️
-                  </div>
-                }
-              />
-            </motion.div>
-
-            {/* Світловий відблиск, що проходить по фото при появі */}
-            <motion.div
-              initial={{ x: '-130%' }}
-              animate={{ x: '130%' }}
-              transition={{ duration: 1.5, ease: 'easeInOut', delay: 0.9 }}
-              className="pointer-events-none absolute inset-y-0 -left-1/3 z-10 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/35 to-transparent"
+            <SmartImage
+              src="/images/about.jpg"
+              alt="Володимир Мальцев — масажист-реабілітолог"
+              className="w-full aspect-[4/5] object-cover"
+              fallback={
+                <div className="flex h-[320px] w-full items-center justify-center bg-slate-100 text-6xl">
+                  👨‍⚕️
+                </div>
+              }
             />
 
             {/* Availability badge (Top Left) */}
@@ -280,15 +265,11 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
               </span>
             </div>
 
-            {/* Stat pill (Top Right) — плавне «дихання» */}
+            {/* Stat pill (Top Right) */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.6, y: -6 }}
-              animate={{ opacity: 1, scale: 0.85, y: [0, -5, 0] }}
-              transition={{
-                opacity: { delay: 0.7, duration: 0.5 },
-                scale: { delay: 0.7, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                y: { delay: 1.2, duration: 4, repeat: Infinity, ease: 'easeInOut' },
-              }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 0.85 }}
+              transition={{ delay: 0.25, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="absolute -right-1 -top-1 z-20 origin-top-right glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80"
             >
               <div className="text-2xl font-black leading-none text-emerald-600">15+</div>
@@ -418,41 +399,26 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
 
               {/* Photo */}
               <motion.div
-                animate={{ y: [0, -10, 0] }}
+                animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                 className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
               >
-                <motion.div
-                  initial={{ scale: 1.1 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-full w-full"
-                >
-                  <SmartImage
-                    src="/images/about.jpg"
-                    alt="Володимир Мальцев — масажист-реабілітолог"
-                    className="w-full aspect-[3/4] object-cover"
-                    fallback={
-                      <div className="flex h-[400px] w-full items-center justify-center bg-slate-100 text-6xl">
-                        👨‍⚕️
-                      </div>
-                    }
-                  />
-                </motion.div>
-
-                {/* Світловий відблиск при появі */}
-                <motion.div
-                  initial={{ x: '-130%' }}
-                  animate={{ x: '130%' }}
-                  transition={{ duration: 1.6, ease: 'easeInOut', delay: 1 }}
-                  className="pointer-events-none absolute inset-y-0 -left-1/3 z-10 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/35 to-transparent"
+                <SmartImage
+                  src="/images/about.jpg"
+                  alt="Володимир Мальцев — масажист-реабілітолог"
+                  className="w-full aspect-[3/4] object-cover"
+                  fallback={
+                    <div className="flex h-[400px] w-full items-center justify-center bg-slate-100 text-6xl">
+                      👨‍⚕️
+                    </div>
+                  }
                 />
                 {/* Name badge */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
+                    transition={{ delay: 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                     className="glass rounded-2xl px-4 py-3 ring-1 ring-white/70 shadow-lg"
                   >
                     <div className="flex items-center gap-3">
@@ -472,12 +438,12 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
 
               {/* Stat pill (desktop only) — поява + м'яке ширяння */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1, y: [0, -7, 0] }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1, y: [0, -6, 0] }}
                 transition={{
-                  opacity: { delay: 0.65, duration: 0.5 },
-                  scale: { delay: 0.65, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                  y: { delay: 1.1, duration: 5, repeat: Infinity, ease: 'easeInOut' },
+                  opacity: { delay: 0.3, duration: 0.35 },
+                  scale: { delay: 0.3, duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+                  y: { delay: 0.7, duration: 5, repeat: Infinity, ease: 'easeInOut' },
                 }}
                 className="absolute -right-3 -top-3 z-20 glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80"
               >
