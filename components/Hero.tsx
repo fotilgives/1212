@@ -106,17 +106,6 @@ const itemV = {
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
 };
 
-// ─── Hero entrance (одна плавна каскадна поява) ───────────────────────────────
-const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.12 } } };
-const heroItem = {
-  hidden: { opacity: 0, y: 26 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
-};
-const heroPhoto = {
-  hidden: { opacity: 0, y: 26, scale: 0.97 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] } },
-};
-
 // ─── Color map ────────────────────────────────────────────────────────────────
 const colorMap = {
   emerald: { active: 'bg-emerald-600 text-white', idle: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500' },
@@ -233,19 +222,10 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
         {/* ════════════════════════════════════════════════════
             MOBILE layout (hidden on lg+)
         ═════════════════════════════════════════════════════ */}
-        <motion.div
-          variants={heroStagger}
-          initial="hidden"
-          animate="show"
-          className="lg:hidden pt-6 pb-10 space-y-6"
-          style={{ touchAction: 'pan-y' }}
-        >
+        <div className="lg:hidden pt-6 pb-10 space-y-6" style={{ touchAction: 'pan-y' }}>
 
           {/* ── Profile banner card: Large premium portrait (identical to PC style) ── */}
-          <motion.div
-            variants={heroPhoto}
-            className="group relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
-          >
+          <div className="relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80">
             <SmartImage
               src="/images/about.jpg"
               alt="Володимир Мальцев — масажист-реабілітолог"
@@ -266,19 +246,14 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
             </div>
 
             {/* Stat pill (Top Right) */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 0.85 }}
-              transition={{ delay: 0.25, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute -right-1 -top-1 z-20 origin-top-right glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80"
-            >
+            <div className="absolute -right-1 -top-1 z-20 scale-85 origin-top-right glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80">
               <div className="text-2xl font-black leading-none text-emerald-600">15+</div>
               <div className="mt-1 text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">
                 років
                 <br />
                 досвіду
               </div>
-            </motion.div>
+            </div>
 
             {/* Name + Title overlay at bottom (identical to PC card) */}
             <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
@@ -296,19 +271,15 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* ── Stats row ── */}
-          <motion.div variants={heroItem} className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3"
+          >
             {STATS.map((s) => {
               const Icon = s.icon;
               return (
-                <motion.div
-                  key={s.l}
-                  whileHover={{ y: -3 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="card-glow rounded-2xl p-3 text-center ring-1 ring-slate-100 bg-white"
-                >
+                <div key={s.l} className="card-glow rounded-2xl p-3 text-center ring-1 ring-slate-100 bg-white">
                   <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                     <Icon className="h-4 w-4" />
                   </div>
@@ -316,20 +287,20 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                   <div className="mt-1 whitespace-pre-line text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-tight">
                     {s.l}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
-          </motion.div>
+          </div>
 
           {/* ── Bio text ── */}
-          <motion.p variants={heroItem} className="text-sm leading-relaxed text-slate-600">
+          <p className="text-sm leading-relaxed text-slate-600">
             Спеціаліст із фізичної реабілітації з понад{' '}
             <b className="text-slate-800">15 роками практичного досвіду</b>. Допомагаю відновити{' '}
             <b className="text-slate-800">свободу руху та баланс всього тіла</b>, працюючи з першопричиною больового синдрому.
-          </motion.p>
+          </p>
 
           {/* ── Credential badges ── */}
-          <motion.div variants={heroItem} className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {BADGES.map((b) => {
               const Icon = b.icon;
               return (
@@ -342,10 +313,10 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </span>
               );
             })}
-          </motion.div>
+          </div>
 
           {/* ── Expandable cards ── */}
-          <motion.div variants={heroItem} className="space-y-2.5">
+          <div className="space-y-2.5">
             {CARDS.map((card) => (
               <ExpandCard
                 key={card.id}
@@ -354,13 +325,13 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 onToggle={() => toggle(card.id)}
               />
             ))}
-          </motion.div>
+          </div>
 
           {/* ── CTAs ── */}
-          <motion.div variants={heroItem}>
+          <div>
             {CTAs}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
 
         {/* ════════════════════════════════════════════════════
             DESKTOP layout (hidden below lg)
@@ -398,11 +369,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
               />
 
               {/* Photo */}
-              <motion.div
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
-              >
+              <div className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80">
                 <SmartImage
                   src="/images/about.jpg"
                   alt="Володимир Мальцев — масажист-реабілітолог"
@@ -418,7 +385,7 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ delay: 0.5 }}
                     className="glass rounded-2xl px-4 py-3 ring-1 ring-white/70 shadow-lg"
                   >
                     <div className="flex items-center gap-3">
@@ -434,17 +401,13 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                     </div>
                   </motion.div>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Stat pill (desktop only) — поява + м'яке ширяння */}
+              {/* Stat pill (desktop only) */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1, y: [0, -6, 0] }}
-                transition={{
-                  opacity: { delay: 0.3, duration: 0.35 },
-                  scale: { delay: 0.3, duration: 0.35, ease: [0.22, 1, 0.36, 1] },
-                  y: { delay: 0.7, duration: 5, repeat: Infinity, ease: 'easeInOut' },
-                }}
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.65 }}
                 className="absolute -right-3 -top-3 z-20 glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80"
               >
                 <div className="text-2xl font-black leading-none text-emerald-600">15+</div>
