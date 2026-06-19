@@ -24,11 +24,11 @@ function getGuestId(): string {
 }
 
 function initialId(): string {
-  return localStorage.getItem(ACCOUNT_KEY) || getGuestId();
+  return sessionStorage.getItem(ACCOUNT_KEY) || localStorage.getItem(ACCOUNT_KEY) || getGuestId();
 }
 
 function initialNick(): string {
-  return localStorage.getItem(NICK_KEY) || 'Гравець-' + Math.floor(1000 + Math.random() * 9000);
+  return sessionStorage.getItem(NICK_KEY) || localStorage.getItem(NICK_KEY) || 'Гравець-' + Math.floor(1000 + Math.random() * 9000);
 }
 
 export interface Account {
@@ -44,7 +44,7 @@ export interface Account {
   refresh: () => Promise<void>;
   topUp: (amount: number) => Promise<void>;
   donate: (amount: number) => Promise<boolean>;
-  login: (loginStr: string, password: string) => Promise<string | null>;
+  login: (loginStr: string, password: string, remember?: boolean) => Promise<string | null>;
   signup: (loginStr: string, password: string, nick: string) => Promise<string | null>;
   logout: () => void;
   redeem: (reward: string, cost: number) => Promise<string | null>;
@@ -52,7 +52,7 @@ export interface Account {
 
 export function useAccount(): Account {
   const [playerId, setPlayerId] = useState(initialId);
-  const [isAccount, setIsAccount] = useState(() => !!localStorage.getItem(ACCOUNT_KEY));
+  const [isAccount, setIsAccount] = useState(() => !!(sessionStorage.getItem(ACCOUNT_KEY) || localStorage.getItem(ACCOUNT_KEY)));
   const [nickname, setNicknameState] = useState(initialNick);
   const [balance, setBalance] = useState(0);
   const [wins, setWins] = useState(0);
@@ -138,19 +138,26 @@ export function useAccount(): Account {
     [playerId, refresh]
   );
 
-  const applyAccount = (id: string, nick: string) => {
-    localStorage.setItem(ACCOUNT_KEY, id);
-    localStorage.setItem(NICK_KEY, nick);
+  const applyAccount = (id: string, nick: string, remember = true) => {
+    if (remember) {
+      localStorage.setItem(ACCOUNT_KEY, id);
+      localStorage.setItem(NICK_KEY, nick);
+      sessionStorage.removeItem(ACCOUNT_KEY);
+    } else {
+      sessionStorage.setItem(ACCOUNT_KEY, id);
+      sessionStorage.setItem(NICK_KEY, nick);
+      localStorage.removeItem(ACCOUNT_KEY);
+    }
     setNicknameState(nick);
     setIsAccount(true);
     setPlayerId(id); // re-runs the effect -> register + subscribe + refresh
   };
 
-  const login = useCallback(async (loginStr: string, password: string): Promise<string | null> => {
+  const login = useCallback(async (loginStr: string, password: string, remember = true): Promise<string | null> => {
     const { data, error } = await supabase.rpc('rps_login', { p_login: loginStr, p_password: password });
     if (error || !data) return 'Невірний логін або пароль';
     const d = data as { id: string; nickname: string };
-    applyAccount(d.id, d.nickname);
+    applyAccount(d.id, d.nickname, remember);
     return null;
   }, []);
 
@@ -170,6 +177,9 @@ export function useAccount(): Account {
 
   const logout = useCallback(() => {
     localStorage.removeItem(ACCOUNT_KEY);
+    localStorage.removeItem(NICK_KEY);
+    sessionStorage.removeItem(ACCOUNT_KEY);
+    sessionStorage.removeItem(NICK_KEY);
     setIsAccount(false);
     setPlayerId(getGuestId());
   }, []);

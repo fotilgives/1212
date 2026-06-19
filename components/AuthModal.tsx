@@ -14,6 +14,7 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [nick, setNick] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -22,7 +23,7 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
     setErr(null);
     const e =
       mode === 'login'
-        ? await account.login(login, password)
+        ? await account.login(login, password, rememberMe)
         : await account.signup(login, password, nick);
     setBusy(false);
     if (e) setErr(e);
@@ -38,15 +39,15 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="w-full max-w-sm rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
-            initial={{ y: 40, opacity: 0 }}
+            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+            initial={{ scale: 0.95, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
@@ -90,6 +91,18 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
             </div>
+
+            {mode === 'login' && (
+              <label className="mt-3 flex cursor-pointer items-center gap-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded accent-emerald-600"
+                />
+                <span className="text-sm text-slate-600">Запамʼятати мене</span>
+              </label>
+            )}
 
             {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
 

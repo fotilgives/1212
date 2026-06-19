@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Plus, Menu, X, User, HandHeart, Gamepad2, Gift, Brain, Phone, CalendarCheck, Clock, MapPin, Heart } from 'lucide-react';
+import { Coins, Plus, Menu, X, User, HandHeart, Gamepad2, Gift, Brain, Phone, CalendarCheck, Clock, MapPin, Heart, LogIn, LogOut } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
 import BrandMark from './BrandMark';
 import { HoursPill, SCHEDULE_ROWS } from './Hours';
@@ -11,13 +11,15 @@ interface Props {
   balance: number;
   route: Route;
   onExchange: () => void;
+  account: any;
+  onLogin: () => void;
 }
 
-const LINKS: { to: Route; label: string; href: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { to: 'about', label: 'Про мене', href: '#/about', icon: User },
-  { to: 'services', label: 'Послуги', href: '#/services', icon: HandHeart },
-  { to: 'prices', label: 'Ціни', href: '#/prices', icon: Coins },
-  { to: 'game', label: 'Гра', href: '#/game', icon: Gamepad2 },
+const LINKS: { to: Route; label: string; href: string; icon: React.ComponentType<{ className?: string }>; header?: boolean }[] = [
+  { to: 'about', label: 'Про мене', href: '#/about', icon: User, header: true },
+  { to: 'services', label: 'Послуги', href: '#/services', icon: HandHeart, header: true },
+  { to: 'prices', label: 'Ціни', href: '#/prices', icon: Coins, header: true },
+  { to: 'game', label: 'Гра', href: '#/game', icon: Gamepad2, header: true },
   { to: 'prizes', label: 'Призи', href: '#/prizes', icon: Gift },
   { to: 'philosophy', label: 'Філософія', href: '#/philosophy', icon: Brain },
   { to: 'donate', label: 'Підтримати', href: '#/donate', icon: Heart },
@@ -25,7 +27,7 @@ const LINKS: { to: Route; label: string; href: string; icon: React.ComponentType
 
 const PHONE = '+380638069916';
 
-const Navbar: React.FC<Props> = ({ balance, route, onExchange }) => {
+const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin }) => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -66,16 +68,14 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange }) => {
               <BrandMark size={38} />
             </motion.span>
             <span className="leading-tight">
-              <span className="block text-[15px] font-extrabold tracking-tight sm:text-lg">Центр розвитку та здоров'я</span>
-              <span className="hidden text-[11px] font-medium text-slate-400 sm:block">рух · баланс · відновлення</span>
+              <span className="block text-[14px] sm:text-[15px] lg:text-lg font-extrabold tracking-tight">Центр розвитку та здоров'я</span>
+              <span className="block text-[10px] sm:text-[11px] font-medium text-slate-400">рух · баланс · відновлення</span>
             </span>
           </a>
-          {/* Графік роботи — живий статус біля лого (тільки великі екрани) */}
-          <HoursPill className="hidden xl:block" />
         </div>
 
         <nav className="hidden items-center gap-4 text-[13px] font-medium xl:gap-6 lg:flex">
-          {LINKS.map((l) => (
+          {LINKS.filter(l => l.header).map((l) => (
             <a
               key={l.to}
               href={l.href}
@@ -95,20 +95,43 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange }) => {
           </a>
         </nav>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-bold text-amber-600 ring-1 ring-amber-200">
-            <Coins className="h-4 w-4" />
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-white/70 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-600 ring-1 ring-amber-200">
+            <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <AnimatedNumber value={balance} />
           </div>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.94 }}
             onClick={onExchange}
-            className="flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+            className="flex items-center gap-1 rounded-full bg-emerald-600 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Поповнити</span>
           </motion.button>
+          
+          {account.isAccount ? (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => account.logout()}
+              className="hidden items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 sm:flex"
+            >
+              <User className="h-4 w-4" />
+              {account.nickname || 'Кабінет'}
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={onLogin}
+              className="hidden items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-semibold text-emerald-600 ring-1 ring-emerald-200 transition hover:bg-emerald-50 sm:flex"
+            >
+              <LogIn className="h-4 w-4" />
+              Увійти
+            </motion.button>
+          )}
+
           <button
             onClick={() => setOpen((o) => !o)}
             className="grid h-9 w-9 place-items-center rounded-xl bg-white/70 text-slate-600 ring-1 ring-slate-200 lg:hidden"
@@ -217,6 +240,31 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange }) => {
                       </div>
                     ))}
                   </dl>
+                </div>
+
+                {/* Mobile Auth */}
+                <div className="mt-2 pt-2 border-t border-slate-100">
+                  {account.isAccount ? (
+                    <button
+                      onClick={() => { setOpen(false); account.logout(); }}
+                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500">
+                        <LogOut className="h-4.5 w-4.5" />
+                      </span>
+                      Вийти з кабінету
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setOpen(false); onLogin(); }}
+                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold text-emerald-700 transition bg-emerald-50 hover:bg-emerald-100"
+                    >
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white">
+                        <LogIn className="h-4.5 w-4.5" />
+                      </span>
+                      Увійти в кабінет
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.nav>

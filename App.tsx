@@ -27,6 +27,7 @@ import LocationPage from './components/pages/Location';
 import PricesPage from './components/pages/Prices';
 import Support from './components/pages/Support';
 import Legal from './components/pages/Legal';
+import AuthModal from './components/AuthModal';
 
 
 
@@ -34,8 +35,16 @@ const App: React.FC = () => {
   const account = useAccount();
   const route = useRoute();
   const [exchangeOpen, setExchangeOpen] = useState(false);
-  const openExchange = () => setExchangeOpen(true);
+  const [authOpen, setAuthOpen] = useState(false);
   const [thanks, setThanks] = useState<null | 'donate' | 'topup'>(null);
+
+  const openExchange = () => {
+    if (!account.isAccount) {
+      setAuthOpen(true);
+    } else {
+      setExchangeOpen(true);
+    }
+  };
 
   // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return).
   useEffect(() => {
@@ -59,7 +68,7 @@ const App: React.FC = () => {
     <div className="min-h-screen text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       <ScrollProgress />
       <Background />
-      <Navbar balance={account.balance} route={route} onExchange={openExchange} />
+      <Navbar balance={account.balance} route={route} onExchange={openExchange} account={account} onLogin={() => setAuthOpen(true)} />
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -85,7 +94,7 @@ const App: React.FC = () => {
 
           {route === 'game' && (
             <main>
-              <PoolGame account={account} onTopUp={openExchange} />
+              <PoolGame account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />
               <Leaderboard account={account} />
             </main>
           )}
@@ -145,6 +154,7 @@ const App: React.FC = () => {
       <FloatingContact />
       <BackToTop />
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} />
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} account={account} />
     </div>
   );
 };

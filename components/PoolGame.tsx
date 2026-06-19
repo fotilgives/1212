@@ -5,7 +5,6 @@ import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import AnimatedNumber from './AnimatedNumber';
 import Confetti from './Confetti';
-import AuthModal from './AuthModal';
 import { LogIn } from 'lucide-react';
 
 type Move = 'rock' | 'scissors' | 'paper';
@@ -27,9 +26,10 @@ const CIRC = 2 * Math.PI * RING;
 interface Props {
   account: Account;
   onTopUp: () => void;
+  onLogin: () => void;
 }
 
-const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
+const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [round, setRound] = useState<RoundRow | null>(null);
   const [bets, setBets] = useState<BetRow[]>([]);
   const [remaining, setRemaining] = useState(ROUND_SECONDS);
@@ -42,7 +42,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number; isBluff: boolean } | null>(null);
   const [lastWin, setLastWin] = useState<Move | null>(null);
   const [celebrate, setCelebrate] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const [forcing, setForcing] = useState(false);
 
   const forceNext = async () => {
@@ -219,7 +218,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
   const progress = Math.min(1, Math.max(0, remaining / ROUND_SECONDS));
 
   return (
-    <section id="game" className="mx-auto max-w-3xl px-5 py-16">
+    <section id="game" className="mx-auto max-w-3xl px-3 py-10 sm:px-5 sm:py-16">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -230,9 +229,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
         <AnimatePresence>{celebrate && <Confetti />}</AnimatePresence>
 
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 via-teal-400/5 to-transparent px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 via-teal-400/5 to-transparent px-4 py-3 sm:px-6 sm:py-4">
           <div>
-            <h2 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-slate-900">
+            <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
               Онлайн-раунд
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
                 <motion.span
@@ -251,7 +250,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Nickname + account */}
           <div className="mb-2 flex items-center gap-2">
             <input
@@ -269,7 +268,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
               </button>
             ) : (
               <button
-                onClick={() => setAuthOpen(true)}
+                onClick={onLogin}
                 className="flex shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
               >
                 <LogIn className="h-3.5 w-3.5" /> Увійти
@@ -283,17 +282,17 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
           </p>
 
           {/* Timer ring + stats */}
-          <div className="mb-6 flex items-center justify-center gap-6 sm:gap-10">
+          <div className="mb-6 flex items-center justify-center gap-4 sm:gap-10">
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
                 <Users className="h-3.5 w-3.5" /> Гравців
               </div>
-              <div className="mt-1 text-3xl font-extrabold text-slate-900">
+              <div className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl">
                 <AnimatedNumber value={bets.length} />
               </div>
             </div>
 
-            <div className="relative h-28 w-28 shrink-0">
+            <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
               <svg className="h-full w-full -rotate-90" viewBox="0 0 110 110">
                 <circle cx="55" cy="55" r={RING} fill="none" stroke="#e2e8f0" strokeWidth="8" />
                 <motion.circle
@@ -315,7 +314,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   key={remaining}
                   initial={{ scale: low ? 1.3 : 1, opacity: 0.6 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className={`text-3xl font-extrabold tabular-nums ${low ? 'text-rose-500' : 'text-slate-900'}`}
+                  className={`text-2xl font-extrabold tabular-nums sm:text-3xl ${low ? 'text-rose-500' : 'text-slate-900'}`}
                 >
                   {round ? remaining : '…'}
                 </motion.span>
@@ -325,7 +324,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
 
             <div className="text-center">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Банк</div>
-              <div className="mt-1 flex items-center justify-center gap-1 text-3xl font-extrabold text-emerald-600">
+              <div className="mt-1 flex items-center justify-center gap-1 text-2xl font-extrabold text-emerald-600 sm:text-3xl">
                 <AnimatedNumber value={bank} />
               </div>
               <div className="text-[11px] text-slate-400">монет</div>
@@ -366,14 +365,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.06 }}
-                  className={`relative overflow-hidden rounded-2xl border p-4 text-center transition ${
+                  className={`relative overflow-hidden rounded-2xl border p-2.5 text-center transition sm:p-4 ${
                     isMine
                       ? 'border-emerald-400 bg-emerald-50/80 shadow-lg shadow-emerald-200/50'
                       : 'border-slate-200 bg-white/70'
                   }`}
                 >
                   <motion.div
-                    className="text-4xl"
+                    className="text-3xl sm:text-4xl"
                     animate={isMine ? { scale: [1, 1.12, 1] } : {}}
                     transition={{ duration: 1.6, repeat: Infinity }}
                   >
@@ -495,14 +494,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                             setShownMove(MOVES.find((x) => x.id !== m.id)!.id);
                           }
                         }}
-                        className={`flex flex-col items-center gap-1 rounded-2xl border py-4 transition ${
+                        className={`flex flex-col items-center gap-1 rounded-2xl border py-3 transition sm:py-4 ${
                           move === m.id
                             ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
                             : 'border-slate-200 bg-white/70 hover:border-emerald-300'
                         }`}
                       >
-                        <span className="text-3xl">{m.emoji}</span>
-                        <span className="text-sm font-semibold text-slate-700">{m.label}</span>
+                        <span className="text-2xl sm:text-3xl">{m.emoji}</span>
+                        <span className="text-xs font-semibold text-slate-700 sm:text-sm">{m.label}</span>
                       </motion.button>
                     ))}
                   </div>
@@ -522,7 +521,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
                             setShownMove(MOVES.find((m) => m.id !== move)!.id);
                           }
                         }}
-                        className={`flex flex-col items-center gap-1 rounded-2xl border px-10 py-4 transition ${
+                        className={`flex flex-col items-center gap-1 rounded-2xl border w-full py-3 transition sm:py-4 ${
                           !canBluff
                             ? 'cursor-not-allowed border-slate-100 bg-slate-50'
                             : bluff
@@ -634,8 +633,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp }) => {
           </p>
         </div>
       </motion.div>
-
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} account={account} />
     </section>
   );
 };
