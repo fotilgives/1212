@@ -106,6 +106,17 @@ const itemV = {
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
 };
 
+// ─── Hero entrance (преміум поява блоків зі стаґером) ─────────────────────────
+const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.11, delayChildren: 0.08 } } };
+const heroItem = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
+};
+const heroPhoto = {
+  hidden: { opacity: 0, y: 30, scale: 0.94 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] } },
+};
+
 // ─── Color map ────────────────────────────────────────────────────────────────
 const colorMap = {
   emerald: { active: 'bg-emerald-600 text-white', idle: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500' },
@@ -222,19 +233,43 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
         {/* ════════════════════════════════════════════════════
             MOBILE layout (hidden on lg+)
         ═════════════════════════════════════════════════════ */}
-        <div className="lg:hidden pt-6 pb-10 space-y-6" style={{ touchAction: 'pan-y' }}>
+        <motion.div
+          variants={heroStagger}
+          initial="hidden"
+          animate="show"
+          className="lg:hidden pt-6 pb-10 space-y-6"
+          style={{ touchAction: 'pan-y' }}
+        >
 
           {/* ── Profile banner card: Large premium portrait (identical to PC style) ── */}
-          <div className="relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80">
-            <SmartImage
-              src="/images/about.jpg"
-              alt="Володимир Мальцев — масажист-реабілітолог"
-              className="w-full aspect-[4/5] object-cover"
-              fallback={
-                <div className="flex h-[320px] w-full items-center justify-center bg-slate-100 text-6xl">
-                  👨‍⚕️
-                </div>
-              }
+          <motion.div
+            variants={heroPhoto}
+            className="group relative overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
+          >
+            <motion.div
+              initial={{ scale: 1.12 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full w-full"
+            >
+              <SmartImage
+                src="/images/about.jpg"
+                alt="Володимир Мальцев — масажист-реабілітолог"
+                className="w-full aspect-[4/5] object-cover"
+                fallback={
+                  <div className="flex h-[320px] w-full items-center justify-center bg-slate-100 text-6xl">
+                    👨‍⚕️
+                  </div>
+                }
+              />
+            </motion.div>
+
+            {/* Світловий відблиск, що проходить по фото при появі */}
+            <motion.div
+              initial={{ x: '-130%' }}
+              animate={{ x: '130%' }}
+              transition={{ duration: 1.5, ease: 'easeInOut', delay: 0.9 }}
+              className="pointer-events-none absolute inset-y-0 -left-1/3 z-10 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/35 to-transparent"
             />
 
             {/* Availability badge (Top Left) */}
@@ -245,15 +280,24 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
               </span>
             </div>
 
-            {/* Stat pill (Top Right) */}
-            <div className="absolute -right-1 -top-1 z-20 scale-85 origin-top-right glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80">
+            {/* Stat pill (Top Right) — плавне «дихання» */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.6, y: -6 }}
+              animate={{ opacity: 1, scale: 0.85, y: [0, -5, 0] }}
+              transition={{
+                opacity: { delay: 0.7, duration: 0.5 },
+                scale: { delay: 0.7, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                y: { delay: 1.2, duration: 4, repeat: Infinity, ease: 'easeInOut' },
+              }}
+              className="absolute -right-1 -top-1 z-20 origin-top-right glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80"
+            >
               <div className="text-2xl font-black leading-none text-emerald-600">15+</div>
               <div className="mt-1 text-[9px] font-bold uppercase tracking-widest text-slate-400 leading-none">
                 років
                 <br />
                 досвіду
               </div>
-            </div>
+            </motion.div>
 
             {/* Name + Title overlay at bottom (identical to PC card) */}
             <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
@@ -271,15 +315,19 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* ── Stats row ── */}
-          <div className="grid grid-cols-3 gap-3"
-          >
+          <motion.div variants={heroItem} className="grid grid-cols-3 gap-3">
             {STATS.map((s) => {
               const Icon = s.icon;
               return (
-                <div key={s.l} className="card-glow rounded-2xl p-3 text-center ring-1 ring-slate-100 bg-white">
+                <motion.div
+                  key={s.l}
+                  whileHover={{ y: -3 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="card-glow rounded-2xl p-3 text-center ring-1 ring-slate-100 bg-white"
+                >
                   <div className="mx-auto flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                     <Icon className="h-4 w-4" />
                   </div>
@@ -287,20 +335,20 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                   <div className="mt-1 whitespace-pre-line text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-tight">
                     {s.l}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
           {/* ── Bio text ── */}
-          <p className="text-sm leading-relaxed text-slate-600">
+          <motion.p variants={heroItem} className="text-sm leading-relaxed text-slate-600">
             Спеціаліст із фізичної реабілітації з понад{' '}
             <b className="text-slate-800">15 роками практичного досвіду</b>. Допомагаю відновити{' '}
             <b className="text-slate-800">свободу руху та баланс всього тіла</b>, працюючи з першопричиною больового синдрому.
-          </p>
+          </motion.p>
 
           {/* ── Credential badges ── */}
-          <div className="flex flex-wrap gap-2">
+          <motion.div variants={heroItem} className="flex flex-wrap gap-2">
             {BADGES.map((b) => {
               const Icon = b.icon;
               return (
@@ -313,10 +361,10 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 </span>
               );
             })}
-          </div>
+          </motion.div>
 
           {/* ── Expandable cards ── */}
-          <div className="space-y-2.5">
+          <motion.div variants={heroItem} className="space-y-2.5">
             {CARDS.map((card) => (
               <ExpandCard
                 key={card.id}
@@ -325,13 +373,13 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                 onToggle={() => toggle(card.id)}
               />
             ))}
-          </div>
+          </motion.div>
 
           {/* ── CTAs ── */}
-          <div>
+          <motion.div variants={heroItem}>
             {CTAs}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* ════════════════════════════════════════════════════
             DESKTOP layout (hidden below lg)
@@ -369,16 +417,35 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
               />
 
               {/* Photo */}
-              <div className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80">
-                <SmartImage
-                  src="/images/about.jpg"
-                  alt="Володимир Мальцев — масажист-реабілітолог"
-                  className="w-full aspect-[3/4] object-cover"
-                  fallback={
-                    <div className="flex h-[400px] w-full items-center justify-center bg-slate-100 text-6xl">
-                      👨‍⚕️
-                    </div>
-                  }
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-emerald-950/10 ring-1 ring-white/80"
+              >
+                <motion.div
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full w-full"
+                >
+                  <SmartImage
+                    src="/images/about.jpg"
+                    alt="Володимир Мальцев — масажист-реабілітолог"
+                    className="w-full aspect-[3/4] object-cover"
+                    fallback={
+                      <div className="flex h-[400px] w-full items-center justify-center bg-slate-100 text-6xl">
+                        👨‍⚕️
+                      </div>
+                    }
+                  />
+                </motion.div>
+
+                {/* Світловий відблиск при появі */}
+                <motion.div
+                  initial={{ x: '-130%' }}
+                  animate={{ x: '130%' }}
+                  transition={{ duration: 1.6, ease: 'easeInOut', delay: 1 }}
+                  className="pointer-events-none absolute inset-y-0 -left-1/3 z-10 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/35 to-transparent"
                 />
                 {/* Name badge */}
                 <div className="absolute bottom-0 left-0 right-0 z-10 p-4">
@@ -401,13 +468,17 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
                     </div>
                   </motion.div>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Stat pill (desktop only) */}
+              {/* Stat pill (desktop only) — поява + м'яке ширяння */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.65 }}
+                animate={{ opacity: 1, scale: 1, y: [0, -7, 0] }}
+                transition={{
+                  opacity: { delay: 0.65, duration: 0.5 },
+                  scale: { delay: 0.65, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                  y: { delay: 1.1, duration: 5, repeat: Infinity, ease: 'easeInOut' },
+                }}
                 className="absolute -right-3 -top-3 z-20 glass rounded-2xl px-4 py-3 text-center shadow-xl ring-1 ring-white/80"
               >
                 <div className="text-2xl font-black leading-none text-emerald-600">15+</div>
