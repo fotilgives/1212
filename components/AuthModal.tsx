@@ -48,8 +48,8 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
           <motion.div
             className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
             initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 40, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between">
