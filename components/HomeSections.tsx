@@ -68,7 +68,7 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
       >
         <span className="eyebrow">📂 Усе в одному місці</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
-          Послуги, бонуси та філософія
+          Послуги та напрямки
         </h2>
         <p className="mt-2 max-w-xl text-sm text-slate-500">
           Оберіть потрібну послугу, дізнайтеся про бонусну програму або почитайте про мій підхід до
