@@ -169,9 +169,9 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-x-0 top-full z-50 origin-top border-t border-white/50 bg-white/95 backdrop-blur-xl shadow-xl lg:hidden"
+              className="absolute inset-x-0 top-full z-50 origin-top border-t border-white/50 bg-white/95 backdrop-blur-xl shadow-xl lg:hidden max-h-[calc(100dvh-70px)] overflow-y-auto overscroll-contain pb-6"
             >
-              <div className="mx-auto flex max-w-6xl flex-col gap-1.5 px-4 py-4">
+              <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
                 {LINKS.map((l, i) => {
                   const Icon = l.icon;
                   const active = route === l.to;
