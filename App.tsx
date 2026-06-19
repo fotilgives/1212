@@ -35,15 +35,22 @@ const App: React.FC = () => {
   const route = useRoute();
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const openExchange = () => setExchangeOpen(true);
-  const [donateThanks, setDonateThanks] = useState(false);
+  const [thanks, setThanks] = useState<null | 'donate' | 'topup'>(null);
 
-  // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return -> ?donate=thanks).
+  // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('donate') === 'thanks') {
-      setDonateThanks(true);
+    const isDonate = params.get('donate') === 'thanks';
+    const isTopup = params.get('topup') === 'thanks';
+    if (isDonate || isTopup) {
+      setThanks(isTopup ? 'topup' : 'donate');
       window.history.replaceState({}, '', window.location.pathname + (window.location.hash || '#/'));
+      if (isTopup) {
+        // монети нараховує серверний callback; оновлюємо баланс (realtime теж підхопить).
+        setTimeout(() => account.refresh(), 1500);
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -96,14 +103,14 @@ const App: React.FC = () => {
 
       <Footer />
 
-      {/* Подяка за донат */}
+      {/* Подяка після оплати (донат або поповнення монет) */}
       <AnimatePresence>
-        {donateThanks && (
+        {thanks && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setDonateThanks(false)}
+            onClick={() => setThanks(null)}
             className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
           >
             <motion.div
@@ -113,13 +120,19 @@ const App: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl"
             >
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl">❤️</div>
-              <h3 className="mt-4 text-xl font-extrabold text-slate-900">Дякуємо за підтримку!</h3>
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl">
+                {thanks === 'topup' ? '🪙' : '❤️'}
+              </div>
+              <h3 className="mt-4 text-xl font-extrabold text-slate-900">
+                {thanks === 'topup' ? 'Оплату отримано!' : 'Дякуємо за підтримку!'}
+              </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                Ваш внесок отримано. Він допомагає розвивати центр і робити заняття доступнішими.
+                {thanks === 'topup'
+                  ? 'Монети зараховуються на ваш баланс протягом кількох секунд.'
+                  : 'Ваш внесок отримано. Він допомагає розвивати центр і робити заняття доступнішими.'}
               </p>
               <button
-                onClick={() => setDonateThanks(false)}
+                onClick={() => setThanks(null)}
                 className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
               >
                 Чудово

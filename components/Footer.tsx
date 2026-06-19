@@ -145,7 +145,23 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 text-xs text-slate-400 sm:flex-row">
+        {/* Юридичні документи */}
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-white/10 pt-8 text-xs">
+          <button onClick={() => navigate('legal')} className="text-slate-300 transition hover:text-emerald-400">
+            Публічна оферта
+          </button>
+          <button onClick={() => navigate('legal')} className="text-slate-300 transition hover:text-emerald-400">
+            Політика конфіденційності
+          </button>
+          <button onClick={() => navigate('legal')} className="text-slate-300 transition hover:text-emerald-400">
+            Повернення коштів
+          </button>
+          <button onClick={() => navigate('donate')} className="font-semibold text-emerald-400 transition hover:text-emerald-300">
+            Підтримати ❤️
+          </button>
+        </div>
+
+        <div className="mt-6 flex flex-col items-center justify-between gap-4 text-xs text-slate-400 sm:flex-row">
           <p>© {new Date().getFullYear()} Центр розвитку та здоров'я. Усі права захищені.</p>
           <p className="flex items-center gap-1.5">
             Зроблено з <Heart className="h-3.5 w-3.5 text-emerald-500" /> для здоров'я та руху
