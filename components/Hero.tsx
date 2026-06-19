@@ -106,15 +106,15 @@ const itemV = {
   show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] } },
 };
 
-// ─── Hero entrance (швидка й чиста поява зі стаґером) ─────────────────────────
-const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.02 } } };
+// ─── Hero entrance (одна плавна каскадна поява) ───────────────────────────────
+const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.12 } } };
 const heroItem = {
-  hidden: { opacity: 0, y: 14 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 26 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
 };
 const heroPhoto = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 26, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] } },
 };
 
 // ─── Color map ────────────────────────────────────────────────────────────────
