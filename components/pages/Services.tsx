@@ -414,39 +414,46 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
               onClick={(e) => e.stopPropagation()}
               className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-slate-100 md:flex-row"
             >
-              {/* Медіа-колонка — відео грається автоматично, інакше фото */}
-              <div className="relative w-full shrink-0 bg-slate-900 md:w-[42%]">
-                {selectedService.video ? (
-                  <video
-                    key={selectedService.video}
-                    src={selectedService.video}
-                    poster={selectedService.poster || selectedService.image}
-                    className="h-60 w-full object-cover sm:h-72 md:h-full"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    controls
-                    preload="metadata"
-                  />
-                ) : (
-                  <SmartImage
-                    src={selectedService.poster || selectedService.image}
-                    alt={selectedService.title}
-                    className="h-60 w-full object-cover sm:h-72 md:h-full"
-                    fallback={
-                      <div className="flex h-60 w-full items-center justify-center bg-slate-100 text-slate-400 md:h-full">
-                        📷
-                      </div>
-                    }
-                  />
-                )}
-                <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 shadow-sm backdrop-blur">
+              {/* Медіа-колонка — медіа показується ПОВНІСТЮ (object-contain),
+                  а простір довкола заповнює розмитий фон. Нічого не обрізається. */}
+              <div className="relative w-full shrink-0 overflow-hidden bg-slate-950 md:w-[44%]">
+                {/* Розмитий фон із того ж кадру */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 scale-125 bg-cover bg-center opacity-40 blur-2xl"
+                  style={{ backgroundImage: `url(${selectedService.poster || selectedService.image})` }}
+                />
+                <div className="relative h-[46vh] w-full sm:h-[52vh] md:h-full md:min-h-[440px]">
+                  {selectedService.video ? (
+                    <video
+                      key={selectedService.video}
+                      src={selectedService.video}
+                      poster={selectedService.poster || selectedService.image}
+                      className="absolute inset-0 h-full w-full object-contain"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      preload="metadata"
+                    />
+                  ) : (
+                    <SmartImage
+                      src={selectedService.poster || selectedService.image}
+                      alt={selectedService.title}
+                      className="absolute inset-0 h-full w-full object-contain"
+                      fallback={
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">📷</div>
+                      }
+                    />
+                  )}
+                </div>
+                <span className="absolute left-3 top-3 z-10 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 shadow-sm backdrop-blur">
                   {CAT[selectedService.title] || 'Послуга'}
                 </span>
                 <button
                   onClick={() => setSelectedService(null)}
-                  className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-slate-950/50 text-white backdrop-blur transition hover:bg-slate-950/75 md:hidden"
+                  className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-slate-950/50 text-white backdrop-blur transition hover:bg-slate-950/75 md:hidden"
                   aria-label="Закрити"
                 >
                   <X className="h-5 w-5" />
