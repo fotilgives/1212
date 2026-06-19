@@ -11,6 +11,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -22,6 +23,9 @@ body {
   /* Плавніший момент-скрол на iOS і без зайвого «відскоку», що збиває анімації */
   overscroll-behavior-y: none;
   -webkit-overflow-scrolling: touch;
+  /* Прибираємо горизонтальний скрол/глюк на мобільних */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* Прибираємо сіре підсвічування при тапі — відчуття «нативного» застосунку */

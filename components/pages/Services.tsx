@@ -292,7 +292,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
           </motion.button>
         ))}
 
-        {/* Картка консультації */}
+        {/* Картка консультації — на всю ширину */}
         <motion.button
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -302,21 +302,21 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             const el = document.getElementById('consultation-section') || document.getElementById('book-section');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }}
-          className="group relative flex aspect-[3/4] flex-col justify-between overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-600 p-5 text-left text-white shadow-md shadow-emerald-200/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+          className="group col-span-2 lg:col-span-1 relative flex flex-row items-center gap-4 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-600 p-5 text-left text-white shadow-md shadow-emerald-200/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl lg:flex-col lg:aspect-[3/4] lg:justify-between lg:gap-0"
         >
           <div className="pointer-events-none absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-          <div className="relative">
-            <span className="inline-flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
-              <CalendarCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-            </span>
-            <h3 className="mt-3 sm:mt-5 text-[13px] sm:text-lg font-extrabold leading-tight">Безкоштовна консультація</h3>
-            <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs leading-relaxed text-emerald-50">
+          <span className="relative inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20 lg:h-11 lg:w-11">
+            <CalendarCheck className="h-5 w-5" />
+          </span>
+          <div className="relative flex-1">
+            <h3 className="text-sm font-extrabold leading-tight sm:text-lg">Безкоштовна консультація</h3>
+            <p className="mt-1 text-[11px] leading-relaxed text-emerald-50 sm:text-xs">
               Допоможемо розібратися зі станом та скласти покроковий план відновлення.
             </p>
-          </div>
-          <div className="relative mt-3 sm:mt-4 flex items-center justify-between border-t border-white/15 pt-2.5 sm:pt-3 text-[10px] sm:text-xs font-bold">
-            <span>Залишити опис стану</span>
-            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 transition-transform group-hover:translate-x-1" />
+            <div className="mt-2 flex items-center gap-1 text-[11px] font-bold sm:text-xs">
+              <span>Залишити опис стану</span>
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+            </div>
           </div>
         </motion.button>
       </div>

@@ -43,7 +43,7 @@ const MEMBERS: Member[] = [
 
 const Team: React.FC = () => {
   return (
-    <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
+    <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 [&>*:last-child:nth-child(odd)]:col-span-2 [&>*:last-child:nth-child(odd)]:mx-auto [&>*:last-child:nth-child(odd)]:w-1/2 lg:[&>*:last-child:nth-child(odd)]:col-span-1 lg:[&>*:last-child:nth-child(odd)]:w-full">
       {MEMBERS.map((m, i) => {
         const Icon = m.icon;
         return (
