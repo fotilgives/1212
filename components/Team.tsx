@@ -76,12 +76,10 @@ const Team: React.FC = () => {
               <span className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl bg-white/85 text-emerald-600 shadow-sm backdrop-blur">
                 <Icon className="h-4.5 w-4.5" />
               </span>
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent p-3 pt-10 sm:p-4">
-                <h3 className="text-sm font-extrabold leading-tight text-white sm:text-base">{m.name}</h3>
-                <p className="text-[10px] font-semibold text-emerald-200 sm:text-xs">{m.role}</p>
-              </div>
             </div>
             <div className="p-3 sm:p-5">
+              <h3 className="text-base font-extrabold text-slate-900 sm:text-lg">{m.name}</h3>
+              <p className="mb-3 text-xs font-semibold text-emerald-600 sm:text-sm">{m.role}</p>
               <p className="text-[11px] leading-relaxed text-slate-600 sm:text-sm line-clamp-4 sm:line-clamp-none">{m.desc}</p>
               <div className="mt-3 sm:mt-4 flex flex-wrap gap-1.5">
                 {m.tags.map((t) => (
