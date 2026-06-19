@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Plus, Menu, X, User, HandHeart, Gamepad2, Gift, Brain, Phone, CalendarCheck, Clock, MapPin } from 'lucide-react';
+import { Coins, Plus, Menu, X, User, HandHeart, Gamepad2, Gift, Brain, Phone, CalendarCheck, Clock, MapPin, Heart } from 'lucide-react';
 import AnimatedNumber from './AnimatedNumber';
 import BrandMark from './BrandMark';
 import { HoursPill, SCHEDULE_ROWS } from './Hours';
@@ -20,6 +20,7 @@ const LINKS: { to: Route; label: string; href: string; icon: React.ComponentType
   { to: 'game', label: 'Гра', href: '#/game', icon: Gamepad2 },
   { to: 'prizes', label: 'Призи', href: '#/prizes', icon: Gift },
   { to: 'philosophy', label: 'Філософія', href: '#/philosophy', icon: Brain },
+  { to: 'donate', label: 'Підтримати', href: '#/donate', icon: Heart },
 ];
 
 const PHONE = '+380638069916';

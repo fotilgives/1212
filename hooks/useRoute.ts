@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
 
-export type Route = 'home' | 'game' | 'about' | 'services' | 'prizes' | 'philosophy' | 'prices' | 'location';
+export type Route =
+  | 'home'
+  | 'game'
+  | 'about'
+  | 'services'
+  | 'prizes'
+  | 'philosophy'
+  | 'prices'
+  | 'location'
+  | 'donate'
+  | 'legal';
+
+const ROUTES: Route[] = ['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location', 'donate', 'legal'];
 
 const parse = (): Route => {
   const h = window.location.hash.replace(/^#\/?/, '');
   const r = h.split('?')[0] as Route;
-  return (['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location'].includes(r) ? r : 'home') as Route;
+  return (ROUTES.includes(r) ? r : 'home') as Route;
 };
 
 export function navigate(to: Route) {

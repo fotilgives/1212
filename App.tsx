@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -25,6 +25,8 @@ import { useRoute, navigate } from './hooks/useRoute';
 
 import LocationPage from './components/pages/Location';
 import PricesPage from './components/pages/Prices';
+import Support from './components/pages/Support';
+import Legal from './components/pages/Legal';
 
 
 
@@ -33,6 +35,16 @@ const App: React.FC = () => {
   const route = useRoute();
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const openExchange = () => setExchangeOpen(true);
+  const [donateThanks, setDonateThanks] = useState(false);
+
+  // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return -> ?donate=thanks).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('donate') === 'thanks') {
+      setDonateThanks(true);
+      window.history.replaceState({}, '', window.location.pathname + (window.location.hash || '#/'));
+    }
+  }, []);
 
 
 
@@ -77,10 +89,45 @@ const App: React.FC = () => {
           {route === 'philosophy' && <Philosophy />}
           {route === 'prices' && <PricesPage />}
           {route === 'location' && <LocationPage />}
+          {route === 'donate' && <Support />}
+          {route === 'legal' && <Legal />}
         </motion.div>
       </AnimatePresence>
 
       <Footer />
+
+      {/* Подяка за донат */}
+      <AnimatePresence>
+        {donateThanks && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDonateThanks(false)}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 16 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl"
+            >
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl">❤️</div>
+              <h3 className="mt-4 text-xl font-extrabold text-slate-900">Дякуємо за підтримку!</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                Ваш внесок отримано. Він допомагає розвивати центр і робити заняття доступнішими.
+              </p>
+              <button
+                onClick={() => setDonateThanks(false)}
+                className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+              >
+                Чудово
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <FloatingContact />
       <BackToTop />

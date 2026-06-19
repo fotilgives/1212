@@ -54,7 +54,7 @@ const MEMBERS: Member[] = [
 
 const Team: React.FC = () => {
   return (
-    <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
+    <div className="mt-10 grid grid-cols-1 items-start gap-5 sm:grid-cols-2 sm:gap-6">
       {MEMBERS.map((m, i) => {
         const Icon = m.icon;
         return (
@@ -66,30 +66,22 @@ const Team: React.FC = () => {
             transition={{ duration: 0.5, delay: i * 0.08 }}
             className="group overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-lg hover:shadow-emerald-900/5"
           >
-            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
+            {/* Фото показуємо повністю — на ньому вже є вся інформація про спеціаліста */}
+            <div className="relative overflow-hidden bg-slate-100">
               <img
                 src={m.image}
-                alt={m.name}
+                alt={`${m.name} — ${m.role}`}
                 loading="lazy"
-                className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${m.objectPos || 'object-center'}`}
+                className="h-auto w-full object-contain transition-transform duration-500 group-hover:scale-[1.02]"
               />
               <span className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl bg-white/85 text-emerald-600 shadow-sm backdrop-blur">
                 <Icon className="h-4.5 w-4.5" />
               </span>
             </div>
-            <div className="p-3 sm:p-5">
-              <h3 className="text-base font-extrabold text-slate-900 sm:text-lg">{m.name}</h3>
-              <p className="mb-3 text-xs font-semibold text-emerald-600 sm:text-sm">{m.role}</p>
-              <p className="text-[11px] leading-relaxed text-slate-600 sm:text-sm line-clamp-4 sm:line-clamp-none">{m.desc}</p>
-              <div className="mt-3 sm:mt-4 flex flex-wrap gap-1.5">
-                {m.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full bg-emerald-50 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100"
-                  >
-                    {t}
-                  </span>
-                ))}
+            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4">
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-extrabold text-slate-900 sm:text-lg">{m.name}</h3>
+                <p className="truncate text-xs font-semibold text-emerald-600 sm:text-sm">{m.role}</p>
               </div>
             </div>
           </motion.div>

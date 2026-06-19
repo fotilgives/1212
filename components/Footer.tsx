@@ -3,12 +3,12 @@ import { Instagram, Send, Phone, MapPin, Heart, Clock } from 'lucide-react';
 import BrandMark from './BrandMark';
 import { goToBooking, navigate } from '../hooks/useRoute';
 
-const navLinks: { label: string; route: 'about' | 'services' | 'game' | 'prizes' | 'philosophy' | 'prices' | 'location' }[] = [
+const navLinks: { label: string; route: 'about' | 'services' | 'game' | 'prizes' | 'philosophy' | 'prices' | 'location' | 'donate' | 'legal' }[] = [
   { label: 'Про мене', route: 'about' },
   { label: 'Послуги', route: 'services' },
-  { label: 'Гра', route: 'game' },
-  { label: 'Призи', route: 'prizes' },
-  { label: 'Філософія', route: 'philosophy' },
+  { label: 'Ціни', route: 'prices' },
+  { label: 'Підтримати ❤️', route: 'donate' },
+  { label: 'Документи', route: 'legal' },
 ];
 
 const services = ['Лікувальний масаж', 'Реабілітація', 'Йога та практики', 'Курси й навчання'];
