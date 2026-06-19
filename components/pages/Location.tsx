@@ -29,9 +29,9 @@ const Location: React.FC = () => {
             <MapPin className="h-6 w-6 text-emerald-600" /> Центр розвитку та здоров'я
           </h3>
           <p className="mt-4 text-base leading-relaxed text-slate-600">
-            м. Вінниця, Україна
+            вулиця Шевченка, 44, Вінниця
             <br />
-            (точну адресу повідомимо при записі)
+            Вінницька область, Україна, 21000
           </p>
           
           <div className="mt-6 rounded-2xl bg-emerald-50/70 p-4 ring-1 ring-emerald-100">

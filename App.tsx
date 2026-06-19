@@ -54,12 +54,12 @@ const App: React.FC = () => {
             <main>
               <Hero onPlay={() => navigate('game')} onExchange={openExchange} />
               <HowItWorks />
-              <RehabDetails />
               <HomeSections account={account} onExchange={openExchange} />
               <MediaShowcase />
               <section className="mx-auto max-w-5xl px-5 pb-4">
                 <PriceList />
               </section>
+              <RehabDetails />
               <FinalCTA />
             </main>
           )}
