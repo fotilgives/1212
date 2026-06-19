@@ -1,0 +1,93 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { HandHeart, MessageCircle, Heart } from 'lucide-react';
+
+interface Member {
+  name: string;
+  role: string;
+  desc: string;
+  image: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tags: string[];
+  /** Точка фокуса фото при обрізанні (object-position). */
+  objectPos?: string;
+}
+
+const MEMBERS: Member[] = [
+  {
+    name: 'Володимир Мальцев',
+    role: 'Масажист-реабілітолог',
+    image: '/images/team_vlad.jpg',
+    icon: HandHeart,
+    objectPos: 'object-top',
+    desc: 'Понад 15 років практики. Лікувальний і тайський масаж, фізична реабілітація, йога та авторські тілесні практики для відновлення руху й балансу.',
+    tags: ['Масаж', 'Реабілітація', 'Йога'],
+  },
+  {
+    name: 'Логопед-дефектолог',
+    role: 'Дитячий логопед',
+    image: '/images/team_logoped.jpg',
+    icon: MessageCircle,
+    desc: 'Розвиток мовлення, корекція звуковимови та підготовка до школи у м’якій ігровій формі. Заняття будуються індивідуально під кожну дитину, у співпраці з батьками.',
+    tags: ['Звуковимова', 'Розвиток мовлення', 'Підготовка до школи'],
+  },
+  {
+    name: 'Дитячий психолог',
+    role: 'Психолог для дітей',
+    image: '/images/psychology.jpg',
+    icon: Heart,
+    desc: 'М’яка підтримка дитини через ігрову терапію, творчі практики та роботу з емоціями — у безпечному просторі, де дитину чують, розуміють і підтримують.',
+    tags: ['Ігрова терапія', 'Емоції', 'Адаптація'],
+  },
+];
+
+const Team: React.FC = () => {
+  return (
+    <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {MEMBERS.map((m, i) => {
+        const Icon = m.icon;
+        return (
+          <motion.div
+            key={m.name}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-40px' }}
+            transition={{ duration: 0.5, delay: i * 0.08 }}
+            className="group overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-lg hover:shadow-emerald-900/5"
+          >
+            <div className="relative aspect-[4/5] overflow-hidden bg-slate-100">
+              <img
+                src={m.image}
+                alt={m.name}
+                loading="lazy"
+                className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${m.objectPos || 'object-center'}`}
+              />
+              <span className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-xl bg-white/85 text-emerald-600 shadow-sm backdrop-blur">
+                <Icon className="h-4.5 w-4.5" />
+              </span>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/70 to-transparent p-4 pt-10">
+                <h3 className="text-base font-extrabold leading-tight text-white">{m.name}</h3>
+                <p className="text-xs font-semibold text-emerald-200">{m.role}</p>
+              </div>
+            </div>
+            <div className="p-5">
+              <p className="text-sm leading-relaxed text-slate-600">{m.desc}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {m.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+export default Team;

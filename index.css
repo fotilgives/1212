@@ -1,0 +1,338 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Плавніший момент-скрол на iOS і без зайвого «відскоку», що збиває анімації */
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Прибираємо сіре підсвічування при тапі — відчуття «нативного» застосунку */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Універсальний м'який перехід для інтерактивних елементів */
+a,
+button {
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Преміум-ховер: легке підняття картки */
+.lift {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Анімований градієнтний текст */
+.text-gradient {
+  background: linear-gradient(100deg, #059669, #14b8a6, #0ea5e9, #059669);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 6s linear infinite;
+}
+
+@keyframes gradient-pan {
+  to {
+    background-position: 250% center;
+  }
+}
+
+/* Скляні картки */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+@media (max-width: 1024px) {
+  .glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* Сітка-крапки на фоні (плавно зникає до країв) */
+.bg-grid {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.10) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 35%, transparent 78%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 35%, transparent 78%);
+}
+
+/* Преміум-картка: скло + м'яке світіння */
+.card-glow {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 20px 50px -24px rgba(16, 100, 70, 0.28);
+}
+@media (max-width: 1024px) {
+  .card-glow {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* Маленький лейбл-акцент над заголовками секцій */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.18);
+}
+
+/* Блиск на кнопці */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+.shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: shine-sweep 3.5s ease-in-out infinite;
+}
+@keyframes shine-sweep {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* Менше руху -> вимикаємо важкі/нескінченні анімації для плавності та доступності */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+/* ─── Animated Background ─────────────────────────────────────────────────── */
+@keyframes bg-scroll-anim {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+.bg-scroll-desktop {
+  background-size: 130% 130%;
+  animation: bg-scroll-anim 40s ease-in-out infinite;
+  will-change: background-position;
+}
+
+.bg-scroll-mobile {
+  background-size: 200% 200%;
+  animation: bg-scroll-anim 55s ease-in-out infinite;
+  will-change: background-position;
+}
+
+/* ─── Hero Section ────────────────────────────────────────────────────────── */
+.hero-section {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+}
+
+/* Background layers */
+.hero-bg-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  background: linear-gradient(135deg, #f0fdf4 0%, rgba(240,253,250,0.6) 40%, rgba(240,249,255,0.5) 100%);
+}
+.hero-bg-grid {
+  position: absolute;
+  inset: 0;
+  z-index: -9;
+  background-image: radial-gradient(rgba(16, 185, 129, 0.09) 1px, transparent 1px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse at 40% 50%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse at 40% 50%, #000 30%, transparent 75%);
+}
+.hero-glow-left {
+  position: absolute;
+  inset: 0;
+  left: 5%;
+  top: 20%;
+  z-index: -8;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+.hero-glow-right {
+  position: absolute;
+  right: 5%;
+  bottom: 15%;
+  z-index: -8;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20,184,166,0.14) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+/* Grid layout: stacked on mobile, 2-col on large screens */
+.hero-grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 4rem;
+  }
+}
+
+/* Photo column */
+.hero-photo-col {
+  position: relative;
+  margin: 0 auto;
+  max-width: 22rem;
+  width: 100%;
+}
+@media (min-width: 1024px) {
+  .hero-photo-col {
+    max-width: none;
+    margin: 0;
+  }
+}
+
+/* Glow ring behind photo */
+.hero-photo-glow {
+  position: absolute;
+  inset: -1.5rem;
+  border-radius: 2.5rem;
+  background: linear-gradient(135deg, rgba(52,211,153,0.35) 0%, rgba(20,184,166,0.25) 50%, rgba(56,189,248,0.18) 100%);
+  filter: blur(28px);
+  z-index: 0;
+}
+
+/* Photo card wrapper */
+.hero-photo-card {
+  position: relative;
+  z-index: 1;
+  border-radius: 1.75rem;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(5, 150, 105, 0.22), 0 0 0 1px rgba(255,255,255,0.7);
+}
+
+/* Name badge overlaid at photo bottom */
+.hero-photo-badge {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
+}
+
+/* Floating "15+ років" pill top-right of photo */
+.hero-stat-pill {
+  display: none;
+  position: absolute;
+  top: -1rem;
+  right: -1.25rem;
+  z-index: 20;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-radius: 1rem;
+  padding: 0.6rem 0.85rem;
+  box-shadow: 0 8px 24px rgba(5,150,105,0.15), 0 0 0 1px rgba(255,255,255,0.7);
+  text-align: center;
+}
+@media (min-width: 1024px) {
+  .hero-stat-pill {
+    display: block;
+  }
+}
+
+/* Stat cards in the info column */
+.hero-stat-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.65) inset, 0 14px 36px -16px rgba(5,100,60,0.2);
+  border-radius: 1rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.6);
+}
+
+/* Main hero headline */
+.hero-headline {
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+/* Performant CSS Ticker */
+.ticker-container {
+  display: flex;
+  width: max-content;
+  animation: ticker-slide 20s linear infinite;
+  will-change: transform;
+}
+@keyframes ticker-slide {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+
