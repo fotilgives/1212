@@ -65,11 +65,12 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
+    <div className="flex min-h-screen flex-col overflow-x-hidden text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       <ScrollProgress />
       <Background />
       <Navbar balance={account.balance} route={route} onExchange={openExchange} account={account} onLogin={() => setAuthOpen(true)} />
 
+      <div className="flex-1">
       <AnimatePresence mode="wait">
         <motion.div
           key={route}
@@ -109,6 +110,7 @@ const App: React.FC = () => {
           {route === 'legal' && <Legal />}
         </motion.div>
       </AnimatePresence>
+      </div>
 
       <Footer />
 

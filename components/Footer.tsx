@@ -65,14 +65,6 @@ const Footer: React.FC = () => {
               ))}
               <li>
                 <button
-                  onClick={() => navigate('prices')}
-                  className="text-sm text-slate-300 transition hover:text-emerald-400 text-left"
-                >
-                  Ціни
-                </button>
-              </li>
-              <li>
-                <button
                   onClick={() => navigate('location')}
                   className="text-sm text-slate-300 transition hover:text-emerald-400 text-left"
                 >
