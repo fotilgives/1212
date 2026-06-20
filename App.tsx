@@ -88,7 +88,7 @@ const App: React.FC = () => {
               <HomeSections account={account} onExchange={openExchange} />
               <MediaShowcase />
               <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-5">
-                <YogaCourseCard />
+                <YogaCourseCard account={account} />
                 <PriceList />
               </section>
               <RehabDetails />
@@ -107,7 +107,7 @@ const App: React.FC = () => {
           {route === 'services' && <Services />}
           {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} />}
           {route === 'philosophy' && <Philosophy />}
-          {route === 'prices' && <PricesPage />}
+          {route === 'prices' && <PricesPage account={account} />}
           {route === 'location' && <LocationPage />}
           {route === 'donate' && <Support />}
           {route === 'legal' && <Legal />}

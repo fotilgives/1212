@@ -2,8 +2,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import PriceList from '../PriceList';
 import YogaCourseCard from '../YogaCourseCard';
+import type { Account } from '../../hooks/useAccount';
 
-const Prices: React.FC = () => {
+const Prices: React.FC<{ account: Account }> = ({ account }) => {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-5 md:py-20">
       <motion.div
@@ -19,7 +20,7 @@ const Prices: React.FC = () => {
         </p>
       </motion.div>
 
-      <YogaCourseCard />
+      <YogaCourseCard account={account} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

@@ -16,7 +16,9 @@ export default async function handler(req, res) {
   }
 
   if (to === 'course') {
-    res.writeHead(302, { Location: '/?course=thanks' });
+    // Після оплати курсу грошима ведемо людину одразу в Telegram-бот курсу,
+    // який видає доступ/відео (бот сам звіряє оплату).
+    res.writeHead(302, { Location: 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot' });
     res.end();
     return;
   }
