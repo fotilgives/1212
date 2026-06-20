@@ -12,73 +12,87 @@ async function rpc(fn, args = {}) {
     },
     body: JSON.stringify(args),
   });
-  if (!r.ok) throw new Error(`rpc ${fn}: ${await r.text()}`);
-  return r.json();
+  const text = await r.text();
+  if (!r.ok) throw new Error(`rpc ${fn}: ${text}`);
+  try { return JSON.parse(text); } catch { return text; }
 }
 
+const s = (v) => (v == null ? '' : String(v));
+
 export default async function handler(req, res) {
+  const time = Math.floor(Date.now() / 1000);
+  let orderReference = '';
+
   try {
     let body = req.body;
-    const contentType = (req.headers['content-type'] || '').toLowerCase();
+    const ct = (req.headers['content-type'] || '').toLowerCase();
 
     if (typeof body === 'string') {
-      if (contentType.includes('application/x-www-form-urlencoded')) {
+      if (ct.includes('urlencoded')) {
         body = Object.fromEntries(new URLSearchParams(body));
       } else {
         try { body = JSON.parse(body); } catch { body = {}; }
       }
-    } else if (body && typeof body === 'object' && contentType.includes('application/x-www-form-urlencoded')) {
-      // Vercel may already parse it into an object
     }
     body = body || {};
-
-    console.log('[wfp-cb] content-type:', contentType);
-    console.log('[wfp-cb] body keys:', Object.keys(body).join(','));
-    console.log('[wfp-cb] transactionStatus:', body.transactionStatus, 'orderReference:', body.orderReference);
+    orderReference = s(body.orderReference);
 
     const {
-      merchantAccount, orderReference, amount, currency,
+      merchantAccount, amount, currency,
       authCode, cardPan, transactionStatus, reasonCode, merchantSignature,
     } = body;
 
+    // Build signature string — convert ALL fields to string (undefined → '')
     const inSigStr = [
-      merchantAccount, orderReference, amount, currency,
-      authCode, cardPan, transactionStatus, reasonCode,
+      s(merchantAccount), orderReference, s(amount), s(currency),
+      s(authCode), s(cardPan), s(transactionStatus), s(reasonCode),
     ].join(';');
 
-    const expected = await rpc('wfp_sign', { p_data: inSigStr });
-    const valid = expected && expected === merchantSignature;
+    console.log('[wfp-cb] ct:', ct, 'status:', s(transactionStatus), 'ref:', orderReference);
+    console.log('[wfp-cb] sigStr:', inSigStr);
 
-    console.log('[wfp-cb] sigValid:', valid, 'expected:', expected, 'got:', merchantSignature);
-
-    if (valid && transactionStatus === 'Approved') {
-      const parts    = String(orderReference || '').split('_');
-      const playerId = parts[1];
-      const coins    = parseInt(parts[2], 10);
-      console.log('[wfp-cb] crediting playerId:', playerId, 'coins:', coins);
-      if (playerId && Number.isFinite(coins) && coins > 0) {
-        await rpc('rps_topup', { p_id: playerId, p_nick: 'Гравець', p_amount: coins });
-        console.log('[wfp-cb] topup done');
-      } else {
-        console.log('[wfp-cb] skip topup - invalid playerId or coins');
-      }
-    } else {
-      console.log('[wfp-cb] skip topup - valid:', valid, 'status:', transactionStatus);
+    let sigValid = false;
+    try {
+      const expected = await rpc('wfp_sign', { p_data: inSigStr });
+      sigValid = !!expected && expected === merchantSignature;
+      console.log('[wfp-cb] sigValid:', sigValid, 'expected:', expected, 'received:', merchantSignature);
+    } catch (sigErr) {
+      console.error('[wfp-cb] wfp_sign error:', sigErr.message);
     }
 
-    const merchant = await rpc('wfp_merchant');
-    const time     = Math.floor(Date.now() / 1000);
-    const signature = await rpc('wfp_sign', {
-      p_data: [merchant || merchantAccount, orderReference, 'accept', String(time)].join(';'),
-    });
+    if (sigValid && s(transactionStatus) === 'Approved') {
+      const parts    = orderReference.split('_');
+      const playerId = parts[1];
+      const coins    = parseInt(parts[2], 10);
+      console.log('[wfp-cb] crediting player:', playerId, 'coins:', coins);
+      if (playerId && Number.isFinite(coins) && coins > 0) {
+        try {
+          await rpc('rps_topup', { p_id: playerId, p_nick: 'Гравець', p_amount: coins });
+          console.log('[wfp-cb] topup OK');
+        } catch (topupErr) {
+          console.error('[wfp-cb] topup error:', topupErr.message);
+        }
+      } else {
+        console.log('[wfp-cb] bad playerId/coins — skip');
+      }
+    } else {
+      console.log('[wfp-cb] not crediting — sigValid:', sigValid, 'status:', s(transactionStatus));
+    }
 
-    return res.status(200).json({ orderReference: orderReference || '', status: 'accept', time, signature: signature || '' });
+    // Build accept response signature
+    let respSig = '';
+    try {
+      const merchant = await rpc('wfp_merchant');
+      respSig = await rpc('wfp_sign', {
+        p_data: [s(merchant) || s(merchantAccount), orderReference, 'accept', String(time)].join(';'),
+      });
+    } catch (e) {
+      console.error('[wfp-cb] respSig error:', e.message);
+    }
+
+    return res.status(200).json({ orderReference, status: 'accept', time, signature: respSig || '' });
   } catch (err) {
-    return res.status(200).json({
-      orderReference: (req.body || {}).orderReference || '',
-      status: 'accept',
-      time:   Math.floor(Date.now() / 1000),
-      signature: '',
-    });
+    console.error('[wfp-cb] FATAL:', err.message);
+    return res.status(200).json({ orderReference, status: 'accept', time, signature: '' });
   }
 }
