@@ -99,6 +99,34 @@ export default async function handler(req, res) {
     });
   }
 
+  // 5b) СИРІ відповіді API WayForPay (щоб бачити точну причину/reasonCode)
+  await step('raw_transaction_list', async () => {
+    const merchant = await rpc('wfp_merchant');
+    const now = Math.floor(Date.now() / 1000);
+    const from = now - 35 * 24 * 3600;
+    const sig = await rpc('wfp_sign', { p_data: [s(merchant), String(from), String(now)].join(';') });
+    const r = await fetch('https://api.wayforpay.com/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transactionType: 'TRANSACTION_LIST', merchantAccount: merchant, merchantSignature: sig, apiVersion: 1, dateBegin: from, dateEnd: now }),
+    });
+    const data = await r.json();
+    return { reason: s(data.reason), reasonCode: s(data.reasonCode), count: Array.isArray(data.transactionList) ? data.transactionList.length : 'n/a' };
+  });
+
+  if (ref) {
+    await step('raw_check_status', async () => {
+      const merchant = await rpc('wfp_merchant');
+      const sig = await rpc('wfp_sign', { p_data: [s(merchant), s(ref)].join(';') });
+      const r = await fetch('https://api.wayforpay.com/api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionType: 'CHECK_STATUS', merchantAccount: merchant, orderReference: s(ref), merchantSignature: sig, apiVersion: 1 }),
+      });
+      return await r.json();
+    });
+  }
+
   // 6) Останні зараховані замовлення з нашої БД
   await step('credited_orders', async () => {
     const rows = await rpc('rps_wfp_recent', { p_limit: 10 });
