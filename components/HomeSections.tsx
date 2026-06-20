@@ -11,9 +11,10 @@ import type { Account } from '../hooks/useAccount';
 interface Props {
   account: Account;
   onExchange: () => void;
+  onLogin?: () => void;
 }
 
-const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
+const HomeSections: React.FC<Props> = ({ account, onExchange, onLogin }) => {
   // За замовчуванням відкрита перша секція — Послуги.
   const [open, setOpen] = useState<string | null>('services');
 
@@ -30,7 +31,7 @@ const HomeSections: React.FC<Props> = ({ account, onExchange }) => {
       icon: Gift,
       title: 'Призи за монети',
       subtitle: 'Обмін ігрових монет на послуги та знижки',
-      content: <Prizes account={account} onTopUp={onExchange} embedded />,
+      content: <Prizes account={account} onTopUp={onExchange} onLogin={onLogin} embedded />,
     },
     {
       id: 'philosophy',

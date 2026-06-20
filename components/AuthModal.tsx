@@ -19,12 +19,20 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    setBusy(true);
     setErr(null);
+    if (mode === 'signup' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(login.trim())) {
+      setErr('Вкажіть коректну пошту (email)');
+      return;
+    }
+    if (password.length < 4) {
+      setErr('Пароль — мінімум 4 символи');
+      return;
+    }
+    setBusy(true);
     const e =
       mode === 'login'
         ? await account.login(login, password, rememberMe)
-        : await account.signup(login, password, nick);
+        : await account.signup(login, password, nick, rememberMe);
     setBusy(false);
     if (e) setErr(e);
     else {
@@ -78,8 +86,11 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
               <input
                 value={login}
                 onChange={(e) => setLogin(e.target.value)}
-                placeholder="Логін"
+                placeholder={mode === 'signup' ? 'Пошта (email)' : 'Пошта (email)'}
+                type="email"
+                inputMode="email"
                 autoCapitalize="none"
+                autoComplete={mode === 'signup' ? 'email' : 'username'}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
               <input
@@ -92,17 +103,15 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
               />
             </div>
 
-            {mode === 'login' && (
-              <label className="mt-3 flex cursor-pointer items-center gap-2 select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded accent-emerald-600"
-                />
-                <span className="text-sm text-slate-600">Запамʼятати мене</span>
-              </label>
-            )}
+            <label className="mt-3 flex cursor-pointer items-center gap-2 select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="h-4 w-4 rounded accent-emerald-600"
+              />
+              <span className="text-sm text-slate-600">Запамʼятати мене</span>
+            </label>
 
             {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
 

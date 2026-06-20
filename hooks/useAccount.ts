@@ -45,7 +45,7 @@ export interface Account {
   topUp: (amount: number) => Promise<void>;
   donate: (amount: number) => Promise<boolean>;
   login: (loginStr: string, password: string, remember?: boolean) => Promise<string | null>;
-  signup: (loginStr: string, password: string, nick: string) => Promise<string | null>;
+  signup: (loginStr: string, password: string, nick: string, remember?: boolean) => Promise<string | null>;
   logout: () => void;
   redeem: (reward: string, cost: number) => Promise<string | null>;
   addReview: (rating: number, text: string) => Promise<string | null>;
@@ -195,17 +195,17 @@ export function useAccount(): Account {
     return null;
   }, []);
 
-  const signup = useCallback(async (loginStr: string, password: string, nick: string): Promise<string | null> => {
+  const signup = useCallback(async (loginStr: string, password: string, nick: string, remember = true): Promise<string | null> => {
     const { data, error } = await supabase.rpc('rps_signup', { p_login: loginStr, p_password: password, p_nick: nick });
     if (error) {
       const m = error.message || '';
-      if (m.includes('login taken')) return 'Такий логін уже зайнятий';
-      if (m.includes('login short')) return 'Логін — мінімум 3 символи';
+      if (m.includes('login taken')) return 'Ця пошта вже зареєстрована';
+      if (m.includes('bad email')) return 'Вкажіть коректну пошту (email)';
       if (m.includes('password short')) return 'Пароль — мінімум 4 символи';
       return 'Не вдалося створити акаунт';
     }
     const d = data as { id: string; nickname: string };
-    applyAccount(d.id, d.nickname);
+    applyAccount(d.id, d.nickname, remember);
     return null;
   }, []);
 

@@ -1,28 +1,43 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare } from 'lucide-react';
+import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, X, ExternalLink, Lock } from 'lucide-react';
 import type { Account } from '../../hooks/useAccount';
 import AnimatedNumber from '../AnimatedNumber';
 
 interface Props {
   account: Account;
   onTopUp: () => void;
+  onLogin?: () => void;
   /** true - компонент рендериться всередині акордеону на головній. */
   embedded?: boolean;
 }
 
-const REWARDS = [
-  { emoji: '🎟️', title: 'Знижка 50% на масаж', cost: 500 },
-  { emoji: '💆', title: 'Сеанс масажу', cost: 1500 },
-  { emoji: '🎁', title: 'Подарунковий сертифікат', cost: 1000 },
-  { emoji: '🧘', title: 'Підписка на курс з йоги', cost: 2000 },
-  { emoji: '📜', title: 'Сертифікат на послуги', cost: 1200 },
-  { emoji: '✨', title: 'Корисний бонус / товар', cost: 300 },
+const COURSE_BOT_URL = 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot';
+
+type Delivery =
+  | { type: 'link'; url: string; label: string }
+  | { type: 'contact' };
+
+interface Reward {
+  emoji: string;
+  title: string;
+  cost: number;
+  delivery: Delivery;
+}
+
+// Орієнтовні ціни (≈5 монет = 1 грн). Бос коригує за потреби.
+const REWARDS: Reward[] = [
+  { emoji: '🧘', title: 'Доступ до курсу з йоги', cost: 12500, delivery: { type: 'link', url: COURSE_BOT_URL, label: 'Відкрити курс у Telegram' } },
+  { emoji: '💆', title: 'Сеанс масажу', cost: 6000, delivery: { type: 'contact' } },
+  { emoji: '📜', title: 'Сертифікат на послуги 1000 грн', cost: 6000, delivery: { type: 'contact' } },
+  { emoji: '🎁', title: 'Подарунковий сертифікат 500 грн', cost: 3000, delivery: { type: 'contact' } },
+  { emoji: '🎟️', title: 'Знижка 20% на масаж', cost: 1500, delivery: { type: 'contact' } },
+  { emoji: '✨', title: 'Знижка 10% на будь-яку послугу', cost: 800, delivery: { type: 'contact' } },
 ];
 
-const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
+const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }) => {
   const [busy, setBusy] = useState<string | null>(null);
-  const [claimed, setClaimed] = useState<string | null>(null);
+  const [delivered, setDelivered] = useState<Reward | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   // Реферал
@@ -61,20 +76,22 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
     }
   };
 
-  const redeem = async (title: string, cost: number) => {
+  const redeem = async (r: Reward) => {
     setErr(null);
-    if (account.balance < cost) {
+    // Покупка за монети — лише для зареєстрованих (видача йде на акаунт/пошту).
+    if (!account.isAccount) {
+      onLogin?.();
+      return;
+    }
+    if (account.balance < r.cost) {
       onTopUp();
       return;
     }
-    setBusy(title);
-    const e = await account.redeem(title, cost);
+    setBusy(r.title);
+    const e = await account.redeem(r.title, r.cost);
     setBusy(null);
     if (e) setErr(e);
-    else {
-      setClaimed(title);
-      window.setTimeout(() => setClaimed(null), 3500);
-    }
+    else setDelivered(r);
   };
 
   const Wrapper: any = embedded ? 'div' : 'main';
@@ -93,6 +110,12 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
         <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-base font-bold text-amber-600 ring-1 ring-amber-200">
           <Coins className="h-5 w-5" /> Твій баланс: <AnimatedNumber value={account.balance} />
         </div>
+        {!account.isAccount && (
+          <p className="mx-auto mt-3 flex max-w-xl items-center justify-center gap-1.5 text-sm text-slate-500">
+            <Lock className="h-4 w-4 text-slate-400" />
+            Щоб обміняти монети — <button onClick={() => onLogin?.()} className="font-semibold text-emerald-700 hover:underline">зареєструйся</button> (пошта + пароль).
+          </p>
+        )}
       </div>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -112,19 +135,21 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
               <h2 className="mt-3 flex-1 text-lg font-bold text-slate-900">{r.title}</h2>
               <div className="mt-3 flex items-center gap-1.5 text-emerald-600">
                 <Coins className="h-4 w-4" />
-                <span className="text-xl font-extrabold">{r.cost}</span>
+                <span className="text-xl font-extrabold">{r.cost.toLocaleString('uk-UA')}</span>
                 <span className="text-sm text-slate-400">монет</span>
               </div>
               <button
-                onClick={() => redeem(r.title, r.cost)}
+                onClick={() => redeem(r)}
                 disabled={busy === r.title}
                 className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold transition disabled:opacity-50 ${
-                  enough
+                  !account.isAccount
+                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    : enough
                     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
-                {busy === r.title ? 'Оформлюю…' : enough ? 'Обміняти' : 'Поповнити баланс'}
+                {busy === r.title ? 'Оформлюю…' : !account.isAccount ? 'Зареєструватись' : enough ? 'Обміняти' : 'Поповнити баланс'}
               </button>
             </motion.div>
           );
@@ -210,17 +235,51 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
       </div>
       )}
 
-      {/* Toast */}
+      {/* Видача після покупки */}
       <AnimatePresence>
-        {claimed && (
+        {delivered && (
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-2xl"
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDelivered(null)}
           >
-            <Check className="h-5 w-5" />
-            Готово! «{claimed}» - заявку прийнято <Gift className="h-4 w-4" />
+            <motion.div
+              className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                <Check className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 text-xl font-extrabold text-slate-900">Готово!</h3>
+              <p className="mt-1 text-sm text-slate-500">«{delivered.title}» — оплачено монетами.</p>
+
+              {delivered.delivery.type === 'link' ? (
+                <a
+                  href={delivered.delivery.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+                >
+                  <ExternalLink className="h-4 w-4" /> {delivered.delivery.label}
+                </a>
+              ) : (
+                <p className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-100">
+                  📞 Спеціаліст звʼяжеться з тобою найближчим часом, щоб видати нагороду. Заявку вже прийнято.
+                </p>
+              )}
+
+              <button
+                onClick={() => setDelivered(null)}
+                className="mt-3 w-full rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
+              >
+                Закрити
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

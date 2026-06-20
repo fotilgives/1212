@@ -10,11 +10,14 @@ export type Route =
   | 'prices'
   | 'location'
   | 'donate'
-  | 'legal';
+  | 'legal'
+  | 'admin';
 
-const ROUTES: Route[] = ['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location', 'donate', 'legal'];
+const ROUTES: Route[] = ['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location', 'donate', 'legal', 'admin'];
 
 const parse = (): Route => {
+  // Адмінка доступна за чистим шляхом /admin (Vercel rewrite віддає SPA).
+  if (window.location.pathname.replace(/\/+$/, '') === '/admin') return 'admin';
   const h = window.location.hash.replace(/^#\/?/, '');
   const r = h.split('?')[0] as Route;
   return (ROUTES.includes(r) ? r : 'home') as Route;

@@ -30,7 +30,7 @@ import Support from './components/pages/Support';
 import Legal from './components/pages/Legal';
 import AuthModal from './components/AuthModal';
 
-
+const Admin = lazy(() => import('./components/pages/Admin'));
 
 const App: React.FC = () => {
   const account = useAccount();
@@ -66,6 +66,15 @@ const App: React.FC = () => {
 
 
 
+  // Адмін-панель — окрема повноекранна сторінка (/admin).
+  if (route === 'admin') {
+    return (
+      <Suspense fallback={<div className="grid min-h-screen place-items-center bg-slate-900 text-slate-400">Завантаження…</div>}>
+        <Admin />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       <ScrollProgress />
@@ -85,7 +94,7 @@ const App: React.FC = () => {
             <main>
               <Hero onPlay={() => navigate('game')} onExchange={openExchange} />
               <HowItWorks />
-              <HomeSections account={account} onExchange={openExchange} />
+              <HomeSections account={account} onExchange={openExchange} onLogin={() => setAuthOpen(true)} />
               <MediaShowcase />
               <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-5">
                 <YogaCourseCard account={account} />
@@ -105,7 +114,7 @@ const App: React.FC = () => {
 
           {route === 'about' && <About />}
           {route === 'services' && <Services />}
-          {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} />}
+          {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />}
           {route === 'philosophy' && <Philosophy />}
           {route === 'prices' && <PricesPage account={account} />}
           {route === 'location' && <LocationPage />}
