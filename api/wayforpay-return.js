@@ -1,4 +1,4 @@
-import { parseBody, confirmAndCredit } from './_wfp.js';
+import { parseBody, confirmAndCredit, checkStatus, rpc, s } from './_wfp.js';
 
 /**
  * returnUrl — куди WayForPay повертає користувача (POST) після оплати.
@@ -16,8 +16,22 @@ export default async function handler(req, res) {
   }
 
   if (to === 'course') {
-    // Після оплати курсу грошима ведемо людину одразу в Telegram-бот курсу,
-    // який видає доступ/відео (бот сам звіряє оплату).
+    // Якщо оплату курсу підтверджено — скидаємо таймер «таяння» гравцю
+    // (playerId зашитий у orderReference: COURSE_<playerId>_<ts>).
+    try {
+      const body = await parseBody(req);
+      const ref = s(body.orderReference);
+      const pid = ref.split('_')[1] || '';
+      if (ref.startsWith('COURSE_') && /^[0-9a-fA-F-]{8,40}$/.test(pid) && pid !== 'anon') {
+        const st = await checkStatus(ref);
+        if (st && st.status === 'Approved') {
+          await rpc('rps_touch_activity', { p_id: pid });
+        }
+      }
+    } catch (e) {
+      console.error('[wfp-return course] ERR:', e.message);
+    }
+    // Після оплати ведемо людину одразу в Telegram-бот курсу (видає доступ/відео).
     res.writeHead(302, { Location: 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot' });
     res.end();
     return;

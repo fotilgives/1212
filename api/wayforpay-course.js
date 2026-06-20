@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     const name = s(body.name).slice(0, 60);
     const email = s(body.email).slice(0, 80);
     const phone = s(body.phone).replace(/[^\d+]/g, '').slice(0, 20);
+    const playerId = s(body.playerId).slice(0, 40);
 
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return res.status(400).json({ error: 'Вкажіть коректний e-mail для доступу до курсу.' });
@@ -31,7 +32,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Вкажіть коректний номер телефону.' });
     }
 
-    const orderRef = `COURSE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    // playerId зашитий у orderReference, щоб після оплати скинути таймер «таяння».
+    const pidPart = /^[0-9a-fA-F-]{8,40}$/.test(playerId) ? playerId : 'anon';
+    const orderRef = `COURSE_${pidPart}_${Date.now()}`;
     const orderDate = Math.floor(Date.now() / 1000);
     const currency = 'UAH';
 

@@ -48,6 +48,7 @@ export interface Account {
   signup: (loginStr: string, password: string, nick: string) => Promise<string | null>;
   logout: () => void;
   redeem: (reward: string, cost: number) => Promise<string | null>;
+  addReview: (rating: number, text: string) => Promise<string | null>;
 }
 
 export function useAccount(): Account {
@@ -85,6 +86,17 @@ export function useAccount(): Account {
     let active = true;
     (async () => {
       await supabase.rpc('rps_register', { p_id: playerId, p_nick: nickRef.current });
+      // Реферал: якщо зайшли за посиланням ?ref=<inviterId> — зараховуємо запрошення
+      // (скидає таймер «таяння» тому, хто запросив). Спрацьовує один раз.
+      try {
+        const ref = new URLSearchParams(window.location.search).get('ref');
+        if (ref && ref !== playerId && !localStorage.getItem('rps_ref_done')) {
+          await supabase.rpc('rps_accept_referral', { p_invitee: playerId, p_inviter: ref });
+          localStorage.setItem('rps_ref_done', '1');
+        }
+      } catch {
+        /* ignore */
+      }
       if (active) {
         await refresh();
         setReady(true);
@@ -224,6 +236,24 @@ export function useAccount(): Account {
     [playerId, refresh]
   );
 
+  const addReview = useCallback(
+    async (rating: number, text: string): Promise<string | null> => {
+      const { error } = await supabase.rpc('rps_add_review', {
+        p_id: playerId,
+        p_nick: nickRef.current,
+        p_rating: rating,
+        p_text: text,
+      });
+      await refresh();
+      if (error) {
+        if ((error.message || '').includes('review short')) return 'Відгук занадто короткий';
+        return 'Не вдалося надіслати відгук';
+      }
+      return null;
+    },
+    [playerId, refresh]
+  );
+
   return {
     playerId,
     nickname,
@@ -241,5 +271,6 @@ export function useAccount(): Account {
     signup,
     logout,
     redeem,
+    addReview,
   };
 }

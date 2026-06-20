@@ -65,7 +65,7 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
       const r = await fetch('/api/wayforpay-course', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone }),
+        body: JSON.stringify({ name, email, phone, playerId: account.playerId }),
       });
       const data = await r.json();
       if (!r.ok || !data.fields) throw new Error(data.error || 'Не вдалося створити платіж.');

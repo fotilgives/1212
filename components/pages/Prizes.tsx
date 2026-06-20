@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gift, Check } from 'lucide-react';
+import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare } from 'lucide-react';
 import type { Account } from '../../hooks/useAccount';
 import AnimatedNumber from '../AnimatedNumber';
 
@@ -24,6 +24,42 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
   const [busy, setBusy] = useState<string | null>(null);
   const [claimed, setClaimed] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  // Реферал
+  const [copied, setCopied] = useState(false);
+  const inviteLink =
+    typeof window !== 'undefined' ? `${window.location.origin}/?ref=${account.playerId}` : '';
+  const copyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+    } catch {
+      /* ignore */
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2500);
+  };
+
+  // Відгук
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewDone, setReviewDone] = useState(false);
+  const [reviewErr, setReviewErr] = useState<string | null>(null);
+  const submitReview = async () => {
+    setReviewErr(null);
+    if (reviewText.trim().length < 3) {
+      setReviewErr('Напишіть хоча б кілька слів.');
+      return;
+    }
+    setReviewBusy(true);
+    const e = await account.addReview(rating, reviewText.trim());
+    setReviewBusy(false);
+    if (e) setReviewErr(e);
+    else {
+      setReviewDone(true);
+      setReviewText('');
+    }
+  };
 
   const redeem = async (title: string, cost: number) => {
     setErr(null);
@@ -100,6 +136,79 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, embedded = false }) => {
       </p>
 
       {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
+
+      {/* Утримай бали від «таяння»: запроси друга або залиш відгук */}
+      {!embedded && (
+      <div className="mt-10 grid gap-5 md:grid-cols-2">
+        {/* Запросити друга */}
+        <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-100 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-900">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <UserPlus className="h-5 w-5" />
+            </span>
+            <h3 className="text-lg font-bold">Запросити друга</h3>
+          </div>
+          <p className="mt-2 text-sm text-slate-500">
+            Поділись посиланням. Коли друг приєднається — твій таймер «таяння» балів скинеться ще на 3 дні.
+          </p>
+          <div className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <input
+              readOnly
+              value={inviteLink}
+              className="w-full truncate bg-transparent text-xs text-slate-500 outline-none"
+            />
+          </div>
+          <button
+            onClick={copyInvite}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
+          >
+            {copied ? <><Check className="h-4 w-4" /> Скопійовано</> : <><Copy className="h-4 w-4" /> Скопіювати посилання</>}
+          </button>
+        </div>
+
+        {/* Залишити відгук */}
+        <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-100 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-900">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+              <MessageSquare className="h-5 w-5" />
+            </span>
+            <h3 className="text-lg font-bold">Залишити відгук</h3>
+          </div>
+          {reviewDone ? (
+            <p className="mt-4 flex items-center gap-2 text-sm font-medium text-emerald-600">
+              <Check className="h-4 w-4" /> Дякуємо за відгук! Таймер «таяння» скинуто.
+            </p>
+          ) : (
+            <>
+              <div className="mt-3 flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <button key={n} onClick={() => setRating(n)} aria-label={`${n} зірок`}>
+                    <Star
+                      className={`h-6 w-6 transition ${n <= rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                rows={3}
+                placeholder="Поділись враженнями про гру чи послуги…"
+                className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm outline-none focus:border-amber-400 focus:bg-white"
+              />
+              {reviewErr && <p className="mt-1 text-xs font-semibold text-rose-600">{reviewErr}</p>}
+              <button
+                onClick={submitReview}
+                disabled={reviewBusy}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-60"
+              >
+                {reviewBusy ? 'Надсилаю…' : <><Send className="h-4 w-4" /> Надіслати відгук</>}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+      )}
 
       {/* Toast */}
       <AnimatePresence>
