@@ -147,6 +147,7 @@ export async function checkStatus(orderReference) {
       }),
     });
     const data = await r.json();
+    console.log('[wfp] CHECK_STATUS resp:', JSON.stringify(data).slice(0, 500));
     // Якщо WayForPay не повернув статусу транзакції (помилка API/підпису) —
     // вважаємо результат непереконливим (null), щоб спрацював фолбек на статус із тіла.
     const status = s(data.transactionStatus);
@@ -184,6 +185,7 @@ export async function transactionList(fromTs, toTs) {
       }),
     });
     const data = await r.json();
+    console.log('[wfp] TRANSACTION_LIST reason:', s(data.reason), s(data.reasonCode), 'count:', Array.isArray(data.transactionList) ? data.transactionList.length : 'n/a');
     return Array.isArray(data.transactionList) ? data.transactionList : [];
   } catch (e) {
     console.error('[wfp] transactionList ERR:', e.message);
