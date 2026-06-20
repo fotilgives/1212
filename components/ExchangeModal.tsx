@@ -16,25 +16,6 @@ const PACKS = [
   { id: 'p200', uah: 200, coins: 1100, bonus: '+10%' },
 ];
 
-const SUPABASE_URL = 'https://ewtybyrtdvhibdtdvrmq.supabase.co';
-
-declare global {
-  interface Window {
-    Wayforpay: new () => { run: (p: Record<string, unknown>) => void };
-  }
-}
-
-function loadWfpScript(): Promise<void> {
-  return new Promise((resolve) => {
-    if (document.getElementById('wfp-sdk')) { resolve(); return; }
-    const s = document.createElement('script');
-    s.id = 'wfp-sdk';
-    s.src = 'https://secure.wayforpay.com/server/pay-widget.js';
-    s.onload = () => resolve();
-    document.head.appendChild(s);
-  });
-}
-
 const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [busy, setBusy]   = useState<string | null>(null);
   const [done, setDone]   = useState<number | null>(null);
@@ -42,45 +23,46 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
 
   useEffect(() => { if (!open) { setBusy(null); setDone(null); setErr(null); } }, [open]);
 
-  const buy = async (id: string, uah: number, coins: number) => {
+  // Слухаємо повернення зі сторінки WayForPay
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('wfp') === 'ok') {
+      setDone(Number(params.get('coins') ?? 0));
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [open]);
+
+  const buy = async (id: string, coins: number) => {
     setErr(null);
     setBusy(id);
     try {
-      await loadWfpScript();
-
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/wfp-create`, {
-        method: 'POST',
+      const res  = await fetch('/api/wayforpay-topup', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId: account.playerId, amountUah: uah }),
+        body:    JSON.stringify({ packageId: id, playerId: account.playerId }),
       });
-      if (!res.ok) throw new Error('Не вдалося створити платіж');
-      const data = await res.json() as Record<string, unknown>;
+      const data = await res.json();
+      if (!res.ok || !data.fields) throw new Error(data.error || 'Не вдалося створити платіж.');
 
-      const wfp = new window.Wayforpay();
-      wfp.run({
-        ...data,
-        defaultPaymentSystem: 'card',
-        straightWidget: true,
-        paymentSystems: ['apple', 'google', 'card', 'privat24', 'masterpass'],
-        serviceUrl: `${SUPABASE_URL}/functions/v1/wfp-webhook`,
-        returnUrl: window.location.href,
-      });
+      // Запам'ятовуємо кількість монет для показу після повернення
+      sessionStorage.setItem('wfp_coins', String(coins));
 
-      const handler = (e: MessageEvent) => {
-        try {
-          const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-          if (msg?.type === 'WfpWidgetEventApproved') {
-            window.removeEventListener('message', handler);
-            setBusy(null);
-            setDone(coins);
-            setTimeout(onClose, 2500);
-          } else if (msg?.type === 'WfpWidgetEventClose') {
-            window.removeEventListener('message', handler);
-            setBusy(null);
-          }
-        } catch { /* ignore */ }
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.action;
+      form.acceptCharset = 'utf-8';
+      const add = (k: string, v: string | number) => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = k; i.value = String(v);
+        form.appendChild(i);
       };
-      window.addEventListener('message', handler);
+      Object.entries(data.fields).forEach(([k, v]) => {
+        if (v === undefined || v === null) return;
+        if (Array.isArray(v)) v.forEach((item) => add(`${k}[]`, item as string | number));
+        else add(k, v as string | number);
+      });
+      document.body.appendChild(form);
+      form.submit();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Сталася помилка. Спробуйте пізніше.');
       setBusy(null);
@@ -114,7 +96,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
               </button>
             </div>
 
-            {done !== null ? (
+            {done !== null && done > 0 ? (
               <div className="flex flex-col items-center gap-3 py-10 text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600">
                   <Check className="h-7 w-7" />
@@ -130,7 +112,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
                     return (
                       <button
                         key={p.id}
-                        onClick={() => buy(p.id, p.uah, p.coins)}
+                        onClick={() => buy(p.id, p.coins)}
                         disabled={!!busy}
                         className="relative rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-60"
                       >
@@ -147,8 +129,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
                         <div className="flex items-center gap-1.5 text-lg font-extrabold text-slate-900">
                           {loading
                             ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                            : <Coins className="h-4 w-4 text-amber-500" />
-                          }
+                            : <Coins className="h-4 w-4 text-amber-500" />}
                           {p.coins}
                         </div>
                         <div className="mt-1 text-sm text-slate-500">{p.uah} грн</div>
