@@ -19,8 +19,22 @@ async function rpc(fn, args = {}) {
 export default async function handler(req, res) {
   try {
     let body = req.body;
-    if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
+    const contentType = (req.headers['content-type'] || '').toLowerCase();
+
+    if (typeof body === 'string') {
+      if (contentType.includes('application/x-www-form-urlencoded')) {
+        body = Object.fromEntries(new URLSearchParams(body));
+      } else {
+        try { body = JSON.parse(body); } catch { body = {}; }
+      }
+    } else if (body && typeof body === 'object' && contentType.includes('application/x-www-form-urlencoded')) {
+      // Vercel may already parse it into an object
+    }
     body = body || {};
+
+    console.log('[wfp-cb] content-type:', contentType);
+    console.log('[wfp-cb] body keys:', Object.keys(body).join(','));
+    console.log('[wfp-cb] transactionStatus:', body.transactionStatus, 'orderReference:', body.orderReference);
 
     const {
       merchantAccount, orderReference, amount, currency,
@@ -35,13 +49,21 @@ export default async function handler(req, res) {
     const expected = await rpc('wfp_sign', { p_data: inSigStr });
     const valid = expected && expected === merchantSignature;
 
+    console.log('[wfp-cb] sigValid:', valid, 'expected:', expected, 'got:', merchantSignature);
+
     if (valid && transactionStatus === 'Approved') {
       const parts    = String(orderReference || '').split('_');
       const playerId = parts[1];
       const coins    = parseInt(parts[2], 10);
+      console.log('[wfp-cb] crediting playerId:', playerId, 'coins:', coins);
       if (playerId && Number.isFinite(coins) && coins > 0) {
         await rpc('rps_topup', { p_id: playerId, p_nick: 'Гравець', p_amount: coins });
+        console.log('[wfp-cb] topup done');
+      } else {
+        console.log('[wfp-cb] skip topup - invalid playerId or coins');
       }
+    } else {
+      console.log('[wfp-cb] skip topup - valid:', valid, 'status:', transactionStatus);
     }
 
     const merchant = await rpc('wfp_merchant');
