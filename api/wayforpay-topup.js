@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       },
     });
   } catch (err) {
-    console.error('wayforpay-topup error:', err);
-    return res.status(500).json({ error: 'Внутрішня помилка сервера. Спробуйте пізніше.' });
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: `[DEBUG] ${msg}` });
   }
 }
