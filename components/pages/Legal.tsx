@@ -18,7 +18,7 @@ const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const LI: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <li className="flex items-start gap-2 text-sm leading-relaxed text-slate-600">
     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-    <span>{children}</span>
+    <span className="min-w-0 [overflow-wrap:anywhere]">{children}</span>
   </li>
 );
 
@@ -154,7 +154,7 @@ const Legal: React.FC = () => {
         </p>
       </motion.div>
 
-      <div className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-8">
+      <div className="mt-8 flex flex-col gap-6 lg:grid lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-8">
         {/* Навігація (швидкий перехід) */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <nav className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -189,7 +189,7 @@ const Legal: React.FC = () => {
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white">
                     <Icon className="h-5 w-5" />
                   </span>
-                  <span className="flex-1 text-base font-extrabold text-slate-900 sm:text-lg">{s.label}</span>
+                  <span className="min-w-0 flex-1 text-base font-extrabold text-slate-900 sm:text-lg">{s.label}</span>
                   <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0 text-slate-400">
                     <ChevronDown className="h-5 w-5" />
                   </motion.span>

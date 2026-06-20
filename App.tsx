@@ -16,6 +16,7 @@ import Philosophy from './components/pages/Philosophy';
 import FloatingContact from './components/FloatingContact';
 import RehabDetails from './components/RehabDetails';
 import PriceList from './components/PriceList';
+import YogaCourseCard from './components/YogaCourseCard';
 import MediaShowcase from './components/MediaShowcase';
 import ScrollProgress from './components/ScrollProgress';
 import BackToTop from './components/BackToTop';
@@ -85,7 +86,8 @@ const App: React.FC = () => {
               <HowItWorks />
               <HomeSections account={account} onExchange={openExchange} />
               <MediaShowcase />
-              <section className="mx-auto max-w-5xl px-5 pb-4">
+              <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-5">
+                <YogaCourseCard />
                 <PriceList />
               </section>
               <RehabDetails />
