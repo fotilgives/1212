@@ -145,7 +145,7 @@ const Legal: React.FC = () => {
   };
 
   return (
-    <main className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-5 sm:pt-16">
+    <main className="mx-auto max-w-5xl overflow-x-hidden px-4 pb-20 pt-10 sm:px-5 sm:pt-16">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center">
         <span className="eyebrow">📄 Документи</span>
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Правова інформація</h1>
@@ -154,7 +154,7 @@ const Legal: React.FC = () => {
         </p>
       </motion.div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[230px_1fr] lg:gap-8">
+      <div className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-8">
         {/* Навігація (швидкий перехід) */}
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <nav className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -176,7 +176,7 @@ const Legal: React.FC = () => {
         </aside>
 
         {/* Акордеон-секції */}
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           {SECTIONS.map((s) => {
             const Icon = s.icon;
             const isOpen = open === s.id;
@@ -204,7 +204,7 @@ const Legal: React.FC = () => {
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-5 sm:px-6 sm:pb-6">{bodies[s.id]}</div>
+                      <div className="px-4 pb-5 [overflow-wrap:anywhere] sm:px-6 sm:pb-6">{bodies[s.id]}</div>
                     </motion.div>
                   )}
                 </AnimatePresence>

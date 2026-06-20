@@ -1,8 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, PlayCircle, Wifi, CalendarCheck } from 'lucide-react';
+import { Sparkles, Wifi, CalendarCheck } from 'lucide-react';
 import PriceList from '../PriceList';
 import { goToBooking } from '../../hooks/useRoute';
+
+const COURSE_TOPICS = [
+  'Вступ до йоги',
+  'Дихання',
+  'Біомеханіка тіла',
+  'Види тренінгу',
+  'Анатомічні поїзди',
+  'Складання комплексу',
+];
 
 const Prices: React.FC = () => {
   return (
@@ -27,37 +36,41 @@ const Prices: React.FC = () => {
         transition={{ delay: 0.05 }}
         className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl shadow-emerald-900/5"
       >
-        <div className="grid md:grid-cols-2">
-          <div className="relative min-h-[220px] md:min-h-[300px]">
-            <img
-              src="/images/yoga_service.jpg"
-              alt="Онлайн-курс з йоги"
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent md:bg-gradient-to-r" />
-            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm backdrop-blur">
-              <Wifi className="h-3.5 w-3.5" /> Онлайн
+        <div className="grid items-stretch md:grid-cols-2">
+          {/* Постер курсу — показуємо повністю, без обрізки */}
+          <div className="relative flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 p-4 sm:p-6">
+            <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm backdrop-blur">
+              <Wifi className="h-3.5 w-3.5" /> Онлайн-курс
             </span>
+            <img
+              src="/images/yoga_course.jpg"
+              alt="Курс з йоги — Мальцев Володимир"
+              className="max-h-[460px] w-auto max-w-full rounded-2xl object-contain shadow-lg"
+            />
           </div>
 
-          <div className="p-6 sm:p-8">
-            <span className="eyebrow">🧘 Онлайн-курс</span>
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900">Курс з йоги онлайн</h2>
+          <div className="flex flex-col p-6 sm:p-8">
+            <span className="eyebrow">🧘 Авторський курс · Мальцев Володимир</span>
+            <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-slate-900">
+              Курс з йоги
+            </h2>
+            <p className="mt-2 text-sm font-semibold text-emerald-700">
+              Інтеграція технік йоги в структуру анатомічних поїздів
+            </p>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Повноцінний курс йоги у власному темпі: відеоуроки, дихальні практики та супровід.
-              Займайтеся з будь-якого пристрою, у зручний час.
+              Онлайн-курс у власному темпі: від основ і дихання до біомеханіки тіла й складання
+              власного комплексу. Підійде і початківцям, і досвідченим.
             </p>
 
-            <ul className="mt-4 space-y-2 text-sm text-slate-600">
-              <li className="flex items-center gap-2">
-                <PlayCircle className="h-4 w-4 shrink-0 text-emerald-600" /> Доступ до всіх відеоуроків курсу
-              </li>
-              <li className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 shrink-0 text-emerald-600" /> Практики для початківців і досвідчених
-              </li>
+            <ul className="mt-4 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+              {COURSE_TOPICS.map((t) => (
+                <li key={t} className="flex items-center gap-2 text-sm text-slate-600">
+                  <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600" /> {t}
+                </li>
+              ))}
             </ul>
 
-            <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
+            <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <div className="text-3xl font-extrabold text-emerald-700">
                   2500 <span className="text-base font-semibold text-slate-400">грн</span>
