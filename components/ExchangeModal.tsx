@@ -61,6 +61,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
         ...data,
         defaultPaymentSystem: 'card',
         straightWidget: true,
+        paymentSystems: ['apple', 'google', 'card', 'privat24', 'masterpass'],
         serviceUrl: `${SUPABASE_URL}/functions/v1/wfp-webhook`,
         returnUrl: window.location.href,
       });
