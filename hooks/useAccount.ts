@@ -89,16 +89,25 @@ export function useAccount(): Account {
         await refresh();
         setReady(true);
       }
-      // Страхувальна звірка платежів: дораховує монети за оплачені, але ще не
-      // зараховані замовлення WayForPay (на випадок, якщо колбек/повернення не спрацювали).
+      // Страхувальна звірка платежів: перевіряємо статус збережених замовлень
+      // у WayForPay і дораховуємо монети, якщо колбек/повернення не спрацювали.
       try {
-        const r = await fetch('/api/wayforpay-reconcile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerId }),
-        });
-        const data = await r.json().catch(() => ({}));
-        if (active && data && data.credited > 0) await refresh();
+        const key = 'wfp_pending_refs';
+        const refs: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+        if (refs.length > 0) {
+          const r = await fetch('/api/wayforpay-reconcile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerId, refs }),
+          });
+          const data = await r.json().catch(() => ({}));
+          // Прибираємо вже зараховані замовлення з локального списку.
+          if (Array.isArray(data?.done) && data.done.length > 0) {
+            const left = refs.filter((x) => !data.done.includes(x));
+            localStorage.setItem(key, JSON.stringify(left));
+          }
+          if (active && data && data.credited > 0) await refresh();
+        }
       } catch {
         /* ignore */
       }

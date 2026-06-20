@@ -47,6 +47,20 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
       // Запам'ятовуємо кількість монет для показу після повернення
       sessionStorage.setItem('wfp_coins', String(coins));
 
+      // Зберігаємо orderReference локально — страхувальна звірка дорахує монети,
+      // навіть якщо колбек/повернення не спрацюють (перевіримо статус при заході).
+      try {
+        const ref = String(data.fields.orderReference || '');
+        if (ref) {
+          const key = 'wfp_pending_refs';
+          const list: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+          if (!list.includes(ref)) list.push(ref);
+          localStorage.setItem(key, JSON.stringify(list.slice(-50)));
+        }
+      } catch {
+        /* ignore */
+      }
+
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = data.action;
