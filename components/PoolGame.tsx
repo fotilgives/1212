@@ -63,6 +63,12 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const roundIdRef = useRef<number | null>(null);
   const advancing = useRef(false);
 
+  const [bonus, setBonus] = useState<{ amount: number; cycle_day: number; max_day: number } | null>(null);
+  const fetchBonus = useCallback(async () => {
+    const { data } = await supabase.rpc('rps_bonus');
+    if (data) setBonus(data as { amount: number; cycle_day: number; max_day: number });
+  }, []);
+
   const fetchBets = useCallback(async (rid: number) => {
     const { data } = await supabase.from('rps_bets').select('*').eq('round_id', rid).order('id');
     setBets((data as BetRow[]) || []);
@@ -80,6 +86,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   // Initial load + realtime subscriptions
   useEffect(() => {
     loadCurrent();
+    fetchBonus();
     const ch = supabase
       .channel('rps-game')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
@@ -94,7 +101,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         const r = p.new as RoundRow;
         if (r.id === roundIdRef.current) {
           setRound(r);
-          if (r.status === 'settled' && r.win_move) setLastWin(r.win_move as Move);
+          if (r.status === 'settled' && r.win_move) {
+            setLastWin(r.win_move as Move);
+            fetchBonus(); // банк центру міг бути виграний цього раунду
+          }
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_bets' }, (p) => {
@@ -249,6 +259,24 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             <AnimatedNumber value={account.balance} />
           </div>
         </div>
+
+        {/* Бонусний банк від центру */}
+        {bonus && bonus.amount > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/60 bg-gradient-to-r from-amber-50 via-amber-100/40 to-transparent px-4 py-2.5 sm:px-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
+              <span className="text-lg">🎁</span>
+              Банк центру:
+              <span className="inline-flex items-center gap-1 text-amber-700">
+                <Coins className="h-4 w-4" />
+                <AnimatedNumber value={bonus.amount} />
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-600">
+              <span className="rounded-full bg-amber-200/70 px-2 py-0.5">день {bonus.cycle_day}/{bonus.max_day}</span>
+              <span className="hidden sm:inline text-amber-500">+1000/день · виграє переможець раунду</span>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 sm:p-6">
           {/* Nickname + account */}
