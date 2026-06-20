@@ -15,16 +15,16 @@ const COURSE_TOPICS = [
 
 const Prices: React.FC = () => {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-5 md:py-20">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-5 md:py-12">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 text-center"
+        className="mb-6 text-center"
       >
-        <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
           Вартість послуг
         </h1>
-        <p className="mt-4 text-slate-500 max-w-2xl mx-auto">
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-slate-500">
           Прозорі ціни на всі види масажу та реабілітації. Інвестуйте у своє здоров'я та комфорт.
         </p>
       </motion.div>
@@ -38,31 +38,27 @@ const Prices: React.FC = () => {
       >
         <div className="grid items-stretch md:grid-cols-2">
           {/* Постер курсу — показуємо повністю, без обрізки */}
-          <div className="relative flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 p-4 sm:p-6">
-            <span className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-emerald-700 shadow-sm backdrop-blur">
-              <Wifi className="h-3.5 w-3.5" /> Онлайн-курс
+          <div className="relative flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 p-3">
+            <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-emerald-700 shadow-sm backdrop-blur">
+              <Wifi className="h-3 w-3" /> Онлайн-курс
             </span>
             <img
               src="/images/yoga_course.jpg"
               alt="Курс з йоги — Мальцев Володимир"
-              className="max-h-[460px] w-auto max-w-full rounded-2xl object-contain shadow-lg"
+              className="max-h-[240px] w-auto max-w-full rounded-xl object-contain shadow-md sm:max-h-[300px]"
             />
           </div>
 
-          <div className="flex flex-col p-6 sm:p-8">
+          <div className="flex flex-col p-5 sm:p-6">
             <span className="eyebrow">🧘 Авторський курс · Мальцев Володимир</span>
-            <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-slate-900">
+            <h2 className="mt-2 text-xl font-extrabold leading-tight tracking-tight text-slate-900">
               Курс з йоги
             </h2>
-            <p className="mt-2 text-sm font-semibold text-emerald-700">
+            <p className="mt-1.5 text-sm font-semibold text-emerald-700">
               Інтеграція технік йоги в структуру анатомічних поїздів
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Онлайн-курс у власному темпі: від основ і дихання до біомеханіки тіла й складання
-              власного комплексу. Підійде і початківцям, і досвідченим.
-            </p>
 
-            <ul className="mt-4 grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+            <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1.5 sm:grid-cols-2">
               {COURSE_TOPICS.map((t) => (
                 <li key={t} className="flex items-center gap-2 text-sm text-slate-600">
                   <Sparkles className="h-3.5 w-3.5 shrink-0 text-emerald-600" /> {t}
@@ -70,7 +66,7 @@ const Prices: React.FC = () => {
               ))}
             </ul>
 
-            <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
+            <div className="mt-5 flex flex-wrap items-end justify-between gap-3">
               <div>
                 <div className="text-3xl font-extrabold text-emerald-700">
                   2500 <span className="text-base font-semibold text-slate-400">грн</span>
