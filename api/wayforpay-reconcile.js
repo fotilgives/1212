@@ -11,8 +11,6 @@ import { transactionList, parseTopupRef, creditTopup, s } from './_wfp.js';
  */
 export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
     let body = req.body;
     if (typeof body === 'string') {
       try {
@@ -23,7 +21,14 @@ export default async function handler(req, res) {
     }
     body = body || {};
 
-    const playerId = s(body.playerId);
+    let playerId = s(body.playerId);
+    if (!playerId) {
+      try {
+        playerId = s(new URL(req.url, 'http://localhost').searchParams.get('playerId'));
+      } catch {
+        /* ignore */
+      }
+    }
     if (playerId.length < 8) return res.status(400).json({ error: 'bad playerId' });
 
     const now = Math.floor(Date.now() / 1000);
