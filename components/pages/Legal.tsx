@@ -13,7 +13,7 @@ const SECTIONS = [
 ] as const;
 
 const P: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="mt-3 text-sm leading-relaxed text-slate-600">{children}</p>
+  <p className="mt-3 text-sm leading-relaxed text-slate-600 [overflow-wrap:anywhere]">{children}</p>
 );
 const LI: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <li className="flex items-start gap-2 text-sm leading-relaxed text-slate-600">
