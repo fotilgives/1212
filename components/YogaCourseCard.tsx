@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Wifi, CalendarCheck } from 'lucide-react';
-import { goToBooking } from '../hooks/useRoute';
+import { Sparkles, Wifi, ShoppingCart } from 'lucide-react';
+import CourseBuyModal from './CourseBuyModal';
 
 const COURSE_TOPICS = [
   'Вступ до йоги',
@@ -13,6 +13,7 @@ const COURSE_TOPICS = [
 ];
 
 const YogaCourseCard: React.FC = () => {
+  const [buyOpen, setBuyOpen] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -63,14 +64,16 @@ const YogaCourseCard: React.FC = () => {
               <div className="text-[11px] text-slate-400">повний доступ до курсу</div>
             </div>
             <button
-              onClick={goToBooking}
+              onClick={() => setBuyOpen(true)}
               className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
             >
-              <CalendarCheck className="h-4 w-4" /> Записатися на курс
+              <ShoppingCart className="h-4 w-4" /> Придбати курс
             </button>
           </div>
         </div>
       </div>
+
+      <CourseBuyModal open={buyOpen} onClose={() => setBuyOpen(false)} />
     </motion.div>
   );
 };

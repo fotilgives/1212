@@ -15,6 +15,12 @@ export default async function handler(req, res) {
     to = '';
   }
 
+  if (to === 'course') {
+    res.writeHead(302, { Location: '/?course=thanks' });
+    res.end();
+    return;
+  }
+
   if (to === 'topup') {
     try {
       const body = await parseBody(req);

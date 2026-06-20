@@ -37,7 +37,7 @@ const App: React.FC = () => {
   const route = useRoute();
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
-  const [thanks, setThanks] = useState<null | 'donate' | 'topup'>(null);
+  const [thanks, setThanks] = useState<null | 'donate' | 'topup' | 'course'>(null);
 
   const openExchange = () => {
     if (!account.isAccount) {
@@ -52,8 +52,9 @@ const App: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     const isDonate = params.get('donate') === 'thanks';
     const isTopup = params.get('topup') === 'thanks';
-    if (isDonate || isTopup) {
-      setThanks(isTopup ? 'topup' : 'donate');
+    const isCourse = params.get('course') === 'thanks';
+    if (isDonate || isTopup || isCourse) {
+      setThanks(isCourse ? 'course' : isTopup ? 'topup' : 'donate');
       window.history.replaceState({}, '', window.location.pathname + (window.location.hash || '#/'));
       if (isTopup) {
         // монети нараховує серверний callback; оновлюємо баланс (realtime теж підхопить).
@@ -134,14 +135,16 @@ const App: React.FC = () => {
               className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl"
             >
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl">
-                {thanks === 'topup' ? '🪙' : '❤️'}
+                {thanks === 'topup' ? '🪙' : thanks === 'course' ? '🧘' : '❤️'}
               </div>
               <h3 className="mt-4 text-xl font-extrabold text-slate-900">
-                {thanks === 'topup' ? 'Оплату отримано!' : 'Дякуємо за підтримку!'}
+                {thanks === 'topup' ? 'Оплату отримано!' : thanks === 'course' ? 'Дякуємо за покупку!' : 'Дякуємо за підтримку!'}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 {thanks === 'topup'
                   ? 'Монети зараховуються на ваш баланс протягом кількох секунд.'
+                  : thanks === 'course'
+                  ? 'Доступ до курсу з йоги надішлемо на вашу пошту найближчим часом. Дякуємо!'
                   : 'Ваш внесок отримано. Він допомагає розвивати центр і робити заняття доступнішими.'}
               </p>
               <button
