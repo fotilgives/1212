@@ -145,7 +145,7 @@ const Legal: React.FC = () => {
   };
 
   return (
-    <main className="mx-auto max-w-5xl overflow-x-hidden px-4 pb-20 pt-10 sm:px-5 sm:pt-16">
+    <main className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-5 sm:pt-16">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center">
         <span className="eyebrow">📄 Документи</span>
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Правова інформація</h1>
@@ -204,7 +204,7 @@ const Legal: React.FC = () => {
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 pb-5 [overflow-wrap:anywhere] sm:px-6 sm:pb-6">{bodies[s.id]}</div>
+                      <div className="overflow-x-auto px-4 pb-5 sm:px-6 sm:pb-6">{bodies[s.id]}</div>
                     </motion.div>
                   )}
                 </AnimatePresence>
