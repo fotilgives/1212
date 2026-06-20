@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "WaveSpeed": {
+      "command": "python3",
+      "args": ["-m", "wavespeed_mcp"],
+      "env": {
+        "WAVESPEED_API_KEY": "wsk_live_pHXnHXEst0VX_tSvMOOcrkzYzW-WggMeAhmuvlNx-iY",
+        "WAVESPEED_LOG_FILE": "/tmp/wavespeed-mcp.log"
+      }
+    }
+  }
+}
