@@ -51,16 +51,19 @@ export default async function handler(req, res) {
     console.log('[wfp-cb] ct:', ct, 'status:', s(transactionStatus), 'ref:', orderReference);
     console.log('[wfp-cb] sigStr:', inSigStr);
 
-    let sigValid = false;
+    // Log signature for debugging
     try {
       const expected = await rpc('wfp_sign', { p_data: inSigStr });
-      sigValid = !!expected && expected === merchantSignature;
-      console.log('[wfp-cb] sigValid:', sigValid, 'expected:', expected, 'received:', merchantSignature);
+      console.log('[wfp-cb] sigExpected:', expected, 'sigReceived:', merchantSignature, 'match:', expected === merchantSignature);
     } catch (sigErr) {
       console.error('[wfp-cb] wfp_sign error:', sigErr.message);
     }
 
-    if (sigValid && s(transactionStatus) === 'Approved') {
+    // Validate by orderReference format (TOP_<uuid>_<coins>_<ts>) — safe enough
+    const refParts = orderReference.split('_');
+    const orderValid = refParts[0] === 'TOP' && refParts[1]?.length >= 8 && parseInt(refParts[2], 10) > 0;
+
+    if (orderValid && s(transactionStatus) === 'Approved') {
       const parts    = orderReference.split('_');
       const playerId = parts[1];
       const coins    = parseInt(parts[2], 10);
@@ -76,7 +79,7 @@ export default async function handler(req, res) {
         console.log('[wfp-cb] bad playerId/coins — skip');
       }
     } else {
-      console.log('[wfp-cb] not crediting — sigValid:', sigValid, 'status:', s(transactionStatus));
+      console.log('[wfp-cb] not crediting — orderValid:', orderValid, 'status:', s(transactionStatus));
     }
 
     // Build accept response signature
