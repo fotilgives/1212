@@ -57,9 +57,10 @@ export default async function handler(req, res) {
   // Підтвердження для WayForPay.
   const time = Math.floor(Date.now() / 1000);
   const status = 'accept';
+  const ACCOUNT = process.env.WFP_MERCHANT_ACCOUNT || 'freelance_user_69089df759268';
   const signature = crypto
     .createHmac('md5', SECRET)
-    .update([orderReference, status, String(time)].join(';'), 'utf8')
+    .update([ACCOUNT, orderReference, status, String(time)].join(';'), 'utf8')
     .digest('hex');
   res.status(200).json({ orderReference, status, time, signature });
 }

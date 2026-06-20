@@ -10,10 +10,10 @@ const SECRET = process.env.WFP_MERCHANT_SECRET;
 const DOMAIN = process.env.WFP_DOMAIN || 'playheal.vercel.app';
 
 const PACKAGES = {
-  p50: { amount: 50, coins: 50 },
-  p100: { amount: 100, coins: 110 },
-  p250: { amount: 250, coins: 290 },
-  p500: { amount: 500, coins: 600 },
+  p1:   { amount: 1,   coins: 1 },
+  p50:  { amount: 50,  coins: 250 },
+  p100: { amount: 100, coins: 500 },
+  p200: { amount: 200, coins: 1100 },
 };
 
 export default async function handler(req, res) {
@@ -21,11 +21,6 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
-  if (!SECRET) {
-    res.status(500).json({ error: 'Платіжний сервіс ще не налаштований (відсутній WFP_MERCHANT_SECRET).' });
-    return;
-  }
-
   let body = req.body;
   if (typeof body === 'string') {
     try {
