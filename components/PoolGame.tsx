@@ -234,12 +234,12 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-80px' }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="glass relative overflow-hidden rounded-[2rem] shadow-2xl shadow-emerald-900/5 ring-1 ring-white/60"
+        className="relative overflow-hidden rounded-[2rem] bg-white/90 shadow-2xl shadow-emerald-900/10 ring-1 ring-emerald-100/80 backdrop-blur-xl"
       >
         <AnimatePresence>{celebrate && <Confetti />}</AnimatePresence>
 
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/50 bg-gradient-to-r from-emerald-500/10 via-teal-400/5 to-transparent px-4 py-3 sm:px-6 sm:py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-transparent px-4 py-3.5 sm:px-6 sm:py-4">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
               Онлайн-раунд
@@ -252,9 +252,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 <Wifi className="h-3 w-3" /> наживо
               </span>
             </h2>
-            <p className="text-xs text-slate-500">Спільний банк · тестовий режим: переможний хід чергується щораунду 🔄</p>
+            <p className="mt-0.5 text-xs text-slate-500">Камінь · ножиці · папір · спільний банк</p>
           </div>
-          <div className="flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-bold text-amber-600 ring-1 ring-amber-200">
+          <div className="flex items-center gap-1.5 rounded-2xl bg-amber-50 px-3.5 py-2 text-sm font-extrabold text-amber-600 ring-1 ring-amber-200">
             <Coins className="h-4 w-4" />
             <AnimatedNumber value={account.balance} />
           </div>
@@ -262,19 +262,38 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
         {/* Бонусний банк від центру */}
         {bonus && bonus.amount > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/60 bg-gradient-to-r from-amber-50 via-amber-100/40 to-transparent px-4 py-2.5 sm:px-6">
-            <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
-              <span className="text-lg">🎁</span>
-              Банк центру:
-              <span className="inline-flex items-center gap-1 text-amber-700">
-                <Coins className="h-4 w-4" />
-                <AnimatedNumber value={bonus.amount} />
-              </span>
+          <div className="relative overflow-hidden border-b border-amber-100 bg-gradient-to-r from-amber-50 via-amber-100/50 to-transparent px-4 py-3 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-extrabold text-amber-800">
+                <motion.span
+                  className="text-xl"
+                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2.6, repeat: Infinity }}
+                >
+                  🎁
+                </motion.span>
+                Банк центру
+                <span className="inline-flex items-center gap-1 text-amber-700">
+                  <Coins className="h-4 w-4" />
+                  <AnimatedNumber value={bonus.amount} />
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-0.5 sm:flex">
+                  {Array.from({ length: bonus.max_day }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ background: i < bonus.cycle_day ? '#f59e0b' : 'rgba(245,158,11,0.22)' }}
+                    />
+                  ))}
+                </div>
+                <span className="rounded-full bg-amber-200/70 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+                  день {bonus.cycle_day}/{bonus.max_day}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-amber-600">
-              <span className="rounded-full bg-amber-200/70 px-2 py-0.5">день {bonus.cycle_day}/{bonus.max_day}</span>
-              <span className="hidden sm:inline text-amber-500">+1000/день · виграє переможець раунду</span>
-            </div>
+            <p className="mt-1 text-[11px] text-amber-600/80">+1000 щодня · забирає переможець раунду 🏆</p>
           </div>
         )}
 
@@ -284,20 +303,20 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             <input
               value={account.nickname}
               onChange={(e) => account.setNickname(e.target.value.slice(0, 20))}
-              className="flex-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+              className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
               placeholder="Твоє імʼя у грі"
             />
             {account.isAccount ? (
               <button
                 onClick={account.logout}
-                className="shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
+                className="shrink-0 rounded-xl bg-slate-100 px-3.5 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-200"
               >
                 Вийти
               </button>
             ) : (
               <button
                 onClick={onLogin}
-                className="flex shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                className="flex shrink-0 items-center gap-1 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"
               >
                 <LogIn className="h-3.5 w-3.5" /> Увійти
               </button>
@@ -305,14 +324,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           </div>
           <p className="mb-5 text-[11px] text-slate-400">
             {account.isAccount
-              ? '✓ Ти в акаунті - баланс зберігається на будь-якому пристрої.'
+              ? '✓ Ти в акаунті — баланс зберігається на будь-якому пристрої.'
               : 'Граєш як гість (баланс лише в цьому браузері). Увійди, щоб зберігати скрізь.'}
           </p>
 
           {/* Timer ring + stats */}
-          <div className="mb-6 flex items-center justify-center gap-4 sm:gap-10">
+          <div className="mb-6 grid grid-cols-3 items-center gap-2 rounded-3xl bg-slate-50/80 p-4 ring-1 ring-slate-100">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <div className="flex items-center justify-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 <Users className="h-3.5 w-3.5" /> Гравців
               </div>
               <div className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl">
@@ -320,7 +339,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
               </div>
             </div>
 
-            <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
+            <div className="relative mx-auto h-24 w-24 shrink-0 sm:h-28 sm:w-28">
               <svg className="h-full w-full -rotate-90" viewBox="0 0 110 110">
                 <circle cx="55" cy="55" r={RING} fill="none" stroke="#e2e8f0" strokeWidth="8" />
                 <motion.circle
@@ -332,7 +351,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   strokeWidth="8"
                   strokeLinecap="round"
                   strokeDasharray={CIRC}
-                  style={{ filter: `drop-shadow(0 0 6px ${low ? 'rgba(244,63,94,.55)' : 'rgba(16,185,129,.5)'})` }}
+                  style={{ filter: `drop-shadow(0 0 6px ${low ? 'rgba(244,63,94,.45)' : 'rgba(16,185,129,.4)'})` }}
                   animate={{ strokeDashoffset: CIRC * (1 - progress) }}
                   transition={{ ease: 'linear', duration: 0.25 }}
                 />
@@ -351,7 +370,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             </div>
 
             <div className="text-center">
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">Банк</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Банк</div>
               <div className="mt-1 flex items-center justify-center gap-1 text-2xl font-extrabold text-emerald-600 sm:text-3xl">
                 <AnimatedNumber value={bank} />
               </div>
@@ -374,14 +393,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
               whileTap={{ scale: 0.95 }}
               onClick={fillRound}
               disabled={botBusy || remaining <= 1}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:ring-emerald-300 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:ring-emerald-300 disabled:opacity-50"
             >
               <Bot className="h-3.5 w-3.5" /> {botBusy ? 'Додаю…' : 'Заповнити до 20'}
             </motion.button>
           </div>
 
           {/* Pools */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
             {MOVES.map((m, i) => {
               const pot = potOf(m.id);
               const cnt = bets.filter((b) => b.move === m.id).length;
@@ -395,8 +414,8 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   transition={{ delay: i * 0.06 }}
                   className={`relative overflow-hidden rounded-2xl border p-2.5 text-center transition sm:p-4 ${
                     isMine
-                      ? 'border-emerald-400 bg-emerald-50/80 shadow-lg shadow-emerald-200/50'
-                      : 'border-slate-200 bg-white/70'
+                      ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
+                      : 'border-slate-200 bg-white'
                   }`}
                 >
                   <motion.div
@@ -478,7 +497,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="rounded-2xl bg-emerald-50/80 p-4 text-center ring-1 ring-emerald-100"
+                  className="rounded-2xl bg-emerald-50 p-4 text-center ring-1 ring-emerald-100"
                 >
                   {myPlay?.bluff ? (
                     <>
@@ -502,36 +521,39 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     whileTap={{ scale: 0.97 }}
                     onClick={forceNext}
                     disabled={forcing}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
                   >
                     {forcing ? 'Розігрую…' : '▶ Розіграти зараз'}
                   </motion.button>
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Твій хід</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {MOVES.map((m) => (
-                      <motion.button
-                        key={m.id}
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => {
-                          setMove(m.id);
-                          if (bluff && shownMove === m.id) {
-                            setShownMove(MOVES.find((x) => x.id !== m.id)!.id);
-                          }
-                        }}
-                        className={`flex flex-col items-center gap-1 rounded-2xl border py-3 transition sm:py-4 ${
-                          move === m.id
-                            ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
-                            : 'border-slate-200 bg-white/70 hover:border-emerald-300'
-                        }`}
-                      >
-                        <span className="text-2xl sm:text-3xl">{m.emoji}</span>
-                        <span className="text-xs font-semibold text-slate-700 sm:text-sm">{m.label}</span>
-                      </motion.button>
-                    ))}
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Твій хід</div>
+                  <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                    {MOVES.map((m) => {
+                      const sel = move === m.id;
+                      return (
+                        <motion.button
+                          key={m.id}
+                          whileHover={{ scale: 1.04, y: -2 }}
+                          whileTap={{ scale: 0.96 }}
+                          onClick={() => {
+                            setMove(m.id);
+                            if (bluff && shownMove === m.id) {
+                              setShownMove(MOVES.find((x) => x.id !== m.id)!.id);
+                            }
+                          }}
+                          className={`flex flex-col items-center gap-1.5 rounded-2xl border py-4 transition sm:py-5 ${
+                            sel
+                              ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
+                              : 'border-slate-200 bg-white hover:border-emerald-300'
+                          }`}
+                        >
+                          <span className="text-3xl sm:text-4xl">{m.emoji}</span>
+                          <span className="text-xs font-semibold text-slate-700 sm:text-sm">{m.label}</span>
+                        </motion.button>
+                      );
+                    })}
                   </div>
 
                   {/* Bluff */}
@@ -539,7 +561,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     <div className="flex justify-center">
                       <motion.button
                         type="button"
-                        whileHover={{ scale: canBluff ? 1.05 : 1, y: canBluff ? -2 : 0 }}
+                        whileHover={{ scale: canBluff ? 1.03 : 1, y: canBluff ? -2 : 0 }}
                         whileTap={{ scale: canBluff ? 0.96 : 1 }}
                         disabled={!canBluff}
                         onClick={() => {
@@ -549,16 +571,16 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                             setShownMove(MOVES.find((m) => m.id !== move)!.id);
                           }
                         }}
-                        className={`flex flex-col items-center gap-1 rounded-2xl border w-full py-3 transition sm:py-4 ${
+                        className={`flex w-full flex-col items-center gap-1 rounded-2xl border py-3.5 transition ${
                           !canBluff
                             ? 'cursor-not-allowed border-slate-100 bg-slate-50'
                             : bluff
-                            ? 'border-emerald-400 bg-emerald-50 shadow-lg shadow-emerald-200/50'
-                            : 'border-slate-200 bg-white/70 hover:border-emerald-300'
+                            ? 'border-violet-400 bg-violet-50 shadow-lg shadow-violet-200/50'
+                            : 'border-slate-200 bg-white hover:border-violet-300'
                         }`}
                       >
                         <span className="text-3xl">🤫</span>
-                        <span className="text-sm font-semibold text-slate-700">
+                        <span className={`text-sm font-semibold ${!canBluff ? 'text-slate-300' : bluff ? 'text-violet-700' : 'text-slate-700'}`}>
                           {!canBluff ? 'Блеф 🔒' : bluff ? 'Блеф увімкнено' : 'Блеф'}
                         </span>
                       </motion.button>
@@ -580,12 +602,12 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                                 key={m.id}
                                 onClick={() => setShownMove(m.id)}
                                 disabled={m.id === move}
-                                className={`rounded-xl border py-2 text-sm font-semibold transition ${
+                                className={`rounded-xl border py-2.5 text-sm font-semibold transition ${
                                   m.id === move
                                     ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300'
                                     : shownMove === m.id
                                     ? 'border-violet-400 bg-violet-100 text-violet-700'
-                                    : 'border-slate-200 bg-white/70 text-slate-600 hover:border-violet-300'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-violet-300'
                                 }`}
                               >
                                 {m.emoji} {m.label}
@@ -605,11 +627,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     )}
                   </div>
 
-                  <div className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
-                  <div className="flex items-center gap-2 rounded-2xl bg-white/70 px-4 py-3 ring-1 ring-slate-200">
+                  <div className="mb-2 mt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Ставка</div>
+                  <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3">
                     <Coins className="h-5 w-5 text-amber-500" />
                     <span className="text-lg font-extrabold text-slate-900">{STAKE}</span>
-                    <span className="text-sm text-slate-500">монет - фіксована для всіх</span>
+                    <span className="text-sm text-slate-500">монет — фіксована для всіх</span>
                   </div>
 
                   <motion.button
@@ -617,10 +639,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={placeBet}
                     disabled={busy || remaining <= 1}
-                    className="shine mt-5 w-full rounded-xl bg-emerald-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700 disabled:opacity-50"
+                    className="shine mt-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-emerald-300/50 transition hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50"
                   >
                     {account.balance < STAKE
-                      ? 'Поповнити баланс'
+                      ? '💰 Поповнити баланс'
                       : remaining <= 1
                       ? 'Раунд закінчується…'
                       : `Поставити ${STAKE} монет`}
@@ -643,7 +665,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 24 }}
                     className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                      b.player_id === account.playerId ? 'bg-emerald-600 text-white' : 'bg-white/70 text-slate-600 ring-1 ring-slate-200'
+                      b.player_id === account.playerId ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200'
                     }`}
                   >
                     {emojiOf(b.move as Move)} {b.nickname}
@@ -657,7 +679,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
           <p className="mt-5 text-center text-xs text-slate-400">
             Реальний онлайн: усі гравці грають в одному раунді. Зароблені монети згодом можна буде витратити на послуги
-            або вивести. Поки що - демо на віртуальних монетах.
+            або вивести. Поки що — демо на віртуальних монетах.
           </p>
         </div>
       </motion.div>
