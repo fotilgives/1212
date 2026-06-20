@@ -1,5 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
 const SUPABASE_URL = 'https://ewtybyrtdvhibdtdvrmq.supabase.co';
 const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dHlieXJ0ZHZoaWJkdGR2cm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzI5ODcsImV4cCI6MjA5MTA0ODk4N30.VjWnmvh8tw1GSIBJYWbJ8o5dYBkCj5pOUj2zoTPHmyg';
@@ -11,12 +9,23 @@ const PACKAGES = {
   p200: { amount: 200, coins: 1100 },
 };
 
+async function rpc(fn, args = {}) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) throw new Error(`rpc ${fn} failed: ${await r.text()}`);
+  return r.json();
+}
+
 export default async function handler(req, res) {
-  // Завжди повертаємо JSON, ніколи не кидаємо HTML
   try {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     let body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
@@ -26,38 +35,24 @@ export default async function handler(req, res) {
     if (!pkg) return res.status(400).json({ error: 'Невідомий пакет поповнення.' });
 
     const playerId = String(body.playerId || '');
-    if (!playerId || playerId.length < 8) {
+    if (!playerId || playerId.length < 8)
       return res.status(400).json({ error: 'Невірний ідентифікатор гравця.' });
-    }
 
-    const supabase  = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const orderRef  = `TOP_${playerId}_${pkg.coins}_${Date.now()}`;
-    const orderDate = Math.floor(Date.now() / 1000);
+    const orderRef    = `TOP_${playerId}_${pkg.coins}_${Date.now()}`;
+    const orderDate   = Math.floor(Date.now() / 1000);
     const productName = `${pkg.coins} ігрових монет`;
-    const currency  = 'UAH';
+    const currency    = 'UAH';
 
-    // Отримуємо merchant/domain/підпис з Postgres (секрет ніколи не залишає БД)
-    const [mRes, dRes] = await Promise.all([
-      supabase.rpc('wfp_merchant'),
-      supabase.rpc('wfp_domain'),
-    ]);
-
-    const merchant = mRes.data;
-    const domain   = dRes.data;
-
-    if (!merchant || !domain) {
-      return res.status(500).json({ error: 'Платіжний сервіс тимчасово недоступний (config).' });
-    }
+    const [merchant, domain] = await Promise.all([rpc('wfp_merchant'), rpc('wfp_domain')]);
+    if (!merchant || !domain) return res.status(500).json({ error: 'Не вдалося отримати конфіг.' });
 
     const sigStr = [
       merchant, domain, orderRef, String(orderDate),
       String(pkg.amount), currency, productName, '1', String(pkg.amount),
     ].join(';');
 
-    const { data: signature, error: sigErr } = await supabase.rpc('wfp_sign', { p_data: sigStr });
-    if (sigErr || !signature) {
-      return res.status(500).json({ error: 'Платіжний сервіс тимчасово недоступний (sign).' });
-    }
+    const signature = await rpc('wfp_sign', { p_data: sigStr });
+    if (!signature) return res.status(500).json({ error: 'Не вдалося згенерувати підпис.' });
 
     const origin = `https://${domain}`;
     return res.status(200).json({
