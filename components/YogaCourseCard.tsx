@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Wifi, ShoppingCart } from 'lucide-react';
-import CourseBuyModal from './CourseBuyModal';
+
+const COURSE_BOT_URL = 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot';
 
 const COURSE_TOPICS = [
   'Вступ до йоги',
@@ -13,7 +14,6 @@ const COURSE_TOPICS = [
 ];
 
 const YogaCourseCard: React.FC = () => {
-  const [buyOpen, setBuyOpen] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -63,17 +63,17 @@ const YogaCourseCard: React.FC = () => {
               </div>
               <div className="text-[11px] text-slate-400">повний доступ до курсу</div>
             </div>
-            <button
-              onClick={() => setBuyOpen(true)}
+            <a
+              href={COURSE_BOT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
             >
               <ShoppingCart className="h-4 w-4" /> Придбати курс
-            </button>
+            </a>
           </div>
         </div>
       </div>
-
-      <CourseBuyModal open={buyOpen} onClose={() => setBuyOpen(false)} />
     </motion.div>
   );
 };
