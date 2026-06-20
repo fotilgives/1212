@@ -1,6 +1,4 @@
-const SUPABASE_URL = 'https://ewtybyrtdvhibdtdvrmq.supabase.co';
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dHlieXJ0ZHZoaWJkdGR2cm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzI5ODcsImV4cCI6MjA5MTA0ODk4N30.VjWnmvh8tw1GSIBJYWbJ8o5dYBkCj5pOUj2zoTPHmyg';
+import { rpc } from './_wfp.js';
 
 const PACKAGES = {
   p1:   { amount: 1,   coins: 1 },
@@ -8,20 +6,6 @@ const PACKAGES = {
   p100: { amount: 100, coins: 500 },
   p200: { amount: 200, coins: 1100 },
 };
-
-async function rpc(fn, args = {}) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(args),
-  });
-  if (!r.ok) throw new Error(`rpc ${fn} failed: ${await r.text()}`);
-  return r.json();
-}
 
 export default async function handler(req, res) {
   try {
