@@ -1,11 +1,11 @@
-import { parseBody, s, parseTopupRef, checkStatus, creditTopup } from './_wfp.js';
+import { parseBody, confirmAndCredit } from './_wfp.js';
 
 /**
  * returnUrl — куди WayForPay повертає користувача (POST) після оплати.
  *
  * Для поповнення монет це ще й ЗАПАСНИЙ шлях зарахування: навіть якщо
- * server-to-server колбек (serviceUrl) не спрацював, ми самі питаємо статус
- * транзакції в WayForPay (CHECK_STATUS) і зараховуємо монети ідемпотентно.
+ * server-to-server колбек (serviceUrl) не спрацював, ми тут підтверджуємо
+ * оплату напряму в WayForPay (CHECK_STATUS) і зараховуємо монети ідемпотентно.
  */
 export default async function handler(req, res) {
   let to = '';
@@ -18,24 +18,7 @@ export default async function handler(req, res) {
   if (to === 'topup') {
     try {
       const body = await parseBody(req);
-      const orderReference = s(body.orderReference);
-      const { valid, coins } = parseTopupRef(orderReference);
-
-      if (valid) {
-        // Довіряємо лише статусу, отриманому напряму від WayForPay (не з браузера).
-        const st = await checkStatus(orderReference);
-        const browserStatus = s(body.transactionStatus);
-        const approved =
-          (st && st.status === 'Approved') ||
-          // якщо CHECK_STATUS недоступний — підстраховка статусом із колбека браузера
-          (!st && browserStatus === 'Approved');
-
-        if (approved) {
-          await creditTopup(orderReference, coins, null, 'return');
-        } else {
-          console.log('[wfp-return] not approved:', st ? st.status : browserStatus, orderReference);
-        }
-      }
+      await confirmAndCredit(body, 'return');
     } catch (e) {
       console.error('[wfp-return] ERR:', e.message);
     }

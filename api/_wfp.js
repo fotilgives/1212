@@ -41,21 +41,60 @@ export async function readRawBody(req) {
 }
 
 // Парсимо тіло у звичайний об'єкт незалежно від формату (JSON / urlencoded / об'єкт).
-export async function parseBody(req) {
-  const ct = (req.headers['content-type'] || '').toLowerCase();
-  const raw = await readRawBody(req);
-  if (raw && typeof raw === 'object') return raw;
-  if (typeof raw === 'string' && raw.length > 0) {
-    if (ct.includes('urlencoded')) return Object.fromEntries(new URLSearchParams(raw));
-    try {
-      return JSON.parse(raw);
-    } catch {
-      // WayForPay інколи шле JSON всередині form-поля — пробуємо ще раз як urlencoded
-      try {
-        return Object.fromEntries(new URLSearchParams(raw));
-      } catch {
-        return {};
+const WFP_FIELDS = ['orderReference', 'merchantAccount', 'transactionStatus', 'merchantSignature'];
+
+function looksLikeWfp(obj) {
+  return obj && typeof obj === 'object' && WFP_FIELDS.some((k) => k in obj);
+}
+
+// WayForPay шле JSON-рядок із Content-Type: application/x-www-form-urlencoded,
+// тож стандартні парсери віддають { '<увесь JSON>': '' }. Дістаємо справжній об'єкт.
+function recoverWfpObject(obj) {
+  if (looksLikeWfp(obj)) return obj;
+  if (obj && typeof obj === 'object') {
+    for (const k of Object.keys(obj)) {
+      const t = String(k).trim();
+      if (t.startsWith('{') && t.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(t);
+          if (looksLikeWfp(parsed)) return parsed;
+        } catch {
+          /* ignore */
+        }
       }
+    }
+  }
+  return obj || {};
+}
+
+export async function parseBody(req) {
+  const raw = await readRawBody(req);
+
+  // Vercel вже розпарсив тіло в об'єкт (можливо, у "кривому" вигляді WayForPay).
+  if (raw && typeof raw === 'object') return recoverWfpObject(raw);
+
+  if (typeof raw === 'string' && raw.length > 0) {
+    const t = raw.trim();
+    // 1) Чистий JSON (саме так шле WayForPay).
+    if (t.startsWith('{')) {
+      try {
+        return JSON.parse(t);
+      } catch {
+        /* ignore */
+      }
+    }
+    // 2) urlencoded — звичайний або з JSON у назві єдиного ключа.
+    try {
+      const params = Object.fromEntries(new URLSearchParams(raw));
+      return recoverWfpObject(params);
+    } catch {
+      /* ignore */
+    }
+    // 3) Остання спроба — JSON без перевірки дужки.
+    try {
+      return JSON.parse(t);
+    } catch {
+      return {};
     }
   }
   return {};
@@ -108,10 +147,47 @@ export async function checkStatus(orderReference) {
       }),
     });
     const data = await r.json();
-    return { status: s(data.transactionStatus), reasonCode: s(data.reasonCode) };
+    // Якщо WayForPay не повернув статусу транзакції (помилка API/підпису) —
+    // вважаємо результат непереконливим (null), щоб спрацював фолбек на статус із тіла.
+    const status = s(data.transactionStatus);
+    if (!status) {
+      console.log('[wfp] checkStatus inconclusive:', s(data.reason), s(data.reasonCode));
+      return null;
+    }
+    return { status, reasonCode: s(data.reasonCode) };
   } catch (e) {
     console.error('[wfp] checkStatus ERR:', e.message);
     return null;
+  }
+}
+
+/**
+ * Список транзакцій мерчанта за період через API WayForPay (TRANSACTION_LIST).
+ * Підпис: merchantAccount;dateBegin;dateEnd. Повертає масив або [].
+ */
+export async function transactionList(fromTs, toTs) {
+  try {
+    const merchant = await rpc('wfp_merchant');
+    const signature = await rpc('wfp_sign', {
+      p_data: [s(merchant), String(fromTs), String(toTs)].join(';'),
+    });
+    const r = await fetch('https://api.wayforpay.com/api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transactionType: 'TRANSACTION_LIST',
+        merchantAccount: merchant,
+        merchantSignature: signature,
+        apiVersion: 1,
+        dateBegin: fromTs,
+        dateEnd: toTs,
+      }),
+    });
+    const data = await r.json();
+    return Array.isArray(data.transactionList) ? data.transactionList : [];
+  } catch (e) {
+    console.error('[wfp] transactionList ERR:', e.message);
+    return [];
   }
 }
 
@@ -140,4 +216,47 @@ export async function creditTopup(orderReference, coinsHint, amountHint, source)
     console.error('[wfp] creditTopup ERR:', e.message);
     return false;
   }
+}
+
+// Перевірка підпису callback WayForPay:
+// merchantAccount;orderReference;amount;currency;authCode;cardPan;transactionStatus;reasonCode
+export async function verifyCallback(body) {
+  try {
+    const fields = ['merchantAccount', 'orderReference', 'amount', 'currency', 'authCode', 'cardPan', 'transactionStatus', 'reasonCode'];
+    const data = fields.map((f) => s(body[f])).join(';');
+    const expected = s(await rpc('wfp_sign', { p_data: data }));
+    return !!expected && expected === s(body.merchantSignature);
+  } catch (e) {
+    console.error('[wfp] verifyCallback ERR:', e.message);
+    return false;
+  }
+}
+
+/**
+ * Єдина точка прийняття рішення про зарахування — використовується і колбеком,
+ * і returnUrl. Зараховує монети ТІЛЬКИ якщо WayForPay підтвердив оплату:
+ *   1) CHECK_STATUS API повертає 'Approved' (істина, підробити неможливо), АБО
+ *   2) CHECK_STATUS недоступний, АЛЕ тіло має статус 'Approved' з валідним підписом.
+ * Зарахування ідемпотентне (одне замовлення — один раз).
+ */
+export async function confirmAndCredit(body, source) {
+  const orderReference = s(body.orderReference);
+  const { valid, coins } = parseTopupRef(orderReference);
+  if (!valid) {
+    console.log('[wfp] confirmAndCredit: invalid ref', orderReference, '(', source, ')');
+    return false;
+  }
+
+  const st = await checkStatus(orderReference);
+  let approved;
+  if (st) {
+    approved = st.status === 'Approved';
+    console.log('[wfp] checkStatus', orderReference, '->', st.status);
+  } else {
+    approved = s(body.transactionStatus) === 'Approved' && (await verifyCallback(body));
+    console.log('[wfp] checkStatus unreachable; signed-fallback approved:', approved);
+  }
+
+  if (!approved) return false;
+  return creditTopup(orderReference, coins, null, source);
 }

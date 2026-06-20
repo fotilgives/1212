@@ -89,6 +89,19 @@ export function useAccount(): Account {
         await refresh();
         setReady(true);
       }
+      // Страхувальна звірка платежів: дораховує монети за оплачені, але ще не
+      // зараховані замовлення WayForPay (на випадок, якщо колбек/повернення не спрацювали).
+      try {
+        const r = await fetch('/api/wayforpay-reconcile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (active && data && data.credited > 0) await refresh();
+      } catch {
+        /* ignore */
+      }
     })();
 
     const channel = supabase
