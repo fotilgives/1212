@@ -17,72 +17,74 @@ async function rpc(fn, args = {}) {
   try { return JSON.parse(text); } catch { return text; }
 }
 
-const s = (v) => (v == null ? '' : String(v));
+// Read raw body from stream (handles Buffer, string, object, undefined)
+async function parseBody(req) {
+  const ct = (req.headers['content-type'] || '').toLowerCase();
+
+  // If Vercel already parsed it to a plain object (JSON)
+  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
+    return req.body;
+  }
+
+  // Read raw bytes from stream
+  const raw = await new Promise((resolve, reject) => {
+    // Already a string or Buffer sitting on req.body
+    if (typeof req.body === 'string') return resolve(req.body);
+    if (Buffer.isBuffer(req.body)) return resolve(req.body.toString('utf-8'));
+
+    // Stream
+    const chunks = [];
+    req.on('data', (c) => chunks.push(typeof c === 'string' ? Buffer.from(c) : c));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+    req.on('error', reject);
+  });
+
+  if (!raw) return {};
+
+  if (ct.includes('urlencoded')) {
+    return Object.fromEntries(new URLSearchParams(raw));
+  }
+  try { return JSON.parse(raw); } catch { return {}; }
+}
 
 export default async function handler(req, res) {
   const time = Math.floor(Date.now() / 1000);
   let orderReference = '';
 
   try {
-    let body = req.body;
-    const ct = (req.headers['content-type'] || '').toLowerCase();
-
-    if (typeof body === 'string') {
-      if (ct.includes('urlencoded')) {
-        body = Object.fromEntries(new URLSearchParams(body));
-      } else {
-        try { body = JSON.parse(body); } catch { body = {}; }
-      }
-    }
-    body = body || {};
-    orderReference = s(body.orderReference);
+    const body = await parseBody(req);
 
     const {
-      merchantAccount, amount, currency,
+      merchantAccount, orderReference: ref, amount, currency,
       authCode, cardPan, transactionStatus, reasonCode, merchantSignature,
     } = body;
 
-    // Build signature string — convert ALL fields to string (undefined → '')
-    const inSigStr = [
-      s(merchantAccount), orderReference, s(amount), s(currency),
-      s(authCode), s(cardPan), s(transactionStatus), s(reasonCode),
-    ].join(';');
+    orderReference = String(ref || '');
+    const s = (v) => (v == null ? '' : String(v));
 
-    console.log('[wfp-cb] ct:', ct, 'status:', s(transactionStatus), 'ref:', orderReference);
-    console.log('[wfp-cb] sigStr:', inSigStr);
+    console.log('[wfp-cb] status:', s(transactionStatus), 'ref:', orderReference, 'amount:', s(amount));
+    console.log('[wfp-cb] bodyKeys:', Object.keys(body).join(','));
 
-    // Log signature for debugging
-    try {
-      const expected = await rpc('wfp_sign', { p_data: inSigStr });
-      console.log('[wfp-cb] sigExpected:', expected, 'sigReceived:', merchantSignature, 'match:', expected === merchantSignature);
-    } catch (sigErr) {
-      console.error('[wfp-cb] wfp_sign error:', sigErr.message);
-    }
+    // Перевіряємо тільки статус та формат orderReference (TOP_uuid_coins_ts)
+    const parts = orderReference.split('_');
+    const playerId = parts[1] || '';
+    const coins    = parseInt(parts[2], 10);
+    const orderValid = parts[0] === 'TOP' && playerId.length >= 8 && coins > 0;
 
-    // Validate by orderReference format (TOP_<uuid>_<coins>_<ts>) — safe enough
-    const refParts = orderReference.split('_');
-    const orderValid = refParts[0] === 'TOP' && refParts[1]?.length >= 8 && parseInt(refParts[2], 10) > 0;
+    console.log('[wfp-cb] orderValid:', orderValid, 'playerId:', playerId, 'coins:', coins);
 
-    if (orderValid && s(transactionStatus) === 'Approved') {
-      const parts    = orderReference.split('_');
-      const playerId = parts[1];
-      const coins    = parseInt(parts[2], 10);
-      console.log('[wfp-cb] crediting player:', playerId, 'coins:', coins);
-      if (playerId && Number.isFinite(coins) && coins > 0) {
-        try {
-          await rpc('rps_topup', { p_id: playerId, p_nick: 'Гравець', p_amount: coins });
-          console.log('[wfp-cb] topup OK');
-        } catch (topupErr) {
-          console.error('[wfp-cb] topup error:', topupErr.message);
-        }
-      } else {
-        console.log('[wfp-cb] bad playerId/coins — skip');
+    if (s(transactionStatus) === 'Approved' && orderValid) {
+      try {
+        const bal = await rpc('rps_topup', { p_id: playerId, p_nick: 'Гравець', p_amount: coins });
+        console.log('[wfp-cb] TOPUP OK bal:', bal);
+      } catch (e) {
+        console.error('[wfp-cb] topup ERR:', e.message);
       }
     } else {
-      console.log('[wfp-cb] not crediting — orderValid:', orderValid, 'status:', s(transactionStatus));
+      console.log('[wfp-cb] skip — status:', s(transactionStatus), 'orderValid:', orderValid);
     }
 
-    // Build accept response signature
+    // Відповідь для WayForPay
     let respSig = '';
     try {
       const merchant = await rpc('wfp_merchant');
@@ -90,7 +92,7 @@ export default async function handler(req, res) {
         p_data: [s(merchant) || s(merchantAccount), orderReference, 'accept', String(time)].join(';'),
       });
     } catch (e) {
-      console.error('[wfp-cb] respSig error:', e.message);
+      console.error('[wfp-cb] respSig ERR:', e.message);
     }
 
     return res.status(200).json({ orderReference, status: 'accept', time, signature: respSig || '' });
