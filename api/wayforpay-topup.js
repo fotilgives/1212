@@ -12,52 +12,74 @@ const PACKAGES = {
 };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  // Завжди повертаємо JSON, ніколи не кидаємо HTML
+  try {
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-  const pkg = PACKAGES[body.packageId];
-  if (!pkg) return res.status(400).json({ error: 'Невідомий пакет.' });
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
+    body = body || {};
 
-  const playerId = String(body.playerId || '');
-  if (!/^[0-9a-fA-F-]{8,64}$/.test(playerId))
-    return res.status(400).json({ error: 'Невірний ідентифікатор гравця.' });
+    const pkg = PACKAGES[body.packageId];
+    if (!pkg) return res.status(400).json({ error: 'Невідомий пакет поповнення.' });
 
-  const supabase     = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const orderRef     = `TOP_${playerId}_${pkg.coins}_${Date.now()}`;
-  const orderDate    = Math.floor(Date.now() / 1000);
-  const productName  = `${pkg.coins} ігрових монет`;
-  const currency     = 'UAH';
+    const playerId = String(body.playerId || '');
+    if (!playerId || playerId.length < 8) {
+      return res.status(400).json({ error: 'Невірний ідентифікатор гравця.' });
+    }
 
-  // Отримуємо merchant і domain з БД
-  const [{ data: merchant }, { data: domain }] = await Promise.all([
-    supabase.rpc('wfp_merchant'),
-    supabase.rpc('wfp_domain'),
-  ]);
+    const supabase  = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const orderRef  = `TOP_${playerId}_${pkg.coins}_${Date.now()}`;
+    const orderDate = Math.floor(Date.now() / 1000);
+    const productName = `${pkg.coins} ігрових монет`;
+    const currency  = 'UAH';
 
-  const sigStr = [
-    merchant, domain, orderRef, String(orderDate),
-    String(pkg.amount), currency, productName, '1', String(pkg.amount),
-  ].join(';');
+    // Отримуємо merchant/domain/підпис з Postgres (секрет ніколи не залишає БД)
+    const [mRes, dRes] = await Promise.all([
+      supabase.rpc('wfp_merchant'),
+      supabase.rpc('wfp_domain'),
+    ]);
 
-  const { data: signature } = await supabase.rpc('wfp_sign', { p_data: sigStr });
+    const merchant = mRes.data;
+    const domain   = dRes.data;
 
-  const origin = `https://${domain}`;
-  return res.status(200).json({
-    action: 'https://secure.wayforpay.com/pay',
-    fields: {
-      merchantAccount:    merchant,
-      merchantDomainName: domain,
-      merchantSignature:  signature,
-      orderReference:     orderRef,
-      orderDate,
-      amount:             String(pkg.amount),
-      currency,
-      productName:        [productName],
-      productCount:       [1],
-      productPrice:       [pkg.amount],
-      language:           'UA',
-      returnUrl:          `${origin}/api/wayforpay-return?to=topup`,
-      serviceUrl:         `${origin}/api/wayforpay-topup-callback`,
-    },
-  });
+    if (!merchant || !domain) {
+      return res.status(500).json({ error: 'Платіжний сервіс тимчасово недоступний (config).' });
+    }
+
+    const sigStr = [
+      merchant, domain, orderRef, String(orderDate),
+      String(pkg.amount), currency, productName, '1', String(pkg.amount),
+    ].join(';');
+
+    const { data: signature, error: sigErr } = await supabase.rpc('wfp_sign', { p_data: sigStr });
+    if (sigErr || !signature) {
+      return res.status(500).json({ error: 'Платіжний сервіс тимчасово недоступний (sign).' });
+    }
+
+    const origin = `https://${domain}`;
+    return res.status(200).json({
+      action: 'https://secure.wayforpay.com/pay',
+      fields: {
+        merchantAccount:    merchant,
+        merchantDomainName: domain,
+        merchantSignature:  signature,
+        orderReference:     orderRef,
+        orderDate:          String(orderDate),
+        amount:             String(pkg.amount),
+        currency,
+        productName:        [productName],
+        productCount:       ['1'],
+        productPrice:       [String(pkg.amount)],
+        language:           'UA',
+        returnUrl:          `${origin}/api/wayforpay-return?to=topup`,
+        serviceUrl:         `${origin}/api/wayforpay-topup-callback`,
+      },
+    });
+  } catch (err) {
+    console.error('wayforpay-topup error:', err);
+    return res.status(500).json({ error: 'Внутрішня помилка сервера. Спробуйте пізніше.' });
+  }
 }
