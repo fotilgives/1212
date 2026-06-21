@@ -174,7 +174,8 @@ begin
   return inserted;
 end; $function$;
 
--- ── Денний фонд центру: 5000/день, скидається щодня (не накопичується) ───────
+-- ── Фонд центру: +5000/день, накопичується, цикл 10 днів (до 50000) ──────────
+-- На 11-й день -> скидання на 5000. Тільки живим гравцям (гарантія в settle).
 create or replace function public.rps_bonus_accrue()
 returns void
 language plpgsql
@@ -182,6 +183,7 @@ security definer
 set search_path to 'public'
 as $function$
 declare r public.rps_center_bonus; today date := (now() at time zone 'Europe/Kyiv')::date;
+  missed int; i int;
 begin
   select * into r from rps_center_bonus where id = 1 for update;
   if not found then
@@ -191,12 +193,18 @@ begin
     return;
   end if;
   if today <= r.last_accrual then return; end if;
-  -- новий день -> денний фонд скидається на 5000
+
+  missed := today - r.last_accrual;
+  for i in 1..least(missed, 60) loop
+    if r.cycle_day >= 10 then
+      r.amount := rps_daily_fund(); r.cycle_day := 1;        -- 11-й день -> скидання
+    else
+      r.amount := r.amount + rps_daily_fund(); r.cycle_day := r.cycle_day + 1;
+    end if;
+  end loop;
+
   update rps_center_bonus
-     set amount = rps_daily_fund(),
-         cycle_day = (r.cycle_day % 10) + 1,
-         last_accrual = today,
-         updated_at = now()
+     set amount = r.amount, cycle_day = r.cycle_day, last_accrual = today, updated_at = now()
    where id = 1;
 end; $function$;
 

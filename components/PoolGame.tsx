@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Users, Bot, Wifi } from 'lucide-react';
+import { Coins, Users, Wifi } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import AnimatedNumber from './AnimatedNumber';
@@ -145,20 +145,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     return () => window.clearInterval(id);
   }, [round, loadCurrent]);
 
-  const [botBusy, setBotBusy] = useState(false);
-  const [autoFill, setAutoFill] = useState(true);
   const filledRef = useRef<number | null>(null);
 
-  const fillRound = useCallback(async () => {
-    setBotBusy(true);
-    await supabase.rpc('rps_fill', { p_target: 20 });
-    if (roundIdRef.current) await fetchBets(roundIdRef.current);
-    setBotBusy(false);
-  }, [fetchBets]);
-
-  // Auto-fill: боти заходять ПОСТУПОВО протягом раунду (живіше відчуття).
+  // Auto-fill: боти заходять автоматично й ПОСТУПОВО протягом раунду (за сценарієм).
   useEffect(() => {
-    if (!autoFill || !round || round.status !== 'betting') return;
+    if (!round || round.status !== 'betting') return;
     if (filledRef.current === round.id) return;
     filledRef.current = round.id;
 
@@ -183,7 +174,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [round, autoFill, fetchBets]);
+  }, [round, fetchBets]);
 
   const myBet = bets.find((b) => b.player_id === account.playerId) || null;
   const potOf = (m: Move) => bets.filter((b) => b.move === m).reduce((s, b) => s + b.stake, 0);
@@ -376,27 +367,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
               </div>
               <div className="text-[11px] text-slate-400">монет</div>
             </div>
-          </div>
-
-          {/* Controls (top tools) */}
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
-            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-500">
-              <input
-                type="checkbox"
-                checked={autoFill}
-                onChange={(e) => setAutoFill(e.target.checked)}
-                className="h-3.5 w-3.5 accent-emerald-600"
-              />
-              Авто-боти (до 20 щораунду)
-            </label>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={fillRound}
-              disabled={botBusy || remaining <= 1}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition hover:ring-emerald-300 disabled:opacity-50"
-            >
-              <Bot className="h-3.5 w-3.5" /> {botBusy ? 'Додаю…' : 'Заповнити до 20'}
-            </motion.button>
           </div>
 
           {/* Pools */}
