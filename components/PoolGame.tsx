@@ -293,7 +293,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 </span>
               </div>
             </div>
-            <p className="mt-1 text-[11px] text-amber-600/80">+1000 щодня · забирає переможець раунду 🏆</p>
+            <p className="mt-1 text-[11px] text-amber-600/80">Денний фонд центру для гравців · поповнюється щодня 🏆</p>
           </div>
         )}
 
