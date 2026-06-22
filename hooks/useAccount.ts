@@ -206,6 +206,12 @@ export function useAccount(): Account {
     }
     const d = data as { id: string; nickname: string };
     applyAccount(d.id, d.nickname, remember);
+    // Привітальний лист — fire-and-forget, не блокує реєстрацію.
+    fetch('/api/send-welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginStr.trim(), name: nick }),
+    }).catch(() => {});
     return null;
   }, []);
 
