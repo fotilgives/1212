@@ -20,6 +20,12 @@ const ROUND_SECONDS = 30;
 const emojiOf = (m: Move) => MOVES.find((x) => x.id === m)!.emoji;
 const labelOf = (m: Move) => MOVES.find((x) => x.id === m)!.label;
 
+const MOVE_IMG: Record<Move, string> = {
+  rock: '/images/game/rock.png',
+  scissors: '/images/game/scissors.png',
+  paper: '/images/game/paper.png',
+};
+
 const RING = 46;
 const CIRC = 2 * Math.PI * RING;
 
@@ -384,13 +390,13 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                       : 'border-slate-200 bg-white'
                   }`}
                 >
-                  <motion.div
-                    className="text-3xl sm:text-4xl"
-                    animate={isMine ? { scale: [1, 1.12, 1] } : {}}
+                  <motion.img
+                    src={MOVE_IMG[m.id]}
+                    alt={m.label}
+                    className="mx-auto h-14 w-14 object-contain drop-shadow-sm sm:h-16 sm:w-16"
+                    animate={isMine ? { scale: [1, 1.12, 1], y: [0, -2, 0] } : {}}
                     transition={{ duration: 1.6, repeat: Infinity }}
-                  >
-                    {m.emoji}
-                  </motion.div>
+                  />
                   <div className="mt-1 text-sm font-semibold text-slate-700">{m.label}</div>
                   <div className="mt-2 flex items-center justify-center gap-1 text-sm font-bold text-emerald-600">
                     <Coins className="h-3.5 w-3.5" /> <AnimatedNumber value={pot} />
@@ -515,7 +521,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                               : 'border-slate-200 bg-white hover:border-emerald-300'
                           }`}
                         >
-                          <span className="text-3xl sm:text-4xl">{m.emoji}</span>
+                          <img src={MOVE_IMG[m.id]} alt={m.label} className="h-12 w-12 object-contain drop-shadow-sm sm:h-14 sm:w-14" />
                           <span className="text-xs font-semibold text-slate-700 sm:text-sm">{m.label}</span>
                         </motion.button>
                       );
