@@ -322,14 +322,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         {/* ── Банк центру (gold strip) ── */}
         {bonus && (
           <div className="relative flex items-center gap-3 border-b border-amber-100 bg-gradient-to-r from-amber-100 via-amber-50 to-transparent px-5 py-3 sm:px-7">
-            <video
-              src="/images/game/bank.mp4"
-              poster="/images/game/bank.png"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="h-11 w-11 shrink-0 rounded-2xl object-cover ring-1 ring-amber-200/80 sm:h-12 sm:w-12"
+            <div
+              className="h-11 w-11 shrink-0 rounded-2xl overflow-hidden ring-1 ring-amber-200/80 sm:h-12 sm:w-12"
+              dangerouslySetInnerHTML={{
+                __html: `<video src="/images/game/bank.mp4" poster="/images/game/bank.png" autoplay loop muted playsinline preload="auto" class="h-full w-full object-cover"></video>`
+              }}
             />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -441,18 +438,20 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     : 'bg-slate-100 text-slate-600 ring-slate-200'
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5">
-                  <img src={MOVE_IMG[lastResult.move]} alt="" className="h-7 w-7 object-contain" />
-                  Твій хід
-                  {lastResult.isBluff && <span>🤫 блеф</span>}
-                </span>{' '}
-                <span className="block sm:inline">
-                  {lastResult.net > 0
-                    ? `· виграш +${lastResult.net} монет 🎉`
-                    : lastResult.net < 0
-                    ? `· програш ${lastResult.net} монет`
-                    : '· ставку повернено'}
-                </span>
+                <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+                  <span className="inline-flex items-center gap-1.5">
+                    <img src={MOVE_IMG[lastResult.move]} alt="" className="h-7 w-7 object-contain" />
+                    <span>Твій хід{lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}</span>
+                  </span>
+                  <span className="opacity-40">·</span>
+                  <span>
+                    {lastResult.net > 0
+                      ? `виграш +${lastResult.net} монет 🎉`
+                      : lastResult.net < 0
+                      ? `програш ${lastResult.net} монет`
+                      : 'ставку повернено'}
+                  </span>
+                </div>
                 {lastWin && (
                   <div className="mt-1 text-xs font-medium opacity-80">
                     Виграшний хід раунду: {emojiOf(lastWin)} {labelOf(lastWin)}
