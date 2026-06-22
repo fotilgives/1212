@@ -52,9 +52,8 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     setForcing(false);
   };
 
-  // Блеф розблоковується лише ПІСЛЯ перемоги в попередньому раунді.
-  // Програш або відсутність зіграного раунду — блеф заблокований.
-  const canBluff = !!lastResult && lastResult.net > 0;
+  // Блеф завжди доступний (не прив'язаний до попередньої перемоги).
+  const canBluff = true;
 
   useEffect(() => {
     if (!canBluff && bluff) setBluff(false);
