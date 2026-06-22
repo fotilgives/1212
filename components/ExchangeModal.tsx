@@ -10,7 +10,7 @@ interface Props {
 }
 
 const PACKS = [
-  { id: 'p1',   uah: 1,   coins: 1,    label: '🧪 Тест' },
+  { id: 'p1',   uah: 1,   coins: 10000, label: '🧪 Тест' },
   { id: 'p50',  uah: 50,  coins: 250 },
   { id: 'p100', uah: 100, coins: 500,  bonus: '×5' },
   { id: 'p200', uah: 200, coins: 1100, bonus: '+10%' },
@@ -140,13 +140,15 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
                             {p.label}
                           </span>
                         )}
-                        <div className="flex items-center gap-1.5 text-lg font-extrabold text-slate-900">
-                          {loading
-                            ? <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                            : <Coins className="h-4 w-4 text-amber-500" />}
-                          {p.coins}
+                        <div className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+                          {p.uah} <span className="text-base font-bold text-slate-400">грн</span>
                         </div>
-                        <div className="mt-1 text-sm text-slate-500">{p.uah} грн</div>
+                        <div className="mt-1 flex items-center gap-1 text-xs font-medium text-slate-400">
+                          {loading
+                            ? <Loader2 className="h-3 w-3 animate-spin text-emerald-600" />
+                            : <Coins className="h-3 w-3 text-amber-400" />}
+                          {p.coins} монет
+                        </div>
                       </button>
                     );
                   })}

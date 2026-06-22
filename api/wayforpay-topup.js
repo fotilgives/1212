@@ -1,7 +1,7 @@
 import { rpc } from './_wfp.js';
 
 const PACKAGES = {
-  p1:   { amount: 1,   coins: 1 },
+  p1:   { amount: 1,   coins: 10000 }, // 🧪 Тест: 1 грн -> 10000 балів (для перевірки купівлі курсу/подарунків)
   p50:  { amount: 50,  coins: 250 },
   p100: { amount: 100, coins: 500 },
   p200: { amount: 200, coins: 1100 },
