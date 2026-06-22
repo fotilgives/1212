@@ -257,13 +257,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 via-amber-100/40 to-transparent px-4 py-3 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-extrabold text-amber-800">
-                <motion.span
-                  className="text-xl"
-                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2.6, repeat: Infinity }}
-                >
-                  🏦
-                </motion.span>
+                <video
+                  src="/images/game/bank.mp4"
+                  poster="/images/game/bank.png"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="h-9 w-9 shrink-0 rounded-xl object-cover ring-1 ring-amber-200/70"
+                />
                 Банк центру
                 <span className="inline-flex items-center gap-1 text-amber-700">
                   <Coins className="h-4 w-4" />
