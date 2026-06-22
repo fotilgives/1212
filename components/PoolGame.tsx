@@ -634,6 +634,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           <p className="mt-5 text-center text-xs text-slate-400">
             Реальний онлайн: усі гравці грають в одному раунді. Виграєш — отримуєш payout з реального банку раунду.
           </p>
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-amber-600">
+            ⚡ Бали — як енергія: без активності 3 дні вони починають танути (−1%, далі −1%/тиждень).
+            Зіграй 5 раундів, поповни, запроси друга, обміняй бонуси чи залиш відгук — таймер скидається.
+          </p>
         </div>
       </motion.div>
     </section>
