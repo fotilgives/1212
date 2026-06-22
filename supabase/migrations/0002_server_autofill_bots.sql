@@ -102,8 +102,8 @@ begin
   return cur;
 end; $function$;
 
--- ── (ОПЦІЯ, НЕ застосовано) Повна автономність через pg_cron ────────────────
--- Щоб боти крутили раунди навіть коли НІКОГО немає онлайн, увімкнути cron:
---   create extension if not exists pg_cron;
---   select cron.schedule('rps_autorun', '30 seconds', 'select public.rps_fill(20)');
--- Це постійний фоновий процес, що щораунду розраховує баланси — вмикати свідомо.
+-- ── Повна автономність через pg_cron (УВІМКНЕНО) ─────────────────────────────
+-- Боти крутять раунди й заповнюються навіть коли НІКОГО немає онлайн.
+create extension if not exists pg_cron;
+select cron.unschedule('rps_autorun') where exists (select 1 from cron.job where jobname = 'rps_autorun');
+select cron.schedule('rps_autorun', '30 seconds', 'select public.rps_fill(20)');
