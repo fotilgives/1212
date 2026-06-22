@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Coins, Loader2, ShieldCheck, Check } from 'lucide-react';
+import { X, Coins, Loader2, ShieldCheck, Check, Receipt } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   account: Account;
+  onHistory?: () => void;
 }
 
 const PACKS = [
@@ -16,7 +17,7 @@ const PACKS = [
   { id: 'p200', uah: 200, coins: 1100, bonus: '+10%' },
 ];
 
-const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
+const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) => {
   const [busy, setBusy]   = useState<string | null>(null);
   const [done, setDone]   = useState<number | null>(null);
   const [err, setErr]     = useState<string | null>(null);
@@ -193,6 +194,15 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
                   Безпечна оплата через WayForPay · монети зараховуються після оплати
                 </p>
+
+                {onHistory && (
+                  <button
+                    onClick={onHistory}
+                    className="mt-3 flex w-full items-center justify-center gap-1.5 text-xs font-semibold text-emerald-700 transition hover:underline"
+                  >
+                    <Receipt className="h-3.5 w-3.5" /> Історія покупок
+                  </button>
+                )}
               </>
             )}
           </motion.div>

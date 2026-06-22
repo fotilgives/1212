@@ -43,9 +43,8 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
       setBusy(false);
       return;
     }
-    // Успіх — показуємо екран з кнопкою-посиланням (window.open після await
-    // блокується мобільним браузером, тому даємо явну кнопку — це жест користувача).
-    window.open(COURSE_BOT_URL, '_blank', 'noopener,noreferrer');
+    // Успіх — показуємо екран з кнопкою-посиланням. НЕ викликаємо window.open
+    // (його блокує браузер після await) — користувач тисне кнопку сам.
     setBusy(false);
     setMode('done');
   };

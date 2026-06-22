@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, X, ExternalLink, Lock } from 'lucide-react';
+import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, X, ExternalLink, Lock, Receipt } from 'lucide-react';
 import type { Account } from '../../hooks/useAccount';
 import AnimatedNumber from '../AnimatedNumber';
 
@@ -8,6 +8,7 @@ interface Props {
   account: Account;
   onTopUp: () => void;
   onLogin?: () => void;
+  onHistory?: () => void;
   /** true - компонент рендериться всередині акордеону на головній. */
   embedded?: boolean;
 }
@@ -35,7 +36,7 @@ const REWARDS: Reward[] = [
   { emoji: '✨', title: 'Знижка 10% на будь-яку послугу', cost: 800, delivery: { type: 'contact' } },
 ];
 
-const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }) => {
+const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedded = false }) => {
   const [busy, setBusy] = useState<string | null>(null);
   const [delivered, setDelivered] = useState<Reward | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -107,8 +108,18 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }
         <p className={`mx-auto max-w-xl text-slate-600 ${embedded ? '' : 'mt-3'}`}>
           Зароблені у грі монети можна обміняти на послуги, знижки, сертифікати та курси. Без виводу коштів - лише корисні нагороди.
         </p>
-        <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-base font-bold text-amber-600 ring-1 ring-amber-200">
-          <Coins className="h-5 w-5" /> Твій баланс: <AnimatedNumber value={account.balance} />
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-base font-bold text-amber-600 ring-1 ring-amber-200">
+            <Coins className="h-5 w-5" /> Твій баланс: <AnimatedNumber value={account.balance} />
+          </div>
+          {onHistory && (
+            <button
+              onClick={onHistory}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-200 transition hover:bg-emerald-50"
+            >
+              <Receipt className="h-4 w-4" /> Історія покупок
+            </button>
+          )}
         </div>
         {!account.isAccount && (
           <p className="mx-auto mt-3 flex max-w-xl items-center justify-center gap-1.5 text-sm text-slate-500">
