@@ -415,9 +415,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                className="relative mt-4 overflow-hidden rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-700 ring-1 ring-emerald-200"
+                className={`relative mt-4 overflow-hidden rounded-2xl p-4 text-center text-sm font-bold ring-1 ${
+                  lastResult.net > 0
+                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                    : lastResult.net < 0
+                    ? 'bg-rose-50 text-rose-600 ring-rose-200'
+                    : 'bg-slate-100 text-slate-600 ring-slate-200'
+                }`}
               >
-                {lastResult.payout > 0 &&
+                {lastResult.net > 0 &&
                   Array.from({ length: 8 }).map((_, i) => (
                     <motion.span
                       key={i}
@@ -432,7 +438,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   ))}
                 Твій хід {emojiOf(lastResult.move)}
                 {lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}{' '}
-                {`· виграш +${lastResult.payout} монет 🎉`}
+                {lastResult.net > 0
+                  ? `· виграш +${lastResult.net} монет 🎉`
+                  : lastResult.net < 0
+                  ? `· програш ${lastResult.net} монет`
+                  : '· ставку повернено'}
                 {lastWin && (
                   <div className="mt-1 text-xs font-medium opacity-80">
                     Виграшний хід раунду: {emojiOf(lastWin)} {labelOf(lastWin)}
