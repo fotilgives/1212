@@ -63,11 +63,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const roundIdRef = useRef<number | null>(null);
   const advancing = useRef(false);
 
-  const [bonus, setBonus] = useState<{ amount: number; cycle_day: number; max_day: number } | null>(null);
-  const fetchBonus = useCallback(async () => {
-    const { data } = await supabase.rpc('rps_bonus');
-    if (data) setBonus(data as { amount: number; cycle_day: number; max_day: number });
-  }, []);
 
   const fetchBets = useCallback(async (rid: number) => {
     const { data } = await supabase.from('rps_bets').select('*').eq('round_id', rid).order('id');
@@ -86,7 +81,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   // Initial load + realtime subscriptions
   useEffect(() => {
     loadCurrent();
-    fetchBonus();
     const ch = supabase
       .channel('rps-game')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
@@ -103,7 +97,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           setRound(r);
           if (r.status === 'settled' && r.win_move) {
             setLastWin(r.win_move as Move);
-            fetchBonus(); // банк центру міг бути виграний цього раунду
           }
         }
       })
@@ -251,43 +244,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           </div>
         </div>
 
-        {/* Бонусний банк від центру */}
-        {bonus && bonus.amount > 0 && (
-          <div className="relative overflow-hidden border-b border-amber-100 bg-gradient-to-r from-amber-50 via-amber-100/50 to-transparent px-4 py-3 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-sm font-extrabold text-amber-800">
-                <motion.span
-                  className="text-xl"
-                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2.6, repeat: Infinity }}
-                >
-                  🎁
-                </motion.span>
-                Банк центру
-                <span className="inline-flex items-center gap-1 text-amber-700">
-                  <Coins className="h-4 w-4" />
-                  <AnimatedNumber value={bonus.amount} />
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="hidden items-center gap-0.5 sm:flex">
-                  {Array.from({ length: bonus.max_day }).map((_, i) => (
-                    <span
-                      key={i}
-                      className="h-1.5 w-1.5 rounded-full"
-                      style={{ background: i < bonus.cycle_day ? '#f59e0b' : 'rgba(245,158,11,0.22)' }}
-                    />
-                  ))}
-                </div>
-                <span className="rounded-full bg-amber-200/70 px-2 py-0.5 text-[11px] font-bold text-amber-700">
-                  день {bonus.cycle_day}/{bonus.max_day}
-                </span>
-              </div>
-            </div>
-            <p className="mt-1 text-[11px] text-amber-600/80">Денний фонд центру для гравців · поповнюється щодня 🏆</p>
-          </div>
-        )}
-
         <div className="p-4 sm:p-6">
           {/* Nickname + account */}
           <div className="mb-2 flex items-center gap-2">
@@ -421,15 +377,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                className={`relative mt-4 overflow-hidden rounded-2xl p-4 text-center text-sm font-bold ${
-                  lastResult.net > 0
-                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                    : lastResult.net < 0
-                    ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
+                className="relative mt-4 overflow-hidden rounded-2xl bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-700 ring-1 ring-emerald-200"
               >
-                {lastResult.net > 0 &&
+                {lastResult.payout > 0 &&
                   Array.from({ length: 8 }).map((_, i) => (
                     <motion.span
                       key={i}
@@ -444,11 +394,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   ))}
                 Твій хід {emojiOf(lastResult.move)}
                 {lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}{' '}
-                {lastResult.net > 0
-                  ? `· виграш +${lastResult.net} монет 🎉`
-                  : lastResult.net < 0
-                  ? `· програш ${lastResult.net} монет`
-                  : '· ставку повернено'}
+                {`· виграш +${lastResult.payout} монет 🎉`}
                 {lastWin && (
                   <div className="mt-1 text-xs font-medium opacity-80">
                     Виграшний хід раунду: {emojiOf(lastWin)} {labelOf(lastWin)}
@@ -648,12 +594,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           )}
 
           <p className="mt-5 text-center text-xs text-slate-400">
-            Реальний онлайн: усі гравці грають в одному раунді. Зароблені монети згодом можна буде витратити на послуги
-            або вивести. Поки що — демо на віртуальних монетах.
-          </p>
-          <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-amber-600">
-            ⚡ Бали — як енергія: без активності 3 дні вони починають танути (−1%, далі −1%/тиждень).
-            Зіграй 5 раундів, поповни чи зроби внесок — таймер скидається.
+            Реальний онлайн: усі гравці грають в одному раунді. Виграєш — отримуєш payout з реального банку раунду.
           </p>
         </div>
       </motion.div>
