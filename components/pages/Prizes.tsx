@@ -12,7 +12,7 @@ interface Props {
   embedded?: boolean;
 }
 
-const COURSE_BOT_URL = 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot';
+const COURSE_BOT_URL = 'https://t.me/+o9i9tJpoj4A3MTcy';
 
 type Delivery =
   | { type: 'link'; url: string; label: string }

@@ -20,8 +20,13 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [busy, setBusy]   = useState<string | null>(null);
   const [done, setDone]   = useState<number | null>(null);
   const [err, setErr]     = useState<string | null>(null);
+  const [customUah, setCustomUah] = useState('');
 
-  useEffect(() => { if (!open) { setBusy(null); setDone(null); setErr(null); } }, [open]);
+  const COIN_RATE = 5; // 1 грн = 5 балів (100 грн = 500)
+  const customNum = Math.floor(Number(customUah) || 0);
+  const customCoins = customNum >= 1 ? customNum * COIN_RATE : 0;
+
+  useEffect(() => { if (!open) { setBusy(null); setDone(null); setErr(null); setCustomUah(''); } }, [open]);
 
   // Слухаємо повернення зі сторінки WayForPay
   useEffect(() => {
@@ -32,14 +37,14 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
     }
   }, [open]);
 
-  const buy = async (id: string, coins: number) => {
+  const buy = async (payload: { packageId?: string; amount?: number }, coins: number, key: string) => {
     setErr(null);
-    setBusy(id);
+    setBusy(key);
     try {
       const res  = await fetch('/api/wayforpay-topup', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ packageId: id, playerId: account.playerId }),
+        body:    JSON.stringify({ ...payload, playerId: account.playerId }),
       });
       const data = await res.json();
       if (!res.ok || !data.fields) throw new Error(data.error || 'Не вдалося створити платіж.');
@@ -126,7 +131,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
                     return (
                       <button
                         key={p.id}
-                        onClick={() => buy(p.id, p.coins)}
+                        onClick={() => buy({ packageId: p.id }, p.coins, p.id)}
                         disabled={!!busy}
                         className="relative rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-60"
                       >
@@ -152,6 +157,34 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account }) => {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Своя сума */}
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Своя сума</div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex flex-1 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus-within:border-emerald-400">
+                      <input
+                        value={customUah}
+                        onChange={(e) => setCustomUah(e.target.value.replace(/[^\d]/g, '').slice(0, 6))}
+                        inputMode="numeric"
+                        placeholder="Напр. 250"
+                        className="w-full bg-transparent text-lg font-extrabold text-slate-900 outline-none"
+                      />
+                      <span className="text-sm font-bold text-slate-400">грн</span>
+                    </div>
+                    <button
+                      onClick={() => buy({ amount: customNum }, customCoins, 'custom')}
+                      disabled={!!busy || customNum < 1}
+                      className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {busy === 'custom' ? '…' : 'Поповнити'}
+                    </button>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1 text-xs font-medium text-slate-500">
+                    <Coins className="h-3.5 w-3.5 text-amber-400" />
+                    {customCoins > 0 ? <>= <b className="text-slate-700">{customCoins.toLocaleString('uk-UA')}</b> монет</> : 'введи суму — покажемо скільки балів'}
+                  </div>
                 </div>
 
                 {err && <p className="mt-4 text-center text-xs font-semibold text-rose-600">{err}</p>}

@@ -31,8 +31,8 @@ export default async function handler(req, res) {
     } catch (e) {
       console.error('[wfp-return course] ERR:', e.message);
     }
-    // Після оплати ведемо людину одразу в Telegram-бот курсу (видає доступ/відео).
-    res.writeHead(302, { Location: 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot' });
+    // Після оплати ведемо людину одразу в Telegram-групу курсу (видає доступ/відео).
+    res.writeHead(302, { Location: 'https://t.me/+o9i9tJpoj4A3MTcy' });
     res.end();
     return;
   }
