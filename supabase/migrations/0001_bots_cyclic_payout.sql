@@ -10,18 +10,14 @@
 --        ✊ камінь  <- пул ✌️ ножиць
 --        ✌️ ножиці  <- пул ✋ паперу
 --        ✋ папір   <- пул ✊ каменю
---   * Денний фонд центру = 5000 балів/день. Тільки ЖИВИМ гравцям.
---     Гарантія: жива людина ніколи не в мінусі — програш докривається з фонду
---     до ставки + невеликий плюс (rps_bonus_floor). Фонд скінчився -> чистий цикл.
+--   * Без штучних бонусів: живий гравець отримує лише реальний розподіл пулу.
 --   * Бот = ставка без профілю (player_id не в rps_profiles). Боти топапів не мають.
 -- =============================================================================
 
 -- ── Константи ───────────────────────────────────────────────────────────────
 create or replace function public.rps_daily_fund() returns integer
-  language sql immutable as $$ select 5000 $$;
+  language sql immutable as $$ select 0 $$;
 
-create or replace function public.rps_bonus_floor() returns integer
-  language sql immutable as $$ select 25 $$;
 
 -- ── Сценарій 35 раундів ──────────────────────────────────────────────────────
 create table if not exists public.rps_bot_script (
@@ -174,39 +170,6 @@ begin
   return inserted;
 end; $function$;
 
--- ── Фонд центру: +5000/день, накопичується, цикл 10 днів (до 50000) ──────────
--- На 11-й день -> скидання на 5000. Тільки живим гравцям (гарантія в settle).
-create or replace function public.rps_bonus_accrue()
-returns void
-language plpgsql
-security definer
-set search_path to 'public'
-as $function$
-declare r public.rps_center_bonus; today date := (now() at time zone 'Europe/Kyiv')::date;
-  missed int; i int;
-begin
-  select * into r from rps_center_bonus where id = 1 for update;
-  if not found then
-    insert into rps_center_bonus(id, amount, cycle_day, last_accrual)
-      values (1, rps_daily_fund(), 1, today)
-      on conflict (id) do nothing;
-    return;
-  end if;
-  if today <= r.last_accrual then return; end if;
-
-  missed := today - r.last_accrual;
-  for i in 1..least(missed, 60) loop
-    if r.cycle_day >= 10 then
-      r.amount := rps_daily_fund(); r.cycle_day := 1;        -- 11-й день -> скидання
-    else
-      r.amount := r.amount + rps_daily_fund(); r.cycle_day := r.cycle_day + 1;
-    end if;
-  end loop;
-
-  update rps_center_bonus
-     set amount = r.amount, cycle_day = r.cycle_day, last_accrual = today, updated_at = now()
-   where id = 1;
-end; $function$;
 
 -- ── Розрахунок раунду: циклічна виплата + гарантія живим гравцям ──────────────
 create or replace function public.rps_settle_round(p_round_id bigint)
@@ -219,7 +182,6 @@ declare
   rock_pot int; sc_pot int; pp_pot int;
   rock_n int; sc_n int; pp_n int;
   arr record; tgt text; n int; i int; per int; distributed int; r record; share int;
-  v_fund int; floor_b int := rps_bonus_floor();
   rpp int; spp int; ppp int; cosmetic text;
 begin
   -- пули та к-сть за РЕАЛЬНИМ ходом
@@ -271,28 +233,7 @@ begin
     end loop;
   end loop;
 
-  -- Гарантія живим гравцям: ніколи не в мінусі. Програш докривається з денного
-  -- фонду до (ставка + floor). Боти (без профілю) пропускаються.
-  perform rps_bonus_accrue();
-  select amount into v_fund from rps_center_bonus where id = 1 for update;
-  v_fund := coalesce(v_fund, 0);
-  if v_fund > 0 then
-    for r in
-      select b.id, b.stake, b.payout
-        from rps_bets b
-        join rps_profiles p on p.id = b.player_id
-        where b.round_id = p_round_id
-        order by b.id
-    loop
-      exit when v_fund <= 0;
-      if r.payout < r.stake + floor_b then
-        share := least((r.stake + floor_b) - r.payout, v_fund);
-        update rps_bets set payout = payout + share where id = r.id;
-        v_fund := v_fund - share;
-      end if;
-    end loop;
-    update rps_center_bonus set amount = v_fund, last_claim_at = now(), updated_at = now() where id = 1;
-  end if;
+  -- Без штучних бонусів: лише реальний payout з пулу раунду.
 
   -- розкрити справжні ходи (зняти блеф) у списку ставок
   update rps_bets b set move = s.real_move
@@ -316,5 +257,4 @@ begin
     where b.round_id = p_round_id and b.player_id = p.id;
 end; $function$;
 
--- ── Скинути поточний фонд на денний (одноразово при міграції) ─────────────────
-update public.rps_center_bonus set amount = rps_daily_fund(), updated_at = now() where id = 1;
+-- Звичайна циклiчна виплата без окремого бонусного фонду.

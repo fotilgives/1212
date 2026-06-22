@@ -11,10 +11,9 @@ interface Props {
 }
 
 const PACKS = [
-  { id: 'p1',   uah: 1,   coins: 10000, label: '🧪 Тест' },
   { id: 'p50',  uah: 50,  coins: 250 },
-  { id: 'p100', uah: 100, coins: 500,  bonus: '×5' },
-  { id: 'p200', uah: 200, coins: 1100, bonus: '+10%' },
+  { id: 'p100', uah: 100, coins: 500 },
+  { id: 'p200', uah: 200, coins: 1000 },
 ];
 
 const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) => {
@@ -136,16 +135,6 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) =
                         disabled={!!busy}
                         className="relative rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-60"
                       >
-                        {p.bonus && (
-                          <span className="absolute right-2 top-2 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                            {p.bonus}
-                          </span>
-                        )}
-                        {'label' in p && p.label && (
-                          <span className="absolute right-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                            {p.label}
-                          </span>
-                        )}
                         <div className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
                           {p.uah} <span className="text-base font-bold text-slate-400">грн</span>
                         </div>
@@ -184,7 +173,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) =
                   </div>
                   <div className="mt-2 flex items-center gap-1 text-xs font-medium text-slate-500">
                     <Coins className="h-3.5 w-3.5 text-amber-400" />
-                    {customCoins > 0 ? <>= <b className="text-slate-700">{customCoins.toLocaleString('uk-UA')}</b> монет</> : 'введи суму — покажемо скільки балів'}
+                    {customCoins > 0 ? <> = <b className="text-slate-700">{customCoins.toLocaleString('uk-UA')}</b> монет</> : 'введи суму — покажемо скільки балів'}
                   </div>
                 </div>
 
