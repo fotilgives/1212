@@ -43,6 +43,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [lastWin, setLastWin] = useState<Move | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [forcing, setForcing] = useState(false);
+  const [bonus, setBonus] = useState<{ amount: number; cycle_day: number; max_day: number } | null>(null);
 
   const forceNext = async () => {
     if (forcing) return;
@@ -68,6 +69,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     setBets((data as BetRow[]) || []);
   }, []);
 
+  const fetchBonus = useCallback(async () => {
+    const { data } = await supabase.rpc('rps_bonus');
+    if (data) setBonus(data as { amount: number; cycle_day: number; max_day: number });
+  }, []);
+
   const loadCurrent = useCallback(async () => {
     const { data, error } = await supabase.rpc('rps_tick');
     if (error || !data) return;
@@ -80,6 +86,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   // Initial load + realtime subscriptions
   useEffect(() => {
     loadCurrent();
+    fetchBonus();
     const ch = supabase
       .channel('rps-game')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
@@ -96,6 +103,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           setRound(r);
           if (r.status === 'settled' && r.win_move) {
             setLastWin(r.win_move as Move);
+            fetchBonus();
           }
         }
       })
@@ -114,6 +122,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             window.setTimeout(() => setCelebrate(false), 2600);
           }
           account.refresh();
+          fetchBonus();
         }
       })
       .subscribe();
@@ -242,6 +251,36 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             <AnimatedNumber value={account.balance} />
           </div>
         </div>
+
+        {/* Банк центру — звідси гравці виграють бали (окремо від балансу гравця) */}
+        {bonus && (
+          <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 via-amber-100/40 to-transparent px-4 py-3 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-extrabold text-amber-800">
+                <motion.span
+                  className="text-xl"
+                  animate={{ rotate: [0, -8, 8, 0], scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2.6, repeat: Infinity }}
+                >
+                  🏦
+                </motion.span>
+                Банк центру
+                <span className="inline-flex items-center gap-1 text-amber-700">
+                  <Coins className="h-4 w-4" />
+                  <AnimatedNumber value={bonus.amount} />
+                </span>
+              </div>
+              <span className="rounded-full bg-amber-200/70 px-2 py-0.5 text-[11px] font-bold text-amber-700">
+                ліміт на день
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-amber-600/80">
+              {bonus.amount > 0
+                ? 'Звідси гравці виграють бали · оновлюється щодня 🏆'
+                : 'Ліміт на сьогодні вичерпано — гравці грають між собою'}
+            </p>
+          </div>
+        )}
 
         <div className="p-4 sm:p-6">
           {/* Nickname + account */}
