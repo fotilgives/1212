@@ -151,7 +151,7 @@ const Login: React.FC<{ onIn: (t: string) => void }> = ({ onIn }) => {
 };
 
 // ============ КАРТКА КОРИСТУВАЧА (з кастомною сумою) ============
-const UserCard: React.FC<{ u: UserRow; onGrant: (id: string, delta: number) => void }> = ({ u, onGrant }) => {
+const UserCard: React.FC<{ u: UserRow; onGrant: (id: string, delta: number) => void; onDelete: (id: string, label: string) => void }> = ({ u, onGrant, onDelete }) => {
   const [custom, setCustom] = useState('');
   const apply = (sign: number) => {
     const n = Math.abs(parseInt(custom, 10));
@@ -175,8 +175,17 @@ const UserCard: React.FC<{ u: UserRow; onGrant: (id: string, delta: number) => v
             активність: {fmtDate(u.last_activity)} · перемог: {u.wins ?? 0} · донат: {fmt(u.donated)}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 font-extrabold text-amber-600">
-          <Coins className="h-4 w-4" /> {fmt(u.balance)}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 font-extrabold text-amber-600">
+            <Coins className="h-4 w-4" /> {fmt(u.balance)}
+          </div>
+          <button
+            onClick={() => onDelete(u.id, u.nick || u.email || u.login || 'Гравець')}
+            title="Видалити учасника"
+            className="grid h-8 w-8 place-items-center rounded-xl bg-rose-50 text-rose-500 transition hover:bg-rose-100"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -279,6 +288,12 @@ const Admin: React.FC = () => {
     if (typeof data === 'number') {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, balance: data as number } : u)));
     }
+  };
+  const removeUser = async (id: string, label: string) => {
+    if (!window.confirm(`Видалити учасника «${label}»?\n\nБудуть стерті його акаунт, баланс, ставки та історія. Дію не можна скасувати.`)) return;
+    const { error } = await rpc('rps_admin_delete_user', { p_player: id });
+    if (error) { window.alert('Не вдалося видалити: ' + (error.message || '')); return; }
+    setUsers((prev) => prev.filter((u) => u.id !== id));
   };
   const setRedStatus = async (id: number, status: string) => {
     await rpc('rps_admin_set_redemption', { p_id: id, p_status: status });
@@ -495,7 +510,7 @@ const Admin: React.FC = () => {
                 </button>
               </div>
               <div className="grid gap-2.5 lg:grid-cols-2">
-                {filtered.map((u) => <UserCard key={u.id} u={u} onGrant={grant} />)}
+                {filtered.map((u) => <UserCard key={u.id} u={u} onGrant={grant} onDelete={removeUser} />)}
               </div>
               {filtered.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Нічого не знайдено.</p>}
             </div>

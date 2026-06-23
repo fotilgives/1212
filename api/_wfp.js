@@ -1,6 +1,7 @@
 // Спільна логіка WayForPay для серверних функцій (Vercel).
 // Файли з префіксом "_" у каталозі /api НЕ стають окремими ендпоінтами.
-import { buildTopupReceiptEmail, sendTransactionalEmail, normalizeOrigin } from './_mail.js';
+import { buildTopupReceiptEmail, buildOwnerNotice, sendTransactionalEmail, normalizeOrigin } from './_mail.js';
+import { tgNotifyAdmins } from './_tg.js';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -216,7 +217,7 @@ export async function creditTopup(orderReference, coinsHint, amountHint, source)
       p_source: source || null,
     });
     console.log('[wfp] credited', orderReference, '->', bal);
-    await sendTopupReceipt(orderReference, playerId, finalCoins, amountHint);
+    await notifyTopup(orderReference, playerId, finalCoins, amountHint);
     return true;
   } catch (e) {
     console.error('[wfp] creditTopup ERR:', e.message);
@@ -224,29 +225,42 @@ export async function creditTopup(orderReference, coinsHint, amountHint, source)
   }
 }
 
-// Лист-квитанція після зарахування монет. Шлеться лише раз (claim_email) і лише
-// якщо у гравця є акаунт з поштою. Будь-яка помилка не зриває зарахування.
-async function sendTopupReceipt(orderReference, playerId, coins, amountHint) {
+// Сповіщення після зарахування монет. Спрацьовує ОДИН раз на замовлення
+// (rps_wfp_claim_email): лист-квитанція гравцю (якщо є пошта) + сповіщення адмінам
+// (Telegram + e-mail власнику). Будь-яка помилка не зриває зарахування.
+async function notifyTopup(orderReference, playerId, coins, amountHint) {
   try {
-    const email = s(await rpc('rps_player_email', { p_id: playerId }));
-    if (!EMAIL_RE.test(email)) return;
     const claimed = await rpc('rps_wfp_claim_email', { p_order_ref: s(orderReference) });
-    if (!claimed) return;
+    if (!claimed) return; // вже сповіщали
+    const email = s(await rpc('rps_player_email', { p_id: playerId }));
     const domain = await rpc('wfp_domain');
     const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
     const bannerUrl = origin ? `${origin}/images/email/welcome-banner.png` : '';
-    const { subject, html, text } = buildTopupReceiptEmail({
-      name: '',
-      coins,
-      amountUah: Number.isFinite(amountHint) ? amountHint : null,
-      appUrl: origin,
-      supportEmail: process.env.COURSE_SUPPORT_EMAIL || 'support@example.com',
-      bannerUrl,
-    });
-    await sendTransactionalEmail({ to: email, subject, html, text });
-    console.log('[wfp] topup receipt sent', orderReference, '->', email);
+    const amountStr = Number.isFinite(amountHint) && amountHint > 0 ? `${amountHint} грн` : '—';
+
+    // Лист гравцю
+    if (EMAIL_RE.test(email)) {
+      const { subject, html, text } = buildTopupReceiptEmail({
+        name: '', coins, amountUah: Number.isFinite(amountHint) ? amountHint : null,
+        appUrl: origin, supportEmail: process.env.COURSE_SUPPORT_EMAIL || 'support@example.com', bannerUrl,
+      });
+      try { await sendTransactionalEmail({ to: email, subject, html, text }); }
+      catch (e) { console.error('[wfp] topup receipt ERR:', e.message); }
+    }
+
+    // Сповіщення адмінам
+    try {
+      await tgNotifyAdmins(`🪙 <b>Поповнення монет</b>\n\n👤 ${email || 'гість'}\n💰 Зараховано: ${coins} монет\n💳 Оплата: ${amountStr}`);
+    } catch (e) { console.error('[wfp] topup tg ERR:', e.message); }
+    const owner = process.env.NOTIFY_EMAIL || process.env.COURSE_SUPPORT_EMAIL || process.env.GMAIL_USER;
+    if (owner) {
+      try {
+        const n = buildOwnerNotice({ title: '🪙 Поповнення монет', rows: [['Гравець', email || 'гість'], ['Зараховано', `${coins} монет`], ['Оплата', amountStr]] });
+        await sendTransactionalEmail({ to: owner, subject: n.subject, html: n.html, text: n.text });
+      } catch (e) { console.error('[wfp] topup owner mail ERR:', e.message); }
+    }
   } catch (e) {
-    console.error('[wfp] topup receipt ERR:', e.message);
+    console.error('[wfp] notifyTopup ERR:', e.message);
   }
 }
 

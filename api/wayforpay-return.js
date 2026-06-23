@@ -57,6 +57,10 @@ export default async function handler(req, res) {
                 text,
               });
               await rpc('rps_course_order_mark_emailed', { p_order_reference: ref });
+              try {
+                const { tgNotifyAdmins } = await import('./_tg.js');
+                await tgNotifyAdmins(`🧘 <b>Оплата курсу (гроші)</b>\n\n👤 ${s(current?.name) || '—'}\n📧 ${email}\n🎓 ${courseName}\n💳 ${amountUah} грн`);
+              } catch (tgErr) { console.error('[wfp-return course] tg ERR:', tgErr.message); }
             } catch (mailErr) {
               console.error('[wfp-return course] mail ERR:', mailErr.message);
             }

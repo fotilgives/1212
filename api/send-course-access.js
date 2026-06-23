@@ -1,4 +1,5 @@
 import { buildCourseAccessEmail, normalizeOrigin, sendTransactionalEmail } from './_mail.js';
+import { tgNotifyAdmins } from './_tg.js';
 import { rpc, s } from './_wfp.js';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -41,6 +42,9 @@ export default async function handler(req, res) {
     });
 
     await sendTransactionalEmail({ to: email, subject, html, text });
+    try {
+      await tgNotifyAdmins(`🧘 <b>Оплата курсу (монети)</b>\n\n👤 ${s(body.name) || '—'}\n📧 ${email}\n🎓 ${s(body.courseName) || 'Курс з йоги'}`);
+    } catch (e) { console.error('[send-course-access] tg ERR:', e.message); }
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('[send-course-access] ERR:', err.message);
