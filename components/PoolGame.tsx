@@ -64,6 +64,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     })();
   }, []);
 
+  // Екран правил при вході в гру (показуємо, поки гравець не погодиться).
+  const [rulesOk, setRulesOk] = useState(() => {
+    try { return localStorage.getItem('rps_rules_accepted') === '1'; } catch { return false; }
+  });
+  const acceptRules = () => {
+    try { localStorage.setItem('rps_rules_accepted', '1'); } catch { /* ignore */ }
+    setRulesOk(true);
+  };
+
   // Блеф завжди доступний (не прив'язаний до попередньої перемоги).
   const canBluff = true;
 
@@ -240,6 +249,54 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         className="relative overflow-hidden rounded-[2.25rem] bg-white shadow-[0_30px_80px_-25px_rgba(6,78,59,0.4)] ring-1 ring-emerald-100/70"
       >
         <AnimatePresence>{celebrate && <Confetti />}</AnimatePresence>
+
+        {/* ── Екран правил (поки не погодився) ── */}
+        <AnimatePresence>
+          {!rulesOk && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-40 flex flex-col bg-white"
+            >
+              <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 px-5 py-6 text-white sm:px-7">
+                <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
+                <h2 className="relative text-xl font-black sm:text-2xl">Як грати 🎮</h2>
+                <p className="relative mt-1 text-sm text-emerald-50/90">Прочитай правила — це займе хвилинку. Тоді почнемо 🌿</p>
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5 sm:px-7">
+                {[
+                  ['✊✌️✋', 'Обери хід', 'Камінь, ножиці або папір. Камінь б’є ножиці, ножиці — папір, папір — камінь.'],
+                  ['🪙', 'Ставка', `${stake} монет за раунд — однакова для всіх гравців.`],
+                  ['⏱️', 'Раунд', `Триває ${roundSeconds} секунд. Усі грають одночасно у спільний банк.`],
+                  ['🎁', 'Виграш', 'Після раунду нараховуємо монети за твій хід. Що вдаліший хід у цьому раунді — то більший виграш.'],
+                  ['🤫', 'Блеф', 'Можеш показати суперникам один хід, а зіграти інший — заплутай їх.'],
+                  ['⚡', 'Заходь регулярно', 'Монети ігрові (демо). Без активності бонуси поступово «тануть» — грай частіше, щоб тримати форму.'],
+                ].map(([emoji, title, desc]) => (
+                  <div key={title} className="flex gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3.5">
+                    <span className="text-2xl leading-none">{emoji}</span>
+                    <div>
+                      <div className="text-sm font-bold text-slate-800">{title}</div>
+                      <div className="mt-0.5 text-xs leading-relaxed text-slate-500">{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="shrink-0 border-t border-slate-100 bg-white p-4 sm:px-7">
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={acceptRules}
+                  className="shine w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-emerald-300/50 transition hover:from-emerald-700 hover:to-teal-600"
+                >
+                  Погоджуюсь — грати →
+                </motion.button>
+                <p className="mt-2 text-center text-[11px] text-slate-400">Натискаючи «Грати», ти приймаєш правила гри</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Hero header (rich gradient) ── */}
         <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 px-5 pb-6 pt-5 text-white sm:px-7 sm:pt-6">
