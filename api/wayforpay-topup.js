@@ -3,6 +3,9 @@ import { rpc } from './_wfp.js';
 // Фіксовані пакети — лише сума у грн; монети рахуються з курсу coin_rate.
 const PACKAGE_AMOUNTS = { p50: 50, p100: 100, p200: 200 };
 
+// Тестовий пакет із фіксованою кількістю монет (не залежить від курсу).
+const TEST_PACKAGES = { ptest: { amount: 1, coins: 20000 } };
+
 // Курс монет (1 грн = N балів) задається в адмінці — rps_config.coin_rate. Дефолт 5.
 const DEFAULT_COIN_RATE = 5;
 const CUSTOM_MIN_UAH = 1;
@@ -27,6 +30,7 @@ function resolvePackage(body, rate) {
     if (amount > CUSTOM_MAX_UAH) return null;
     return { amount, coins: amount * rate };
   }
+  if (TEST_PACKAGES[body.packageId]) return TEST_PACKAGES[body.packageId];
   const amount = PACKAGE_AMOUNTS[body.packageId];
   if (!amount) return null;
   return { amount, coins: amount * rate };
