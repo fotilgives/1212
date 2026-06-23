@@ -1,25 +1,35 @@
 import { rpc } from './_wfp.js';
 
-const PACKAGES = {
-  p50:  { amount: 50,  coins: 250 },
-  p100: { amount: 100, coins: 500 },
-  p200: { amount: 200, coins: 1000 },
-};
+// Фіксовані пакети — лише сума у грн; монети рахуються з курсу coin_rate.
+const PACKAGE_AMOUNTS = { p50: 50, p100: 100, p200: 200 };
 
-// Курс для довільної суми: 1 грн = 5 балів (як 100 грн = 500 балів).
-const COIN_RATE = 5;
+// Курс монет (1 грн = N балів) задається в адмінці — rps_config.coin_rate. Дефолт 5.
+const DEFAULT_COIN_RATE = 5;
 const CUSTOM_MIN_UAH = 1;
 const CUSTOM_MAX_UAH = 100000;
 
+// Поточний курс із БД; стійко до помилок — падаємо на дефолт.
+async function getCoinRate() {
+  try {
+    const v = Number(await rpc('rps_cfg', { p_key: 'coin_rate', p_default: DEFAULT_COIN_RATE }));
+    if (Number.isFinite(v) && v >= 1) return Math.floor(v);
+  } catch {
+    /* ignore — використаємо дефолт */
+  }
+  return DEFAULT_COIN_RATE;
+}
+
 // Пакет для оплати: або фіксований (packageId), або довільна сума (amount у грн).
-function resolvePackage(body) {
+function resolvePackage(body, rate) {
   const custom = Number(body.amount);
   if (Number.isFinite(custom) && custom >= CUSTOM_MIN_UAH) {
     const amount = Math.floor(custom);
     if (amount > CUSTOM_MAX_UAH) return null;
-    return { amount, coins: amount * COIN_RATE };
+    return { amount, coins: amount * rate };
   }
-  return PACKAGES[body.packageId] || null;
+  const amount = PACKAGE_AMOUNTS[body.packageId];
+  if (!amount) return null;
+  return { amount, coins: amount * rate };
 }
 
 export default async function handler(req, res) {
@@ -30,7 +40,8 @@ export default async function handler(req, res) {
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
     body = body || {};
 
-    const pkg = resolvePackage(body);
+    const rate = await getCoinRate();
+    const pkg = resolvePackage(body, rate);
     if (!pkg) return res.status(400).json({ error: 'Невірна сума поповнення.' });
 
     const playerId = String(body.playerId || '');

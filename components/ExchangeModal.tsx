@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Coins, Loader2, ShieldCheck, Check, Receipt } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   open: boolean;
@@ -10,23 +11,32 @@ interface Props {
   onHistory?: () => void;
 }
 
-const PACKS = [
-  { id: 'p50',  uah: 50,  coins: 250 },
-  { id: 'p100', uah: 100, coins: 500 },
-  { id: 'p200', uah: 200, coins: 1000 },
-];
+// Суми фіксованих пакетів (грн). Монети рахуються з курсу coin_rate (з БД).
+const PACK_UAH = [50, 100, 200];
+const DEFAULT_COIN_RATE = 5;
 
 const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) => {
   const [busy, setBusy]   = useState<string | null>(null);
   const [done, setDone]   = useState<number | null>(null);
   const [err, setErr]     = useState<string | null>(null);
   const [customUah, setCustomUah] = useState('');
+  const [rate, setRate]   = useState(DEFAULT_COIN_RATE); // 1 грн = rate балів (налаштовується в адмінці)
 
-  const COIN_RATE = 5; // 1 грн = 5 балів (100 грн = 500)
+  const packs = PACK_UAH.map((uah) => ({ id: `p${uah}`, uah, coins: uah * rate }));
   const customNum = Math.floor(Number(customUah) || 0);
-  const customCoins = customNum >= 1 ? customNum * COIN_RATE : 0;
+  const customCoins = customNum >= 1 ? customNum * rate : 0;
 
   useEffect(() => { if (!open) { setBusy(null); setDone(null); setErr(null); setCustomUah(''); } }, [open]);
+
+  // Підтягуємо актуальний курс монет із БД при відкритті.
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data } = await supabase.from('rps_config').select('data').eq('id', 1).single();
+      const r = Number((data as { data?: Record<string, number> } | null)?.data?.coin_rate);
+      if (Number.isFinite(r) && r >= 1) setRate(Math.floor(r));
+    })();
+  }, [open]);
 
   // Слухаємо повернення зі сторінки WayForPay
   useEffect(() => {
@@ -108,7 +118,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) =
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-xl font-extrabold text-slate-900">Поповнення балансу</h3>
-                <p className="mt-1 text-sm text-slate-500">100 грн = 500 монет</p>
+                <p className="mt-1 text-sm text-slate-500">1 грн = {rate} {rate === 1 ? 'монета' : 'монет'} · 100 грн = {(100 * rate).toLocaleString('uk-UA')}</p>
               </div>
               <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">
                 <X className="h-5 w-5" />
@@ -126,7 +136,7 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) =
             ) : (
               <>
                 <div className="mt-5 grid grid-cols-2 gap-3">
-                  {PACKS.map((p) => {
+                  {packs.map((p) => {
                     const loading = busy === p.id;
                     return (
                       <button
