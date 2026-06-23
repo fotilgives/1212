@@ -52,9 +52,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     setForcing(false);
   };
 
-  // Блеф розблоковується лише ПІСЛЯ перемоги в попередньому раунді.
-  // Програш або відсутність зіграного раунду — блеф заблокований.
-  const canBluff = !!lastResult && lastResult.net > 0;
+  // Блеф розблоковується лише ПІСЛЯ перемоги раунду (виграшний хід).
+  // Сервер фіксує це у bluff_ready; беремо ще й локальний збіг ходу.
+  const wonRound = !!lastResult && !!lastWin && lastResult.move === lastWin;
+  const canBluff = account.bluffReady || wonRound;
 
   useEffect(() => {
     if (!canBluff && bluff) setBluff(false);
@@ -474,11 +475,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   ))}
                 Твій хід {emojiOf(lastResult.move)}
                 {lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}{' '}
-                {lastResult.net > 0
+                {lastWin && lastResult.move === lastWin
                   ? `· виграш +${lastResult.net} монет 🎉`
-                  : lastResult.net < 0
-                  ? `· програш ${lastResult.net} монет`
-                  : '· ставку повернено'}
+                  : `· +${lastResult.net} монет за участь ✨`}
                 {lastWin && (
                   <div className="mt-1 text-xs font-medium opacity-80">
                     Виграшний хід раунду: {emojiOf(lastWin)} {labelOf(lastWin)}
@@ -681,10 +680,34 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             Реальний онлайн: усі гравці грають в одному раунді. Зароблені монети згодом можна буде витратити на послуги
             або вивести. Поки що — демо на віртуальних монетах.
           </p>
-          <p className="mt-2 flex items-center justify-center gap-1.5 text-center text-[11px] text-amber-600">
-            ⚡ Бали — як енергія: без активності 3 дні вони починають танути (−1%, далі −1%/тиждень).
-            Зіграй 5 раундів, поповни чи зроби внесок — таймер скидається.
-          </p>
+
+          {/* Опис «таяння бонусів» */}
+          <div className="mt-5 rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50/50 p-4 sm:p-5">
+            <h3 className="flex items-center gap-2 text-sm font-extrabold text-amber-700">
+              ⚡ Що таке «таяння бонусів»
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              Бонуси — це як <b>енергія</b>. Займатися собою потрібно щодня. Якщо нічого не практикувати
+              3 дні, рівень енергії поступово спадає — і з кожним тижнем стаєш трохи слабшим. Тому гра —
+              це <b>тренажер самоконтролю й дисципліни</b>: коли ми втрачаємо енергію, це помітно лише з часом,
+              а коли втрачаємо бали — помітно одразу. Тож починай з малого ☺️👍
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              <b>Як це працює:</b> після 3 днів без активності баланс зменшується на <b>1%</b>, далі — ще
+              по <b>1% щотижня</b>, поки не виконаєш хоча б одну умову.
+            </p>
+            <div className="mt-3">
+              <div className="text-xs font-bold text-slate-700">Як уникнути (таймер скидається на 3 дні):</div>
+              <ul className="mt-1.5 grid grid-cols-1 gap-1 text-xs text-slate-600 sm:grid-cols-2">
+                <li>🎮 зіграти 5 раундів</li>
+                <li>💳 оплатити щось на сайті</li>
+                <li>🤝 запросити учасника</li>
+                <li>➕ поповнити рахунок</li>
+                <li>🎁 розрахуватися бонусами</li>
+                <li>⭐ написати відгук</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </motion.div>
     </section>

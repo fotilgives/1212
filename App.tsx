@@ -21,6 +21,7 @@ import MediaShowcase from './components/MediaShowcase';
 import ScrollProgress from './components/ScrollProgress';
 import BackToTop from './components/BackToTop';
 import FinalCTA from './components/FinalCTA';
+import ReviewsWall from './components/ReviewsWall';
 import { useAccount } from './hooks/useAccount';
 import { useRoute, navigate } from './hooks/useRoute';
 
@@ -101,6 +102,7 @@ const App: React.FC = () => {
                 <PriceList />
               </section>
               <RehabDetails />
+              <ReviewsWall />
               <FinalCTA />
             </main>
           )}

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, X, ExternalLink, Lock } from 'lucide-react';
+import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, ExternalLink, Lock } from 'lucide-react';
 import type { Account } from '../../hooks/useAccount';
+import { supabase } from '../../lib/supabase';
 import AnimatedNumber from '../AnimatedNumber';
 
 interface Props {
@@ -12,33 +13,29 @@ interface Props {
   embedded?: boolean;
 }
 
-const COURSE_BOT_URL = 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot';
-
-type Delivery =
-  | { type: 'link'; url: string; label: string }
-  | { type: 'contact' };
-
-interface Reward {
+interface Prize {
+  id: number;
   emoji: string;
   title: string;
   cost: number;
-  delivery: Delivery;
+  image_url: string | null;
+  delivery_type: 'link' | 'contact';
+  delivery_url: string | null;
+  delivery_label: string | null;
 }
 
-// Орієнтовні ціни (≈5 монет = 1 грн). Бос коригує за потреби.
-const REWARDS: Reward[] = [
-  { emoji: '🧘', title: 'Доступ до курсу з йоги', cost: 12500, delivery: { type: 'link', url: COURSE_BOT_URL, label: 'Відкрити курс у Telegram' } },
-  { emoji: '💆', title: 'Сеанс масажу', cost: 6000, delivery: { type: 'contact' } },
-  { emoji: '📜', title: 'Сертифікат на послуги 1000 грн', cost: 6000, delivery: { type: 'contact' } },
-  { emoji: '🎁', title: 'Подарунковий сертифікат 500 грн', cost: 3000, delivery: { type: 'contact' } },
-  { emoji: '🎟️', title: 'Знижка 20% на масаж', cost: 1500, delivery: { type: 'contact' } },
-  { emoji: '✨', title: 'Знижка 10% на будь-яку послугу', cost: 800, delivery: { type: 'contact' } },
-];
-
 const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }) => {
+  const [prizes, setPrizes] = useState<Prize[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
-  const [delivered, setDelivered] = useState<Reward | null>(null);
+  const [delivered, setDelivered] = useState<Prize | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('rps_prizes').select('*').eq('active', true).order('sort');
+      if (data) setPrizes(data as Prize[]);
+    })();
+  }, []);
 
   // Реферал
   const [copied, setCopied] = useState(false);
@@ -76,7 +73,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }
     }
   };
 
-  const redeem = async (r: Reward) => {
+  const redeem = async (r: Prize) => {
     setErr(null);
     // Покупка за монети — лише для зареєстрованих (видача йде на акаунт/пошту).
     if (!account.isAccount) {
@@ -119,38 +116,48 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }
       </div>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {REWARDS.map((r, i) => {
+        {prizes.map((r, i) => {
           const enough = account.balance >= r.cost;
           return (
             <motion.div
-              key={r.title}
+              key={r.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.5, delay: i * 0.05 }}
               whileHover={{ y: -5 }}
-              className="card-glow flex flex-col rounded-3xl p-6 ring-1 ring-white/60"
+              className="card-glow flex flex-col overflow-hidden rounded-3xl ring-1 ring-white/60"
             >
-              <div className="text-4xl">{r.emoji}</div>
-              <h2 className="mt-3 flex-1 text-lg font-bold text-slate-900">{r.title}</h2>
-              <div className="mt-3 flex items-center gap-1.5 text-emerald-600">
-                <Coins className="h-4 w-4" />
-                <span className="text-xl font-extrabold">{r.cost.toLocaleString('uk-UA')}</span>
-                <span className="text-sm text-slate-400">монет</span>
+              {r.image_url ? (
+                <div className="-mx-px -mt-px aspect-[16/10] w-[calc(100%+2px)] overflow-hidden bg-slate-100">
+                  <img src={r.image_url} alt={r.title} className="h-full w-full object-cover" loading="lazy" />
+                </div>
+              ) : (
+                <div className="flex aspect-[16/10] items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 text-6xl">
+                  {r.emoji}
+                </div>
+              )}
+              <div className="flex flex-1 flex-col p-6">
+                <h2 className="flex-1 text-lg font-bold text-slate-900">{r.title}</h2>
+                <div className="mt-3 flex items-center gap-1.5 text-emerald-600">
+                  <Coins className="h-4 w-4" />
+                  <span className="text-xl font-extrabold">{r.cost.toLocaleString('uk-UA')}</span>
+                  <span className="text-sm text-slate-400">монет</span>
+                </div>
+                <button
+                  onClick={() => redeem(r)}
+                  disabled={busy === r.title}
+                  className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold transition disabled:opacity-50 ${
+                    !account.isAccount
+                      ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : enough
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {busy === r.title ? 'Оформлюю…' : !account.isAccount ? 'Зареєструватись' : enough ? 'Обміняти' : 'Поповнити баланс'}
+                </button>
               </div>
-              <button
-                onClick={() => redeem(r)}
-                disabled={busy === r.title}
-                className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold transition disabled:opacity-50 ${
-                  !account.isAccount
-                    ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    : enough
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                }`}
-              >
-                {busy === r.title ? 'Оформлюю…' : !account.isAccount ? 'Зареєструватись' : enough ? 'Обміняти' : 'Поповнити баланс'}
-              </button>
             </motion.div>
           );
         })}
@@ -258,14 +265,14 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, embedded = false }
               <h3 className="mt-4 text-xl font-extrabold text-slate-900">Готово!</h3>
               <p className="mt-1 text-sm text-slate-500">«{delivered.title}» — оплачено монетами.</p>
 
-              {delivered.delivery.type === 'link' ? (
+              {delivered.delivery_type === 'link' && delivered.delivery_url ? (
                 <a
-                  href={delivered.delivery.url}
+                  href={delivered.delivery_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
                 >
-                  <ExternalLink className="h-4 w-4" /> {delivered.delivery.label}
+                  <ExternalLink className="h-4 w-4" /> {delivered.delivery_label || 'Відкрити'}
                 </a>
               ) : (
                 <p className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-100">
