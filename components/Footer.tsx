@@ -30,7 +30,7 @@ const Footer: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <BrandMark size={40} />
               <span className="text-base font-extrabold tracking-tight text-white">
-                Центр розвитку та здоров'я
+                reabilitolog-play.vercel.app
               </span>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-slate-300">
@@ -154,7 +154,7 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="mt-6 flex flex-col items-center justify-between gap-4 text-xs text-slate-400 sm:flex-row">
-          <p>© {new Date().getFullYear()} Центр розвитку та здоров'я. Усі права захищені.</p>
+          <p>© {new Date().getFullYear()} reabilitolog-play.vercel.app. Усі права захищені.</p>
           <p className="flex items-center gap-1.5">
             Зроблено з <Heart className="h-3.5 w-3.5 text-emerald-500" /> для здоров'я та руху
           </p>

@@ -9,7 +9,7 @@ interface Props {
 }
 
 /**
- * Логотип «Центр розвитку та здоров'я».
+ * Логотип «reabilitolog-play.vercel.app».
  * Показує /images/logo.png, а поки файлу нема - фірмову іконку-серце.
  */
 const BrandMark: React.FC<Props> = ({ size = 36, className = '' }) => {
@@ -21,7 +21,7 @@ const BrandMark: React.FC<Props> = ({ size = 36, className = '' }) => {
     >
       <SmartImage
         src="/images/logo.png"
-        alt="Логотип - Центр розвитку та здоров'я"
+        alt="Логотип - reabilitolog-play.vercel.app"
         className="h-full w-full object-contain"
         fallback={
           <span className="grid h-full w-full place-items-center bg-emerald-600 text-white">

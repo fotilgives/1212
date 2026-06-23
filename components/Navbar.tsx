@@ -68,7 +68,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
               <BrandMark size={38} />
             </motion.span>
             <span className="leading-tight">
-              <span className="block text-[14px] sm:text-[15px] lg:text-lg font-extrabold tracking-tight">Центр розвитку та здоров'я</span>
+              <span className="block text-[14px] sm:text-[15px] lg:text-lg font-extrabold tracking-tight">reabilitolog-play.vercel.app</span>
               <span className="block text-[10px] sm:text-[11px] font-medium text-slate-400">рух · баланс · відновлення</span>
             </span>
           </a>
