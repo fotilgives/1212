@@ -1,4 +1,5 @@
 import { buildBookingEmail, buildOwnerNotice, normalizeOrigin, sendTransactionalEmail } from './_mail.js';
+import { tgNotifyAdmins } from './_tg.js';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -44,6 +45,11 @@ export default async function handler(req, res) {
       try { await sendTransactionalEmail({ to: owner, subject, html, text }); }
       catch (e) { console.error('[notify-booking] owner mail ERR:', e.message); }
     }
+
+    // 3) Telegram адмінам
+    try {
+      await tgNotifyAdmins(`🗓️ <b>Новий запис (сайт)</b>\n\n👤 ${name || '—'}\n📞 ${phone || '—'}\n📧 ${email || '—'}\n🤲 ${service || '—'}${note ? `\n📝 ${note}` : ''}`);
+    } catch (e) { console.error('[notify-booking] tg ERR:', e.message); }
 
     return res.status(200).json({ ok: true });
   } catch (err) {

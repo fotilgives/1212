@@ -1,4 +1,5 @@
 import { buildPrizeEmail, buildOwnerNotice, normalizeOrigin, sendTransactionalEmail } from './_mail.js';
+import { tgNotifyAdmins } from './_tg.js';
 import { rpc, s } from './_wfp.js';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -51,6 +52,11 @@ export default async function handler(req, res) {
       try { await sendTransactionalEmail({ to: owner, subject, html, text }); }
       catch (e) { console.error('[notify-redeem] owner mail ERR:', e.message); }
     }
+
+    // 3) Telegram адмінам
+    try {
+      await tgNotifyAdmins(`🎁 <b>Новий обмін на приз</b>\n\n👤 ${nickname || playerId || '—'}\n📧 ${email || '— (гість)'}\n🏆 ${reward || '—'}\n🪙 ${Number.isFinite(cost) ? cost : '—'} монет`);
+    } catch (e) { console.error('[notify-redeem] tg ERR:', e.message); }
 
     return res.status(200).json({ ok: true });
   } catch (err) {
