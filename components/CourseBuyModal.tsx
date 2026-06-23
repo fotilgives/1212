@@ -43,6 +43,12 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
       setBusy(false);
       return;
     }
+    // Лист доступу до курсу на пошту (fire-and-forget). Email візьметься з акаунта.
+    fetch('/api/send-course-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId: account.playerId, name: account.nickname, courseName: 'Курс з йоги (онлайн)' }),
+    }).catch(() => {});
     // Успіх — показуємо екран з кнопкою-посиланням. НЕ викликаємо window.open
     // (його блокує браузер після await) — користувач тисне кнопку сам.
     setBusy(false);

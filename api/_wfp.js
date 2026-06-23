@@ -1,5 +1,8 @@
 // Спільна логіка WayForPay для серверних функцій (Vercel).
 // Файли з префіксом "_" у каталозі /api НЕ стають окремими ендпоінтами.
+import { buildTopupReceiptEmail, sendTransactionalEmail, normalizeOrigin } from './_mail.js';
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 const SUPABASE_URL = 'https://ewtybyrtdvhibdtdvrmq.supabase.co';
 const SUPABASE_ANON_KEY =
@@ -213,10 +216,37 @@ export async function creditTopup(orderReference, coinsHint, amountHint, source)
       p_source: source || null,
     });
     console.log('[wfp] credited', orderReference, '->', bal);
+    await sendTopupReceipt(orderReference, playerId, finalCoins, amountHint);
     return true;
   } catch (e) {
     console.error('[wfp] creditTopup ERR:', e.message);
     return false;
+  }
+}
+
+// Лист-квитанція після зарахування монет. Шлеться лише раз (claim_email) і лише
+// якщо у гравця є акаунт з поштою. Будь-яка помилка не зриває зарахування.
+async function sendTopupReceipt(orderReference, playerId, coins, amountHint) {
+  try {
+    const email = s(await rpc('rps_player_email', { p_id: playerId }));
+    if (!EMAIL_RE.test(email)) return;
+    const claimed = await rpc('rps_wfp_claim_email', { p_order_ref: s(orderReference) });
+    if (!claimed) return;
+    const domain = await rpc('wfp_domain');
+    const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
+    const bannerUrl = origin ? `${origin}/images/email/welcome-banner.png` : '';
+    const { subject, html, text } = buildTopupReceiptEmail({
+      name: '',
+      coins,
+      amountUah: Number.isFinite(amountHint) ? amountHint : null,
+      appUrl: origin,
+      supportEmail: process.env.COURSE_SUPPORT_EMAIL || 'support@example.com',
+      bannerUrl,
+    });
+    await sendTransactionalEmail({ to: email, subject, html, text });
+    console.log('[wfp] topup receipt sent', orderReference, '->', email);
+  } catch (e) {
+    console.error('[wfp] topup receipt ERR:', e.message);
   }
 }
 

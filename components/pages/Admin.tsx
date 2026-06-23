@@ -5,7 +5,7 @@ import {
   Search, Plus, Minus, Check, EyeOff, Eye, Loader2, Coins, Star, Crown,
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
   ArrowUp, ArrowDown, Copy, Sparkles, Clock, TrendingDown, Link2,
-  CheckCircle2, ExternalLink, Wand2,
+  CheckCircle2, ExternalLink, Wand2, Table2,
 } from 'lucide-react';
 
 const TOKEN_KEY = 'rps_admin_token';
@@ -45,7 +45,8 @@ interface PrizeRow {
 }
 type Config = Record<string, number>;
 
-type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings';
+type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings' | 'script';
+type ScriptRow = { round_no: number; rk: number; sc: number; pp: number };
 
 // ============ НАЛАШТУВАННЯ ГРИ — згруповано ============
 const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; items: [string, string, number, string][] }[] = [
@@ -215,6 +216,8 @@ const Admin: React.FC = () => {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [catalog, setCatalog] = useState<PrizeRow[]>([]);
   const [config, setConfig] = useState<Config>({});
+  const [script, setScript] = useState<ScriptRow[]>([]);
+  const [scriptSaved, setScriptSaved] = useState(false);
   const [editPrize, setEditPrize] = useState<Partial<PrizeRow> | null>(null);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
@@ -239,13 +242,14 @@ const Admin: React.FC = () => {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [s, u, r, rv, c, cfg] = await Promise.all([
+    const [s, u, r, rv, c, cfg, sc] = await Promise.all([
       rpc('rps_admin_stats'),
       rpc('rps_admin_users'),
       rpc('rps_admin_redemptions'),
       rpc('rps_admin_reviews'),
       rpc('rps_admin_prizes'),
       rpc('rps_admin_get_config'),
+      rpc('rps_admin_get_script'),
     ]);
     if (s.data) setStats(s.data as Stats);
     if (u.data) setUsers(u.data as UserRow[]);
@@ -253,6 +257,7 @@ const Admin: React.FC = () => {
     if (rv.data) setReviews(rv.data as ReviewRow[]);
     if (c.data) setCatalog(c.data as PrizeRow[]);
     if (cfg.data) setConfig(cfg.data as Config);
+    if (sc.data) setScript(sc.data as ScriptRow[]);
     setLoading(false);
   }, [rpc]);
 
@@ -293,6 +298,17 @@ const Admin: React.FC = () => {
     window.setTimeout(() => setCfgSaved(false), 2000);
   }, [rpc]);
   const saveConfig = () => persistConfig(config);
+
+  // --- Таблиця виплат (35 раундів) ---
+  const setScriptCell = (i: number, key: 'rk' | 'sc' | 'pp', value: number) => {
+    const v = Math.max(0, Math.floor(Number(value) || 0));
+    setScript((rows) => rows.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)));
+  };
+  const saveScript = async () => {
+    await rpc('rps_admin_set_script', { p_rows: script });
+    setScriptSaved(true);
+    window.setTimeout(() => setScriptSaved(false), 2000);
+  };
   const applyPreset = (values: Config) => {
     const next = { ...config, ...values };
     setConfig(next);
@@ -377,6 +393,7 @@ const Admin: React.FC = () => {
     { id: 'orders', label: 'Заявки', icon: Gift, badge: stats?.redemptions_pending },
     { id: 'catalog', label: 'Призи', icon: Package, badge: catalog.length },
     { id: 'reviews', label: 'Відгуки', icon: MessageSquare, badge: stats?.reviews },
+    { id: 'script', label: 'Таблиця гри', icon: Table2 },
     { id: 'settings', label: 'Гра / Турніри', icon: Settings },
   ];
   const activeTab = tabs.find((t) => t.id === tab);
@@ -563,6 +580,57 @@ const Admin: React.FC = () => {
           )}
 
           {/* НАЛАШТУВАННЯ ГРИ / ТУРНІРИ */}
+          {/* ТАБЛИЦЯ ГРИ — редагована сітка виплат на 35 раундів */}
+          {tab === 'script' && (
+            <div className="max-w-2xl space-y-4">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+                <h3 className="flex items-center gap-2 font-bold text-slate-900">
+                  <Table2 className="h-5 w-5 text-emerald-600" /> Таблиця виплат за раунд
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Виплата гравцю = число за зіграний хід у поточному раунді (цикл 1–35). Ставка 100:
+                  <span className="font-semibold text-rose-600"> менше 100 = програш</span>,
+                  <span className="font-semibold text-emerald-700"> більше 100 = виграш</span>.
+                </p>
+
+                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+                  <div className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:text-[11px]">
+                    <div className="bg-slate-50 py-2">№</div>
+                    <div className="bg-slate-50 py-2">✊ Камінь</div>
+                    <div className="bg-slate-50 py-2">✌️ Ножиці</div>
+                    <div className="bg-slate-50 py-2">✋ Папір</div>
+                  </div>
+                  <div className="max-h-[62vh] overflow-y-auto">
+                    {script.map((row, i) => (
+                      <div key={row.round_no} className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200">
+                        <div className="flex items-center justify-center bg-white text-xs font-bold text-slate-400">{row.round_no}</div>
+                        {(['rk', 'sc', 'pp'] as const).map((key) => (
+                          <input
+                            key={key}
+                            type="number"
+                            inputMode="numeric"
+                            value={row[key]}
+                            onChange={(e) => setScriptCell(i, key, Number(e.target.value))}
+                            className={`w-full bg-white px-1 py-2 text-center text-sm outline-none focus:bg-emerald-50 ${
+                              row[key] < 100 ? 'text-rose-600' : row[key] > 100 ? 'font-semibold text-emerald-700' : 'text-slate-700'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {!script.length && <p className="mt-3 text-center text-sm text-slate-400">Завантаження…</p>}
+              </div>
+
+              <div className="sticky bottom-3 z-10">
+                <button onClick={saveScript} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 font-semibold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700">
+                  {scriptSaved ? <><Check className="h-5 w-5" /> Збережено ✓</> : <><Save className="h-5 w-5" /> Зберегти таблицю</>}
+                </button>
+              </div>
+            </div>
+          )}
+
           {tab === 'settings' && (
             <div className="max-w-3xl space-y-4">
               {/* Пресети */}
