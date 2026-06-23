@@ -4,7 +4,7 @@ import {
   ShieldCheck, LogOut, Users, Gift, MessageSquare, BarChart3, RefreshCw,
   Search, Plus, Minus, Check, EyeOff, Eye, Loader2, Coins, Star, Crown,
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
-  ArrowUp, ArrowDown, Copy, Trophy, Sparkles, Clock, TrendingDown, Link2,
+  ArrowUp, ArrowDown, Copy, Sparkles, Clock, TrendingDown, Link2,
   CheckCircle2, ExternalLink, Wand2,
 } from 'lucide-react';
 
@@ -50,11 +50,9 @@ type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings';
 // ============ НАЛАШТУВАННЯ ГРИ — згруповано ============
 const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; items: [string, string, number, string][] }[] = [
   {
-    title: 'Бали за гру', icon: Coins, hint: 'Економіка раунду — головне для турнірів.',
+    title: 'Ставка раунду', icon: Coins, hint: 'Виплати визначає таблиця 35 раундів (зашита в грі). Тут лише ставка.',
     items: [
-      ['win_points', 'Бали за перемогу', 150, 'Нараховується за виграний раунд'],
-      ['lose_points', 'Бали за участь', 80, 'Нараховується навіть без перемоги'],
-      ['stake', 'Ставка раунду', 100, 'Скільки монет коштує одна гра'],
+      ['stake', 'Ставка раунду', 100, 'Скільки монет коштує одна гра (таблиця розрахована на 100)'],
     ],
   },
   {
@@ -85,11 +83,10 @@ const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; i
   },
 ];
 
-// Пресети під турніри — задають кілька значень одразу.
+// Пресети — задають кілька значень одразу.
 const PRESETS: { id: string; label: string; icon: React.ElementType; desc: string; values: Config }[] = [
-  { id: 'normal', label: 'Звичайний режим', icon: Sparkles, desc: '150 / 80, 30 сек', values: { win_points: 150, lose_points: 80, stake: 100, round_seconds: 30 } },
-  { id: 'turbo', label: 'Турнір ×2', icon: Trophy, desc: '300 / 160, 15 сек', values: { win_points: 300, lose_points: 160, stake: 100, round_seconds: 15 } },
-  { id: 'mega', label: 'Мега-турнір ×3', icon: Trophy, desc: '450 / 240, 20 сек', values: { win_points: 450, lose_points: 240, stake: 100, round_seconds: 20 } },
+  { id: 'normal', label: 'Стандарт', icon: Sparkles, desc: 'ставка 100, 30 сек', values: { stake: 100, round_seconds: 30 } },
+  { id: 'fast', label: 'Швидкі раунди', icon: Clock, desc: 'ставка 100, 15 сек', values: { stake: 100, round_seconds: 15 } },
   { id: 'nodecay', label: 'Вимкнути таяння', icon: TrendingDown, desc: 'бали не згоряють', values: { decay_start_days: 99999 } },
 ];
 

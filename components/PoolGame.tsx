@@ -436,9 +436,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   </span>
                   <span className="opacity-40">·</span>
                   <span>
-                    {lastWin && lastResult.move === lastWin
+                    {lastResult.net > 0
                       ? `виграш +${lastResult.net} монет 🎉`
-                      : `+${lastResult.net} монет за участь ✨`}
+                      : lastResult.net < 0
+                      ? `програш ${Math.abs(lastResult.net)} монет`
+                      : `повернення ставки`}
                   </span>
                 </div>
                 {lastWin && (
