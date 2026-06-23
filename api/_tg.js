@@ -96,10 +96,11 @@ export async function tgNotifyAdmins(text) {
 export function mainMenuKeyboard() {
   return {
     inline_keyboard: [
+      [{ text: '🚀 Відкрити застосунок', web_app: { url: SITE_URL } }],
       [{ text: '📝 Записатися', callback_data: 'book' }],
       [{ text: '🤲 Послуги', callback_data: 'services' }, { text: '💸 Ціни', callback_data: 'prices' }],
       [{ text: '📍 Контакти', callback_data: 'contacts' }],
-      [{ text: '🎮 Гра', url: SITE_URL }, { text: '🌐 Сайт', url: SITE_URL }],
+      [{ text: '🎮 Грати', web_app: { url: SITE_URL } }, { text: '🌐 Сайт', url: SITE_URL }],
     ],
   };
 }

@@ -20,7 +20,7 @@ const LINKS: { to: Route; label: string; href: string; icon: React.ComponentType
   { to: 'services', label: 'Послуги', href: '#/services', icon: HandHeart, header: true },
   { to: 'prices', label: 'Ціни', href: '#/prices', icon: Coins, header: true },
   { to: 'game', label: 'Гра', href: '#/game', icon: Gamepad2, header: true },
-  { to: 'prizes', label: 'Призи', href: '#/prizes', icon: Gift },
+  { to: 'prizes', label: 'Призи', href: '#/prizes', icon: Gift, header: true },
   { to: 'philosophy', label: 'Філософія', href: '#/philosophy', icon: Brain },
   { to: 'donate', label: 'Підтримати', href: '#/donate', icon: Heart },
 ];
