@@ -242,10 +242,10 @@ export function useAccount(): Account {
         return 'Не вдалося оформити';
       }
       // Лист про оформлення призу клієнту + сповіщення власнику (fire-and-forget).
-      fetch('/api/notify-redeem', {
+      fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId, reward, cost, nickname: nickRef.current }),
+        body: JSON.stringify({ type: 'redeem', playerId, reward, cost, nickname: nickRef.current }),
       }).catch(() => {});
       return null;
     },

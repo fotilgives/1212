@@ -216,10 +216,10 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
     if (error) { setErr('Не вдалося відправити. Спробуйте ще раз.'); return; }
     setDone(true);
     // Лист-підтвердження клієнту + сповіщення власнику (fire-and-forget).
-    fetch('/api/notify-booking', {
+    fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, email: email.trim(), service, note }),
+      body: JSON.stringify({ type: 'booking', name, phone, email: email.trim(), service, note }),
     }).catch(() => {});
   };
 
