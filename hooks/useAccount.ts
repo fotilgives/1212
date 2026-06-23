@@ -241,6 +241,12 @@ export function useAccount(): Account {
         if ((error.message || '').includes('insufficient')) return 'Недостатньо монет';
         return 'Не вдалося оформити';
       }
+      // Лист про оформлення призу клієнту + сповіщення власнику (fire-and-forget).
+      fetch('/api/notify-redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, reward, cost, nickname: nickRef.current }),
+      }).catch(() => {});
       return null;
     },
     [playerId, refresh]

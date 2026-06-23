@@ -167,6 +167,7 @@ interface Props {
 const Services: React.FC<Props> = ({ embedded = false }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [service, setService] = useState(SERVICE_OPTIONS[0]);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -199,16 +200,27 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
       setErr("Вкажіть ім'я та телефон");
       return;
     }
+    if (email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
+      setErr('Вкажіть коректний e-mail або залиште поле порожнім');
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.rpc('rps_book', {
       p_name: name,
       p_phone: phone,
       p_service: service,
       p_note: note,
+      p_email: email.trim() || null,
     });
     setBusy(false);
-    if (error) setErr('Не вдалося відправити. Спробуйте ще раз.');
-    else setDone(true);
+    if (error) { setErr('Не вдалося відправити. Спробуйте ще раз.'); return; }
+    setDone(true);
+    // Лист-підтвердження клієнту + сповіщення власнику (fire-and-forget).
+    fetch('/api/notify-booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, email: email.trim(), service, note }),
+    }).catch(() => {});
   };
 
   const openBookingFor = (serviceName: string) => {
@@ -365,7 +377,16 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
               />
             </div>
-            
+
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              inputMode="email"
+              placeholder="E-mail (надішлемо підтвердження)"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+            />
+
             <select
               value={service}
               onChange={(e) => setService(e.target.value)}
