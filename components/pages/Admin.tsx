@@ -46,7 +46,7 @@ interface PrizeRow {
 type Config = Record<string, number>;
 
 type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings' | 'script';
-type ScriptRow = { round_no: number; rk: number; sc: number; pp: number };
+type ScriptRow = { round_no: number; rk: number; sc: number; pp: number; br: number; bs: number; bp: number };
 
 // ============ НАЛАШТУВАННЯ ГРИ — згруповано ============
 const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; items: [string, string, number, string][] }[] = [
@@ -218,6 +218,7 @@ const Admin: React.FC = () => {
   const [config, setConfig] = useState<Config>({});
   const [script, setScript] = useState<ScriptRow[]>([]);
   const [scriptSaved, setScriptSaved] = useState(false);
+  const [scriptView, setScriptView] = useState<'pay' | 'bots'>('pay');
   const [editPrize, setEditPrize] = useState<Partial<PrizeRow> | null>(null);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
@@ -300,7 +301,7 @@ const Admin: React.FC = () => {
   const saveConfig = () => persistConfig(config);
 
   // --- Таблиця виплат (35 раундів) ---
-  const setScriptCell = (i: number, key: 'rk' | 'sc' | 'pp', value: number) => {
+  const setScriptCell = (i: number, key: 'rk' | 'sc' | 'pp' | 'br' | 'bs' | 'bp', value: number) => {
     const v = Math.max(0, Math.floor(Number(value) || 0));
     setScript((rows) => rows.map((r, idx) => (idx === i ? { ...r, [key]: v } : r)));
   };
@@ -585,41 +586,69 @@ const Admin: React.FC = () => {
             <div className="max-w-2xl space-y-4">
               <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
                 <h3 className="flex items-center gap-2 font-bold text-slate-900">
-                  <Table2 className="h-5 w-5 text-emerald-600" /> Таблиця виплат за раунд
+                  <Table2 className="h-5 w-5 text-emerald-600" /> Таблиця гри за раунд
                 </h3>
-                <p className="mt-1 text-xs text-slate-500">
-                  Виплата гравцю = число за зіграний хід у поточному раунді (цикл 1–35). Ставка 100:
-                  <span className="font-semibold text-rose-600"> менше 100 = програш</span>,
-                  <span className="font-semibold text-emerald-700"> більше 100 = виграш</span>.
+
+                {/* Перемикач: виплати або боти на хід */}
+                <div className="mt-3 inline-flex rounded-xl bg-slate-100 p-1 text-sm font-semibold">
+                  <button
+                    onClick={() => setScriptView('pay')}
+                    className={`rounded-lg px-3 py-1.5 transition ${scriptView === 'pay' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    💰 Виплати
+                  </button>
+                  <button
+                    onClick={() => setScriptView('bots')}
+                    className={`rounded-lg px-3 py-1.5 transition ${scriptView === 'bots' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    🤖 Боти на хід
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  {scriptView === 'pay' ? (
+                    <>Виплата = число за зіграний хід (ставка 100:
+                    <span className="font-semibold text-rose-600"> &lt;100 програш</span>,
+                    <span className="font-semibold text-emerald-700"> &gt;100 виграш</span>).</>
+                  ) : (
+                    <>Скільки ботів ставлять кожен хід — це бачить гравець у пулах. Разом орієнтовно 14–20 на раунд.</>
+                  )}
                 </p>
 
-                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                  <div className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:text-[11px]">
-                    <div className="bg-slate-50 py-2">№</div>
-                    <div className="bg-slate-50 py-2">✊ Камінь</div>
-                    <div className="bg-slate-50 py-2">✌️ Ножиці</div>
-                    <div className="bg-slate-50 py-2">✋ Папір</div>
-                  </div>
-                  <div className="max-h-[62vh] overflow-y-auto">
-                    {script.map((row, i) => (
-                      <div key={row.round_no} className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200">
-                        <div className="flex items-center justify-center bg-white text-xs font-bold text-slate-400">{row.round_no}</div>
-                        {(['rk', 'sc', 'pp'] as const).map((key) => (
-                          <input
-                            key={key}
-                            type="number"
-                            inputMode="numeric"
-                            value={row[key]}
-                            onChange={(e) => setScriptCell(i, key, Number(e.target.value))}
-                            className={`w-full bg-white px-1 py-2 text-center text-sm outline-none focus:bg-emerald-50 ${
-                              row[key] < 100 ? 'text-rose-600' : row[key] > 100 ? 'font-semibold text-emerald-700' : 'text-slate-700'
-                            }`}
-                          />
+                {(() => {
+                  const keys = scriptView === 'pay' ? (['rk', 'sc', 'pp'] as const) : (['br', 'bs', 'bp'] as const);
+                  return (
+                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+                      <div className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:text-[11px]">
+                        <div className="bg-slate-50 py-2">№</div>
+                        <div className="bg-slate-50 py-2">✊ Камінь</div>
+                        <div className="bg-slate-50 py-2">✌️ Ножиці</div>
+                        <div className="bg-slate-50 py-2">✋ Папір</div>
+                      </div>
+                      <div className="max-h-[62vh] overflow-y-auto">
+                        {script.map((row, i) => (
+                          <div key={row.round_no} className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200">
+                            <div className="flex items-center justify-center bg-white text-xs font-bold text-slate-400">{row.round_no}</div>
+                            {keys.map((key) => (
+                              <input
+                                key={key}
+                                type="number"
+                                inputMode="numeric"
+                                value={row[key]}
+                                onChange={(e) => setScriptCell(i, key, Number(e.target.value))}
+                                className={`w-full bg-white px-1 py-2 text-center text-sm outline-none focus:bg-emerald-50 ${
+                                  scriptView === 'pay'
+                                    ? row[key] < 100 ? 'text-rose-600' : row[key] > 100 ? 'font-semibold text-emerald-700' : 'text-slate-700'
+                                    : 'text-slate-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
                         ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  );
+                })()}
                 {!script.length && <p className="mt-3 text-center text-sm text-slate-400">Завантаження…</p>}
               </div>
 
