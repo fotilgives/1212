@@ -1,84 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ArrowRight,
-  Send,
-  Check,
-} from 'lucide-react';
+import { ArrowRight, Send, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-
-// ─── Patient Success Stories — real Unsplash portraits ──────────────────────
-// All photos: professional-looking, warm, realistic individuals from Unsplash
-const STORIES = [
-  {
-    name: 'Олександр, 34 роки',
-    condition: 'Реабілітація після ЧМТ',
-    // Real man portrait from Unsplash - Foto de Michael Dam
-    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=320&h=320&fit=crop&crop=face&q=80',
-    before: 'Залежав від сторонньої допомоги. Сильна спастика правої сторони, порушення мовлення.',
-    after: 'Почав самостійно ходити без опори. Відновив базову дрібну моторику та комунікацію.',
-    quote: '«Кожне маленьке досягнення — це перемога. Дякую за терпіння та справжній професіоналізм.»',
-  },
-  {
-    name: 'Олена, 58 років',
-    condition: 'Інсульт, реабілітація',
-    // Real woman portrait — photo by Michael Dam on Unsplash
-    photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=320&h=320&fit=crop&crop=face&q=80',
-    before: 'Втрата рухливості правої сторони тіла. Порушення мовлення та рівноваги. Не могла вставати.',
-    after: 'Повне відновлення побутових навичок та мовлення. Впевнено пересувається самостійно.',
-    quote: '«Я знову відчула себе собою. Підхід був таким уважним — мені ніколи не було страшно.»',
-  },
-  {
-    name: 'Михайло, 47 років',
-    condition: 'Травма хребта',
-    // Real man portrait — photo by Joseph Gonzalez on Unsplash
-    photo: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=320&h=320&fit=crop&crop=face&q=80',
-    before: 'Парез нижніх кінцівок. Постійний больовий синдром. Пересування лише у кріслі-колісному.',
-    after: 'Здатність стояти біля опори. Значне зменшення болю. Переміщення на милицях без підтримки.',
-    quote: '«Я знову повірив, що зможу ходити. Це справжнє диво — повернутись до активного життя.»',
-  },
-];
 
 // ─── Consultation Form Steps ─────────────────────────────────────────────────
 const RehabDetails: React.FC = () => {
-  const [activeStory, setActiveStory] = useState(0);
   const [step, setStep] = useState(1);
   const [condition, setCondition] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  const touchStart = useRef<number | null>(null);
-  const touchEnd = useRef<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchEnd.current = null;
-    touchStart.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEnd.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const start = touchStart.current;
-    const end = touchEnd.current;
-    if (start === null || end === null) return;
-    const distance = start - end;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-    if (isLeftSwipe) {
-      nextStory();
-    } else if (isRightSwipe) {
-      prevStory();
-    }
-  };
-
-  const nextStory = () => setActiveStory((p) => (p + 1) % STORIES.length);
-  const prevStory = () => setActiveStory((p) => (p - 1 + STORIES.length) % STORIES.length);
 
   const handleNext = () => {
     if (condition.trim().length < 5) {
@@ -116,103 +48,7 @@ const RehabDetails: React.FC = () => {
   return (
     <div className="space-y-20 py-8">
 
-      {/* ── SECTION: Patient Success Stories ──────────────────────── */}
-      <section className="bg-gradient-to-b from-slate-50/70 to-white py-14">
-        <motion.div
-          initial={{ opacity: 0, y: 22 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto max-w-4xl px-5"
-        >
-          <div className="mb-10 text-center">
-            <span className="eyebrow">💬 Відгуки</span>
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Відгуки наших клієнтів
-            </h2>
-          </div>
-
-          <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeStory}
-                initial={{ opacity: 0, x: 18 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -18 }}
-                transition={{ duration: 0.32 }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                className="grid gap-6 p-6 sm:grid-cols-[180px_1fr] sm:gap-8 sm:p-8"
-              >
-                {/* Portrait */}
-                <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-center sm:gap-0">
-                  <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-100 shadow-md ring-1 ring-slate-100 sm:h-40 sm:w-40">
-                    <img
-                      src={STORIES[activeStory].photo}
-                      alt={STORIES[activeStory].name}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="flex flex-col sm:items-center">
-                    <p className="text-base font-extrabold text-slate-900 sm:mt-3 sm:text-center sm:text-sm">
-                      {STORIES[activeStory].name}
-                    </p>
-                    <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-800 ring-1 ring-emerald-100 sm:self-auto self-start">
-                      {STORIES[activeStory].condition}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex flex-col gap-4">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl bg-rose-50 p-4 ring-1 ring-rose-100">
-                      <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-rose-600">До:</p>
-                      <p className="text-xs leading-relaxed text-slate-600">{STORIES[activeStory].before}</p>
-                    </div>
-                    <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-100">
-                      <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-600">Після:</p>
-                      <p className="text-xs leading-relaxed text-slate-600">{STORIES[activeStory].after}</p>
-                    </div>
-                  </div>
-
-                  <blockquote className="relative rounded-xl bg-slate-50 px-5 py-4 text-sm italic text-slate-600 ring-1 ring-slate-100">
-                    <span className="absolute -top-3 left-3 text-3xl leading-none text-slate-200 select-none">"</span>
-                    {STORIES[activeStory].quote}
-                  </blockquote>
-
-                  {/* Dots + arrows */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex gap-1.5">
-                      {STORIES.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setActiveStory(i)}
-                          aria-label={`Історія ${i + 1}`}
-                          className={`h-2 rounded-full transition-all ${i === activeStory ? 'w-5 bg-emerald-600' : 'w-2 bg-slate-200'}`}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={prevStory} aria-label="Попередня" className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50">
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <button onClick={nextStory} aria-label="Наступна" className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50">
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ── SECTION 3: Multi-step Consultation Form ─────────────────── */}
+      {/* ── SECTION: Multi-step Consultation Form ─────────────────── */}
       <motion.section
         id="consultation-section"
         initial={{ opacity: 0, y: 22 }}
