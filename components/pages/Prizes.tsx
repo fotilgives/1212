@@ -181,8 +181,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
       {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
 
       {/* Утримай бали від «таяння»: запроси друга або залиш відгук */}
-      {!embedded && (
-      <div className="mt-10 grid gap-5 md:grid-cols-2">
+      <div id="review-section" className="mt-10 grid gap-5 md:grid-cols-2">
         {/* Запросити друга */}
         <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-100 shadow-sm">
           <div className="flex items-center gap-2 text-slate-900">
@@ -251,7 +250,6 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
           )}
         </div>
       </div>
-      )}
 
       {/* Видача після покупки */}
       <AnimatePresence>

@@ -48,16 +48,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [lastResult, setLastResult] = useState<{ net: number; payout: number; move: Move; stake: number; isBluff: boolean } | null>(null);
   const [lastWin, setLastWin] = useState<Move | null>(null);
   const [celebrate, setCelebrate] = useState(false);
-  const [forcing, setForcing] = useState(false);
   const [bonus, setBonus] = useState<{ amount: number; cycle_day: number; max_day: number } | null>(null);
-
-  const forceNext = async () => {
-    if (forcing) return;
-    setForcing(true);
-    await supabase.rpc('rps_force_tick');
-    await loadCurrent();
-    setForcing(false);
-  };
 
   // Блеф завжди доступний (не прив'язаний до попередньої перемоги).
   const canBluff = true;
@@ -488,14 +479,6 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                       <p className="mt-1 text-xs text-emerald-700">Чекаємо завершення раунду… результат прийде автоматично.</p>
                     </>
                   )}
-                  <motion.button
-                    whileTap={{ scale: 0.97 }}
-                    onClick={forceNext}
-                    disabled={forcing}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
-                  >
-                    {forcing ? 'Розігрую…' : '▶ Розіграти зараз'}
-                  </motion.button>
                 </motion.div>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
