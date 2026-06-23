@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserRound, LogIn } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
@@ -14,9 +14,20 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [nick, setNick] = useState('');
+  const [refCode, setRefCode] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Автозаповнення коду запрошення з ?ref=<uuid> у лінку; перемикаємо на реєстрацію.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref) {
+      setRefCode(ref);
+      setMode('signup');
+    }
+  }, [open]);
 
   const submit = async () => {
     setErr(null);
@@ -32,13 +43,14 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
     const e =
       mode === 'login'
         ? await account.login(login, password, rememberMe)
-        : await account.signup(login, password, nick, rememberMe);
+        : await account.signup(login, password, nick, rememberMe, refCode);
     setBusy(false);
     if (e) setErr(e);
     else {
       setLogin('');
       setPassword('');
       setNick('');
+      setRefCode('');
       onClose();
     }
   };
@@ -101,6 +113,17 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
                 onKeyDown={(e) => e.key === 'Enter' && submit()}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
+              {mode === 'signup' && (
+                <div>
+                  <input
+                    value={refCode}
+                    onChange={(e) => setRefCode(e.target.value)}
+                    placeholder="Код запрошення (необовʼязково)"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+                  />
+                  <p className="mt-1 px-1 text-xs text-emerald-700">🎁 Код друга = +500 монет тобі й другу</p>
+                </div>
+              )}
             </div>
 
             <label className="mt-3 flex cursor-pointer items-center gap-2 select-none">

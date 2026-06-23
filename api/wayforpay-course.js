@@ -28,6 +28,9 @@ export default async function handler(req, res) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return res.status(400).json({ error: 'Вкажіть коректний e-mail для доступу до курсу.' });
     }
+    if (!/^[0-9a-fA-F-]{8,40}$/.test(playerId)) {
+      return res.status(400).json({ error: 'Невірний ідентифікатор акаунта.' });
+    }
     if (phone.replace(/\D/g, '').length < 9) {
       return res.status(400).json({ error: 'Вкажіть коректний номер телефону.' });
     }
@@ -67,6 +70,17 @@ export default async function handler(req, res) {
     if (name) fields.clientFirstName = name;
     if (email) fields.clientEmail = email;
     if (phone) fields.clientPhone = phone;
+
+    await rpc('rps_course_order_upsert', {
+      p_order_reference: orderRef,
+      p_player_id: playerId,
+      p_email: email,
+      p_name: name || null,
+      p_phone: phone || null,
+      p_course_name: COURSE_NAME,
+      p_amount_uah: COURSE_PRICE,
+      p_telegram_url: 'https://t.me/+o9i9tJpoj4A3MTcy',
+    });
 
     return res.status(200).json({ action: 'https://secure.wayforpay.com/pay', fields });
   } catch (err) {

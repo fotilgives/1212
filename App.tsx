@@ -8,6 +8,7 @@ import PoolGame from './components/PoolGame';
 import Leaderboard from './components/Leaderboard';
 import Footer from './components/Footer';
 import ExchangeModal from './components/ExchangeModal';
+import Profile from './components/pages/Profile';
 import Background from './components/Background';
 import About from './components/pages/About';
 import Services from './components/pages/Services';
@@ -46,6 +47,12 @@ const App: React.FC = () => {
     } else {
       setExchangeOpen(true);
     }
+  };
+
+  // Історія покупок тепер живе в кабінеті (окрема сторінка).
+  const openHistory = () => {
+    setExchangeOpen(false);
+    navigate('profile');
   };
 
   // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return).
@@ -116,7 +123,8 @@ const App: React.FC = () => {
 
           {route === 'about' && <About />}
           {route === 'services' && <Services />}
-          {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />}
+          {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} onHistory={openHistory} />}
+          {route === 'profile' && <Profile account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />}
           {route === 'philosophy' && <Philosophy />}
           {route === 'prices' && <PricesPage account={account} />}
           {route === 'location' && <LocationPage />}
@@ -171,7 +179,7 @@ const App: React.FC = () => {
 
       <FloatingContact />
       <BackToTop />
-      <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} />
+      <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} onHistory={openHistory} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} account={account} />
     </div>
   );

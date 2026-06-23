@@ -9,11 +9,11 @@ interface Props {
   account: Account;
 }
 
-const COURSE_BOT_URL = 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot';
+const COURSE_BOT_URL = 'https://t.me/+o9i9tJpoj4A3MTcy';
 const COURSE_PRICE_UAH = 2500;
 const COURSE_PRICE_COINS = 12500;
 
-type Mode = 'choose' | 'money';
+type Mode = 'choose' | 'money' | 'done';
 
 const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [mode, setMode] = useState<Mode>('choose');
@@ -43,10 +43,10 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
       setBusy(false);
       return;
     }
-    // Успіх — відкриваємо бота курсу.
-    window.open(COURSE_BOT_URL, '_blank', 'noopener,noreferrer');
+    // Успіх — показуємо екран з кнопкою-посиланням. НЕ викликаємо window.open
+    // (його блокує браузер після await) — користувач тисне кнопку сам.
     setBusy(false);
-    onClose();
+    setMode('done');
   };
 
   // Оплата грошима: створюємо платіж у WayForPay і редіректимо на оплату.
@@ -237,10 +237,30 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
               </>
             )}
 
-            <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-400">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              Після оплати курс відкриється у Telegram
-            </p>
+            {mode === 'done' && (
+              <div className="mt-5 flex flex-col items-center gap-3 text-center">
+                <span className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+                  <CheckCircle2 className="h-7 w-7" />
+                </span>
+                <p className="text-lg font-bold text-slate-900">Курс відкрито! 🎉</p>
+                <p className="text-sm text-slate-500">Натисни кнопку — і переходь у Telegram-групу курсу.</p>
+                <a
+                  href={COURSE_BOT_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shine mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-4 text-base font-bold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700"
+                >
+                  Відкрити курс у Telegram →
+                </a>
+              </div>
+            )}
+
+            {mode !== 'done' && (
+              <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] text-slate-400">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                Після оплати курс відкриється у Telegram
+              </p>
+            )}
           </motion.div>
         </motion.div>
       )}

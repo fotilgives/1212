@@ -1,11 +1,26 @@
 import { rpc } from './_wfp.js';
 
 const PACKAGES = {
-  p1:   { amount: 1,   coins: 1 },
   p50:  { amount: 50,  coins: 250 },
   p100: { amount: 100, coins: 500 },
-  p200: { amount: 200, coins: 1100 },
+  p200: { amount: 200, coins: 1000 },
 };
+
+// Курс для довільної суми: 1 грн = 5 балів (як 100 грн = 500 балів).
+const COIN_RATE = 5;
+const CUSTOM_MIN_UAH = 1;
+const CUSTOM_MAX_UAH = 100000;
+
+// Пакет для оплати: або фіксований (packageId), або довільна сума (amount у грн).
+function resolvePackage(body) {
+  const custom = Number(body.amount);
+  if (Number.isFinite(custom) && custom >= CUSTOM_MIN_UAH) {
+    const amount = Math.floor(custom);
+    if (amount > CUSTOM_MAX_UAH) return null;
+    return { amount, coins: amount * COIN_RATE };
+  }
+  return PACKAGES[body.packageId] || null;
+}
 
 export default async function handler(req, res) {
   try {
@@ -15,8 +30,8 @@ export default async function handler(req, res) {
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { body = {}; } }
     body = body || {};
 
-    const pkg = PACKAGES[body.packageId];
-    if (!pkg) return res.status(400).json({ error: 'Невідомий пакет поповнення.' });
+    const pkg = resolvePackage(body);
+    if (!pkg) return res.status(400).json({ error: 'Невірна сума поповнення.' });
 
     const playerId = String(body.playerId || '');
     if (!playerId || playerId.length < 8)

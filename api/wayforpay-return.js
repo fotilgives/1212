@@ -1,4 +1,7 @@
 import { parseBody, confirmAndCredit, checkStatus, rpc, s } from './_wfp.js';
+import { buildCourseAccessEmail, normalizeOrigin, sendTransactionalEmail } from './_mail.js';
+
+const COURSE_GROUP_URL = 'https://t.me/+o9i9tJpoj4A3MTcy';
 
 /**
  * returnUrl — куди WayForPay повертає користувача (POST) після оплати.
@@ -26,13 +29,47 @@ export default async function handler(req, res) {
         const st = await checkStatus(ref);
         if (st && st.status === 'Approved') {
           await rpc('rps_touch_activity', { p_id: pid });
+          const order = await rpc('rps_course_order_mark_paid', { p_order_reference: ref });
+          const current = order || (await rpc('rps_course_order_by_ref', { p_order_reference: ref }));
+          const email = s(current?.email || body.clientEmail || body.email || body.customerEmail);
+          const alreadyEmailed = s(current?.status) === 'emailed' || !!current?.emailed_at;
+          if (email && !alreadyEmailed) {
+            const domain = await rpc('wfp_domain');
+            const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'playheal.vercel.app');
+            const profileUrl = origin ? `${origin}/#/profile` : '/#/profile';
+            const bannerUrl = origin ? `${origin}/images/email/course-banner.svg` : '';
+            const courseName = s(current?.course_name) || 'Курс з йоги (онлайн)';
+            const amountUah = Number(current?.amount_uah || 2500);
+            const { subject, html, text } = buildCourseAccessEmail({
+              name: s(current?.name) || '',
+              courseName,
+              amountUah,
+              courseUrl: COURSE_GROUP_URL,
+              profileUrl,
+              supportEmail: process.env.COURSE_SUPPORT_EMAIL || 'support@example.com',
+              bannerUrl,
+            });
+            try {
+              await sendTransactionalEmail({
+                to: email,
+                subject,
+                html,
+                text,
+              });
+              await rpc('rps_course_order_mark_emailed', { p_order_reference: ref });
+            } catch (mailErr) {
+              console.error('[wfp-return course] mail ERR:', mailErr.message);
+            }
+          } else if (!email) {
+            console.warn('[wfp-return course] no email for order', ref);
+          }
         }
       }
     } catch (e) {
       console.error('[wfp-return course] ERR:', e.message);
     }
-    // Після оплати ведемо людину одразу в Telegram-бот курсу (видає доступ/відео).
-    res.writeHead(302, { Location: 'https://t.me/Kurs_Yoga_anatomihni_poizda_bot' });
+    // Після оплати ведемо людину одразу в Telegram-групу курсу (видає доступ/відео).
+    res.writeHead(302, { Location: COURSE_GROUP_URL });
     res.end();
     return;
   }

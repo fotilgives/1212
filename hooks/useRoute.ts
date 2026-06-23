@@ -11,9 +11,10 @@ export type Route =
   | 'location'
   | 'donate'
   | 'legal'
+  | 'profile'
   | 'admin';
 
-const ROUTES: Route[] = ['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location', 'donate', 'legal', 'admin'];
+const ROUTES: Route[] = ['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location', 'donate', 'legal', 'profile', 'admin'];
 
 const parse = (): Route => {
   // Адмінка доступна за чистим шляхом /admin (Vercel rewrite віддає SPA).

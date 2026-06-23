@@ -4,7 +4,7 @@ import { Coins, Plus, Menu, X, User, HandHeart, Gamepad2, Gift, Brain, Phone, Ca
 import AnimatedNumber from './AnimatedNumber';
 import BrandMark from './BrandMark';
 import { HoursPill, SCHEDULE_ROWS } from './Hours';
-import { goToBooking } from '../hooks/useRoute';
+import { goToBooking, navigate } from '../hooks/useRoute';
 import type { Route } from '../hooks/useRoute';
 
 interface Props {
@@ -96,10 +96,14 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-1 sm:gap-1.5 rounded-full bg-white/70 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-600 ring-1 ring-amber-200">
+          <button
+            onClick={() => navigate('profile')}
+            title="Мій кабінет"
+            className={`flex items-center gap-1 sm:gap-1.5 rounded-full bg-white/70 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-600 ring-1 transition hover:ring-amber-400 ${route === 'profile' ? 'ring-amber-400' : 'ring-amber-200'}`}
+          >
             <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <AnimatedNumber value={balance} />
-          </div>
+          </button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.94 }}
@@ -114,8 +118,10 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.94 }}
-              onClick={() => account.logout()}
-              className="hidden items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 sm:flex"
+              onClick={() => navigate('profile')}
+              className={`hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition sm:flex ${
+                route === 'profile' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
             >
               <User className="h-4 w-4" />
               {account.nickname || 'Кабінет'}
@@ -244,6 +250,17 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
 
                 {/* Mobile Auth */}
                 <div className="mt-2 pt-2 border-t border-slate-100">
+                  <button
+                    onClick={() => { setOpen(false); navigate('profile'); }}
+                    className={`mb-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold transition ${
+                      route === 'profile' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className={`grid h-9 w-9 place-items-center rounded-xl ${route === 'profile' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      <User className="h-4.5 w-4.5" />
+                    </span>
+                    Мій кабінет
+                  </button>
                   {account.isAccount ? (
                     <button
                       onClick={() => { setOpen(false); account.logout(); }}

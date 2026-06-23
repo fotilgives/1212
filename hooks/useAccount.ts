@@ -45,7 +45,7 @@ export interface Account {
   topUp: (amount: number) => Promise<void>;
   donate: (amount: number) => Promise<boolean>;
   login: (loginStr: string, password: string, remember?: boolean) => Promise<string | null>;
-  signup: (loginStr: string, password: string, nick: string, remember?: boolean) => Promise<string | null>;
+  signup: (loginStr: string, password: string, nick: string, remember?: boolean, refCode?: string) => Promise<string | null>;
   logout: () => void;
   redeem: (reward: string, cost: number) => Promise<string | null>;
   addReview: (rating: number, text: string) => Promise<string | null>;
@@ -195,8 +195,12 @@ export function useAccount(): Account {
     return null;
   }, []);
 
-  const signup = useCallback(async (loginStr: string, password: string, nick: string, remember = true): Promise<string | null> => {
-    const { data, error } = await supabase.rpc('rps_signup', { p_login: loginStr, p_password: password, p_nick: nick });
+  const signup = useCallback(async (loginStr: string, password: string, nick: string, remember = true, refCode?: string): Promise<string | null> => {
+    // Код запрошення: приймаємо як чистий uuid, так і повний лінк ?ref=<uuid>.
+    const refRaw = (refCode || '').trim();
+    const refMatch = refRaw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const p_ref = refMatch ? refMatch[0] : null;
+    const { data, error } = await supabase.rpc('rps_signup', { p_login: loginStr, p_password: password, p_nick: nick, p_ref });
     if (error) {
       const m = error.message || '';
       if (m.includes('login taken')) return 'Ця пошта вже зареєстрована';
@@ -206,6 +210,12 @@ export function useAccount(): Account {
     }
     const d = data as { id: string; nickname: string };
     applyAccount(d.id, d.nickname, remember);
+    // Привітальний лист — fire-and-forget, не блокує реєстрацію.
+    fetch('/api/send-welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginStr.trim(), name: nick }),
+    }).catch(() => {});
     return null;
   }, []);
 
