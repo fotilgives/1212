@@ -5,7 +5,7 @@ import {
   Search, Plus, Minus, Check, EyeOff, Eye, Loader2, Coins, Star, Crown,
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
   ArrowUp, ArrowDown, Copy, Sparkles, Clock, TrendingDown, Link2,
-  CheckCircle2, ExternalLink, Wand2, Table2,
+  CheckCircle2, ExternalLink, Wand2, Table2, HandHeart,
 } from 'lucide-react';
 
 const TOKEN_KEY = 'rps_admin_token';
@@ -45,8 +45,10 @@ interface PrizeRow {
 }
 type Config = Record<string, number>;
 
-type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings' | 'script';
+type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings' | 'script' | 'prices' | 'servs';
 type ScriptRow = { round_no: number; rk: number; sc: number; pp: number; br: number; bs: number; bp: number };
+type PriceRow = { id?: number; group_title: string; name: string; price: string; meta: string | null; sort: number; active: boolean };
+type ServiceRow = { id?: number; title: string; category: string | null; short: string | null; details: string | null; cases: string | null; cases_title: string | null; image_url: string | null; video_url: string | null; poster_url: string | null; sort: number; active: boolean };
 
 // ============ НАЛАШТУВАННЯ ГРИ — згруповано ============
 const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; items: [string, string, number, string][] }[] = [
@@ -228,6 +230,8 @@ const Admin: React.FC = () => {
   const [script, setScript] = useState<ScriptRow[]>([]);
   const [scriptSaved, setScriptSaved] = useState(false);
   const [scriptView, setScriptView] = useState<'pay' | 'bots'>('pay');
+  const [prices, setPrices] = useState<PriceRow[]>([]);
+  const [servs, setServs] = useState<ServiceRow[]>([]);
   const [editPrize, setEditPrize] = useState<Partial<PrizeRow> | null>(null);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
@@ -252,7 +256,7 @@ const Admin: React.FC = () => {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [s, u, r, rv, c, cfg, sc] = await Promise.all([
+    const [s, u, r, rv, c, cfg, sc, pr, sv] = await Promise.all([
       rpc('rps_admin_stats'),
       rpc('rps_admin_users'),
       rpc('rps_admin_redemptions'),
@@ -260,6 +264,8 @@ const Admin: React.FC = () => {
       rpc('rps_admin_prizes'),
       rpc('rps_admin_get_config'),
       rpc('rps_admin_get_script'),
+      rpc('rps_admin_prices'),
+      rpc('rps_admin_services'),
     ]);
     if (s.data) setStats(s.data as Stats);
     if (u.data) setUsers(u.data as UserRow[]);
@@ -268,6 +274,8 @@ const Admin: React.FC = () => {
     if (c.data) setCatalog(c.data as PrizeRow[]);
     if (cfg.data) setConfig(cfg.data as Config);
     if (sc.data) setScript(sc.data as ScriptRow[]);
+    if (pr.data) setPrices(pr.data as PriceRow[]);
+    if (sv.data) setServs(sv.data as ServiceRow[]);
     setLoading(false);
   }, [rpc]);
 
@@ -324,6 +332,42 @@ const Admin: React.FC = () => {
     await rpc('rps_admin_set_script', { p_rows: script });
     setScriptSaved(true);
     window.setTimeout(() => setScriptSaved(false), 2000);
+  };
+
+  // --- Прайс ---
+  const setPriceCell = (i: number, key: keyof PriceRow, value: string | number | boolean) =>
+    setPrices((rows) => rows.map((r, idx) => (idx === i ? { ...r, [key]: value } : r)));
+  const addPrice = () => setPrices((rows) => [...rows, { group_title: rows[rows.length - 1]?.group_title || 'Послуги', name: '', price: '', meta: '', sort: (rows[rows.length - 1]?.sort || 0) + 1, active: true }]);
+  const savePrice = async (i: number) => {
+    const r = prices[i];
+    const { data } = await rpc('rps_admin_price_upsert', { p_id: r.id ?? null, p_group_title: r.group_title, p_name: r.name, p_price: r.price, p_meta: r.meta || null, p_sort: r.sort, p_active: r.active });
+    if (typeof data === 'number' && !r.id) setPrices((rows) => rows.map((x, idx) => (idx === i ? { ...x, id: data as number } : x)));
+  };
+  const deletePrice = async (i: number) => {
+    const r = prices[i];
+    if (!window.confirm('Видалити рядок прайсу?')) return;
+    if (r.id) await rpc('rps_admin_price_delete', { p_id: r.id });
+    setPrices((rows) => rows.filter((_, idx) => idx !== i));
+  };
+
+  // --- Послуги ---
+  const setServCell = (i: number, key: keyof ServiceRow, value: string | number | boolean) =>
+    setServs((rows) => rows.map((r, idx) => (idx === i ? { ...r, [key]: value } : r)));
+  const addServ = () => setServs((rows) => [...rows, { title: '', category: '', short: '', details: '', cases: '', cases_title: '', image_url: '', video_url: '', poster_url: '', sort: (rows[rows.length - 1]?.sort || 0) + 10, active: true }]);
+  const saveServ = async (i: number) => {
+    const r = servs[i];
+    const { data } = await rpc('rps_admin_service_upsert', {
+      p_id: r.id ?? null, p_title: r.title, p_category: r.category || null, p_short: r.short || null, p_details: r.details || null,
+      p_cases: r.cases || null, p_cases_title: r.cases_title || null, p_image_url: r.image_url || null, p_video_url: r.video_url || null,
+      p_poster_url: r.poster_url || null, p_sort: r.sort, p_active: r.active,
+    });
+    if (typeof data === 'number' && !r.id) setServs((rows) => rows.map((x, idx) => (idx === i ? { ...x, id: data as number } : x)));
+  };
+  const deleteServ = async (i: number) => {
+    const r = servs[i];
+    if (!window.confirm('Видалити послугу?')) return;
+    if (r.id) await rpc('rps_admin_service_delete', { p_id: r.id });
+    setServs((rows) => rows.filter((_, idx) => idx !== i));
   };
   const applyPreset = (values: Config) => {
     const next = { ...config, ...values };
@@ -409,6 +453,8 @@ const Admin: React.FC = () => {
     { id: 'orders', label: 'Заявки', icon: Gift, badge: stats?.redemptions_pending },
     { id: 'catalog', label: 'Призи', icon: Package, badge: catalog.length },
     { id: 'reviews', label: 'Відгуки', icon: MessageSquare, badge: stats?.reviews },
+    { id: 'servs', label: 'Послуги', icon: HandHeart, badge: servs.length },
+    { id: 'prices', label: 'Прайс', icon: Coins, badge: prices.length },
     { id: 'script', label: 'Таблиця гри', icon: Table2 },
     { id: 'settings', label: 'Гра / Турніри', icon: Settings },
   ];
@@ -596,6 +642,66 @@ const Admin: React.FC = () => {
           )}
 
           {/* НАЛАШТУВАННЯ ГРИ / ТУРНІРИ */}
+          {/* ПРАЙС */}
+          {tab === 'prices' && (
+            <div className="max-w-3xl space-y-3">
+              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
+                <h3 className="flex items-center gap-2 font-bold text-slate-900"><Coins className="h-5 w-5 text-emerald-600" /> Прайс</h3>
+                <p className="mt-1 text-xs text-slate-500">Редагуй ціни — оновлюється і на сайті, і в боті. «Група» — заголовок секції.</p>
+                <div className="mt-4 space-y-2.5">
+                  {prices.map((r, i) => (
+                    <div key={r.id ?? `n${i}`} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <input value={r.group_title} onChange={(e) => setPriceCell(i, 'group_title', e.target.value)} placeholder="Група" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+                        <input value={r.name} onChange={(e) => setPriceCell(i, 'name', e.target.value)} placeholder="Назва послуги" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+                        <input value={r.price} onChange={(e) => setPriceCell(i, 'price', e.target.value)} placeholder="Ціна (напр. 700 або 200 / 500)" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+                        <input value={r.meta ?? ''} onChange={(e) => setPriceCell(i, 'meta', e.target.value)} placeholder="Підпис (необов.)" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-400" />
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <label className="flex items-center gap-1.5 text-xs text-slate-600"><input type="checkbox" checked={r.active} onChange={(e) => setPriceCell(i, 'active', e.target.checked)} className="accent-emerald-600" /> активна</label>
+                        <input type="number" value={r.sort} onChange={(e) => setPriceCell(i, 'sort', Number(e.target.value))} title="порядок" className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none" />
+                        <button onClick={() => savePrice(i)} className="ml-auto rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700">Зберегти</button>
+                        <button onClick={() => deletePrice(i)} className="grid h-8 w-8 place-items-center rounded-lg bg-rose-50 text-rose-500 transition hover:bg-rose-100"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={addPrice} className="mt-3 flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"><Plus className="h-4 w-4" /> Додати рядок</button>
+              </div>
+            </div>
+          )}
+
+          {/* ПОСЛУГИ */}
+          {tab === 'servs' && (
+            <div className="max-w-3xl space-y-3">
+              <p className="text-xs text-slate-500">Редагуй послуги — оновлюється на сайті (картки) та в боті. Показання — кожне з нового рядка.</p>
+              {servs.map((r, i) => (
+                <div key={r.id ?? `n${i}`} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input value={r.title} onChange={(e) => setServCell(i, 'title', e.target.value)} placeholder="Назва" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white" />
+                    <input value={r.category ?? ''} onChange={(e) => setServCell(i, 'category', e.target.value)} placeholder="Категорія (бейдж)" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                  </div>
+                  <textarea value={r.short ?? ''} onChange={(e) => setServCell(i, 'short', e.target.value)} placeholder="Короткий опис (на картці)" rows={2} className="mt-2 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                  <textarea value={r.details ?? ''} onChange={(e) => setServCell(i, 'details', e.target.value)} placeholder="Повний опис (у вікні)" rows={3} className="mt-2 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                  <textarea value={r.cases ?? ''} onChange={(e) => setServCell(i, 'cases', e.target.value)} placeholder="Показання (кожне з нового рядка)" rows={3} className="mt-2 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <input value={r.cases_title ?? ''} onChange={(e) => setServCell(i, 'cases_title', e.target.value)} placeholder="Заголовок показань (необов.)" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                    <input value={r.image_url ?? ''} onChange={(e) => setServCell(i, 'image_url', e.target.value)} placeholder="URL фото (/images/...)" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                    <input value={r.video_url ?? ''} onChange={(e) => setServCell(i, 'video_url', e.target.value)} placeholder="URL відео (необов.)" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                    <input value={r.poster_url ?? ''} onChange={(e) => setServCell(i, 'poster_url', e.target.value)} placeholder="URL постера відео (необов.)" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <label className="flex items-center gap-1.5 text-xs text-slate-600"><input type="checkbox" checked={r.active} onChange={(e) => setServCell(i, 'active', e.target.checked)} className="accent-emerald-600" /> активна</label>
+                    <input type="number" value={r.sort} onChange={(e) => setServCell(i, 'sort', Number(e.target.value))} title="порядок" className="w-16 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs outline-none" />
+                    <button onClick={() => saveServ(i)} className="ml-auto rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-700">Зберегти</button>
+                    <button onClick={() => deleteServ(i)} className="grid h-8 w-8 place-items-center rounded-lg bg-rose-50 text-rose-500 transition hover:bg-rose-100"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              ))}
+              <button onClick={addServ} className="flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"><Plus className="h-4 w-4" /> Додати послугу</button>
+            </div>
+          )}
+
           {/* ТАБЛИЦЯ ГРИ — редагована сітка виплат на 35 раундів */}
           {tab === 'script' && (
             <div className="max-w-2xl space-y-4">

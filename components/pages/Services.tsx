@@ -8,6 +8,7 @@ import MediaShowcase from '../MediaShowcase';
 
 interface ServiceItem {
   title: string;
+  category?: string;
   image: string;
   /** Коротке відео процесу (необов'язково) — показується у вікні «Докладніше». */
   video?: string;
@@ -177,6 +178,27 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
   // Selected service for detail modal
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
 
+  // Послуги з бази (редагуються в адмінці); фолбек — SERVICES_DATA.
+  const [services, setServices] = useState<ServiceItem[]>(SERVICES_DATA);
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc('rps_services_list');
+      const rows = (data as Array<Record<string, unknown>> | null) || [];
+      if (error || rows.length === 0) return;
+      setServices(rows.map((r) => ({
+        title: String(r.title || ''),
+        category: (r.category as string) || undefined,
+        image: (r.image_url as string) || '',
+        video: (r.video_url as string) || undefined,
+        poster: (r.poster_url as string) || undefined,
+        short: (r.short as string) || '',
+        details: (r.details as string) || '',
+        casesTitle: (r.cases_title as string) || undefined,
+        cases: String(r.cases || '').split('\n').map((c) => c.trim()).filter(Boolean),
+      })));
+    })();
+  }, []);
+
   // Якщо прийшли сюди через кнопку «Записатися» — плавно прокрутити до форми.
   useEffect(() => {
     let flagged = false;
@@ -258,7 +280,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
 
       {/* Преміум-сітка послуг — image-forward картки */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-        {SERVICES_DATA.map((item, idx) => (
+        {services.map((item, idx) => (
           <motion.button
             key={item.title}
             onClick={() => setSelectedService(item)}
@@ -283,7 +305,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
 
             {/* Категорія + бейдж відео */}
             <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 shadow-sm backdrop-blur">
-              {CAT[item.title]}
+              {item.category || CAT[item.title]}
             </span>
             {item.video && (
               <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-600/95 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur">
@@ -470,7 +492,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
                   )}
                 </div>
                 <span className="absolute left-3 top-3 z-10 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 shadow-sm backdrop-blur">
-                  {CAT[selectedService.title] || 'Послуга'}
+                  {selectedService.category || CAT[selectedService.title] || 'Послуга'}
                 </span>
                 <button
                   onClick={() => setSelectedService(null)}

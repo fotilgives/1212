@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, HandHeart, Activity, Baby, Brain, CalendarCheck } from 'lucide-react';
 import { goToBooking } from '../hooks/useRoute';
+import { supabase } from '../lib/supabase';
 
 interface Row {
   name: string;
@@ -64,7 +65,34 @@ const GROUPS: Group[] = [
   },
 ];
 
+const ICON_BY_GROUP: Record<string, React.ComponentType<{ className?: string }>> = {
+  'Дитячий напрямок': Baby,
+  'Масаж': HandHeart,
+  'Авторські послуги — Володимир Мальцев': Sparkles,
+  'Апаратне лікування': Activity,
+};
+
+interface PriceRow { id: number; group_title: string; name: string; price: string; meta: string | null; sort: number }
+
 const PriceList: React.FC = () => {
+  const [groups, setGroups] = useState<Group[]>(GROUPS);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.rpc('rps_prices_list');
+      const rows = (data as PriceRow[] | null) || [];
+      if (error || rows.length === 0) return; // фолбек на GROUPS
+      const map = new Map<string, Group>();
+      for (const r of rows) {
+        if (!map.has(r.group_title)) {
+          map.set(r.group_title, { title: r.group_title, icon: ICON_BY_GROUP[r.group_title] || Sparkles, rows: [] });
+        }
+        map.get(r.group_title)!.rows.push({ name: r.name, price: r.price, meta: r.meta || undefined });
+      }
+      setGroups(Array.from(map.values()));
+    })();
+  }, []);
+
   return (
     <section id="price-section" className="mx-auto mt-16 max-w-5xl">
       <motion.div
@@ -84,7 +112,7 @@ const PriceList: React.FC = () => {
       </motion.div>
 
       <div className="mt-9 grid gap-5 md:grid-cols-2">
-        {GROUPS.map(({ title, icon: Icon, note, rows }, gi) => (
+        {groups.map(({ title, icon: Icon, note, rows }, gi) => (
           <motion.div
             key={title}
             initial={{ opacity: 0, y: 18 }}
