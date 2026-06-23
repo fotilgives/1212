@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import {
   ShieldCheck, LogOut, Users, Gift, MessageSquare, BarChart3, RefreshCw,
   Search, Plus, Minus, Check, EyeOff, Eye, Loader2, Coins, Star, Crown,
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
+  ArrowUp, ArrowDown, Copy, Trophy, Sparkles, Clock, TrendingDown, Link2,
+  CheckCircle2, ExternalLink, Wand2,
 } from 'lucide-react';
 
 const TOKEN_KEY = 'rps_admin_token';
@@ -44,6 +46,46 @@ interface PrizeRow {
 type Config = Record<string, number>;
 
 type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings';
+
+// ============ НАЛАШТУВАННЯ ГРИ — згруповано ============
+const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; items: [string, string, number, string][] }[] = [
+  {
+    title: 'Бали за гру', icon: Coins, hint: 'Економіка раунду — головне для турнірів.',
+    items: [
+      ['win_points', 'Бали за перемогу', 150, 'Нараховується за виграний раунд'],
+      ['lose_points', 'Бали за участь', 80, 'Нараховується навіть без перемоги'],
+      ['stake', 'Ставка раунду', 100, 'Скільки монет коштує одна гра'],
+    ],
+  },
+  {
+    title: 'Раунд', icon: Clock, hint: 'Темп гри.',
+    items: [
+      ['round_seconds', 'Тривалість раунду (сек)', 30, 'Час до автоматичного розіграшу'],
+    ],
+  },
+  {
+    title: 'Таяння балів (енергія)', icon: TrendingDown, hint: 'Стимулює грати регулярно. Постав «через днів» дуже великим, щоб вимкнути.',
+    items: [
+      ['decay_start_days', 'Починати через (днів)', 3, 'Днів неактивності до старту таяння'],
+      ['decay_period_days', 'Період кроку (днів)', 7, 'Як часто застосовувати таяння'],
+      ['decay_pct', 'Відсоток за крок (%)', 1, 'На скільки % зменшувати баланс щокроку'],
+    ],
+  },
+  {
+    title: 'Реєстрація', icon: Gift, hint: 'Бонус новачкам.',
+    items: [
+      ['starter_coins', 'Стартові монети', 0, 'Бонус новому акаунту при реєстрації'],
+    ],
+  },
+];
+
+// Пресети під турніри — задають кілька значень одразу.
+const PRESETS: { id: string; label: string; icon: React.ElementType; desc: string; values: Config }[] = [
+  { id: 'normal', label: 'Звичайний режим', icon: Sparkles, desc: '150 / 80, 30 сек', values: { win_points: 150, lose_points: 80, stake: 100, round_seconds: 30 } },
+  { id: 'turbo', label: 'Турнір ×2', icon: Trophy, desc: '300 / 160, 15 сек', values: { win_points: 300, lose_points: 160, stake: 100, round_seconds: 15 } },
+  { id: 'mega', label: 'Мега-турнір ×3', icon: Trophy, desc: '450 / 240, 20 сек', values: { win_points: 450, lose_points: 240, stake: 100, round_seconds: 20 } },
+  { id: 'nodecay', label: 'Вимкнути таяння', icon: TrendingDown, desc: 'бали не згоряють', values: { decay_start_days: 99999 } },
+];
 
 // ============ ВХІД ============
 const Login: React.FC<{ onIn: (t: string) => void }> = ({ onIn }) => {
@@ -104,6 +146,60 @@ const Login: React.FC<{ onIn: (t: string) => void }> = ({ onIn }) => {
   );
 };
 
+// ============ КАРТКА КОРИСТУВАЧА (з кастомною сумою) ============
+const UserCard: React.FC<{ u: UserRow; onGrant: (id: string, delta: number) => void }> = ({ u, onGrant }) => {
+  const [custom, setCustom] = useState('');
+  const apply = (sign: number) => {
+    const n = Math.abs(parseInt(custom, 10));
+    if (!n) return;
+    onGrant(u.id, sign * n);
+    setCustom('');
+  };
+  return (
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 font-bold text-slate-900">
+            {u.is_admin && <Crown className="h-4 w-4 text-amber-500" />}
+            <span className="truncate">{u.nick || 'Гравець'}</span>
+            {u.is_account
+              ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">акаунт</span>
+              : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">гість</span>}
+          </div>
+          <div className="mt-0.5 truncate text-xs text-slate-500">{u.email || u.login || '— без пошти —'}</div>
+          <div className="mt-0.5 text-[11px] text-slate-400">
+            активність: {fmtDate(u.last_activity)} · перемог: {u.wins ?? 0} · донат: {fmt(u.donated)}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 font-extrabold text-amber-600">
+          <Coins className="h-4 w-4" /> {fmt(u.balance)}
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+        {[100, 500, 1000].map((v) => (
+          <button key={'p' + v} onClick={() => onGrant(u.id, v)} className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
+            <Plus className="h-3 w-3" />{v}
+          </button>
+        ))}
+        {[100, 500].map((v) => (
+          <button key={'m' + v} onClick={() => onGrant(u.id, -v)} className="flex items-center gap-1 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-100">
+            <Minus className="h-3 w-3" />{v}
+          </button>
+        ))}
+        <div className="ml-auto flex items-center gap-1">
+          <input
+            value={custom} onChange={(e) => setCustom(e.target.value.replace(/[^0-9]/g, ''))}
+            inputMode="numeric" placeholder="сума"
+            className="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs outline-none focus:border-emerald-400 focus:bg-white"
+          />
+          <button onClick={() => apply(1)} disabled={!custom} className="rounded-lg bg-emerald-600 p-1.5 text-white transition hover:bg-emerald-700 disabled:opacity-40" title="Додати"><Plus className="h-3.5 w-3.5" /></button>
+          <button onClick={() => apply(-1)} disabled={!custom} className="rounded-lg bg-rose-500 p-1.5 text-white transition hover:bg-rose-600 disabled:opacity-40" title="Відняти"><Minus className="h-3.5 w-3.5" /></button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ============ ПАНЕЛЬ ============
 const Admin: React.FC = () => {
   const [token, setToken] = useState<string | null>(getToken());
@@ -119,6 +215,9 @@ const Admin: React.FC = () => {
   const [editPrize, setEditPrize] = useState<Partial<PrizeRow> | null>(null);
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
+  const [onlyAccounts, setOnlyAccounts] = useState(false);
+  const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'issued'>('all');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'visible' | 'hidden'>('all');
 
   const rpc = useCallback(async (fn: string, args: Record<string, unknown> = {}) => {
     return supabase.rpc(fn, { p_token: token, ...args });
@@ -156,6 +255,11 @@ const Admin: React.FC = () => {
 
   useEffect(() => { if (authed) loadAll(); }, [authed, loadAll]);
 
+  const reloadPrizes = useCallback(async () => {
+    const { data } = await rpc('rps_admin_prizes');
+    if (data) setCatalog(data as PrizeRow[]);
+  }, [rpc]);
+
   const logout = async () => {
     if (token) await supabase.rpc('rps_admin_logout', { p_token: token });
     clearToken(); setToken(null); setAuthed(false);
@@ -167,7 +271,7 @@ const Admin: React.FC = () => {
       setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, balance: data as number } : u)));
     }
   };
-  const setRed = async (id: number, status: string) => {
+  const setRedStatus = async (id: number, status: string) => {
     await rpc('rps_admin_set_redemption', { p_id: id, p_status: status });
     setReds((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
   };
@@ -178,40 +282,70 @@ const Admin: React.FC = () => {
 
   // --- Налаштування гри ---
   const [cfgSaved, setCfgSaved] = useState(false);
-  const saveConfig = async () => {
+  const persistConfig = useCallback(async (next: Config) => {
     const clean: Config = {};
-    Object.entries(config).forEach(([k, v]) => { clean[k] = Number(v) || 0; });
+    Object.entries(next).forEach(([k, v]) => { clean[k] = Number(v) || 0; });
     await rpc('rps_admin_set_config', { p_data: clean });
     setCfgSaved(true);
     window.setTimeout(() => setCfgSaved(false), 2000);
+  }, [rpc]);
+  const saveConfig = () => persistConfig(config);
+  const applyPreset = (values: Config) => {
+    const next = { ...config, ...values };
+    setConfig(next);
+    persistConfig(next);
   };
 
   // --- Каталог призів ---
   const [savingPrize, setSavingPrize] = useState(false);
+  const upsertPrize = useCallback(async (p: Partial<PrizeRow>) => {
+    return rpc('rps_admin_prize_upsert', {
+      p_id: p.id ?? null,
+      p_emoji: p.emoji ?? '🎁',
+      p_title: p.title,
+      p_cost: Number(p.cost) || 0,
+      p_image_url: p.image_url ?? null,
+      p_delivery_type: p.delivery_type ?? 'contact',
+      p_delivery_url: p.delivery_url ?? null,
+      p_delivery_label: p.delivery_label ?? null,
+      p_active: p.active ?? true,
+      p_sort: Number(p.sort) || 0,
+    });
+  }, [rpc]);
+
   const savePrize = async () => {
     if (!editPrize || !editPrize.title?.trim()) return;
     setSavingPrize(true);
-    await rpc('rps_admin_prize_upsert', {
-      p_id: editPrize.id ?? null,
-      p_emoji: editPrize.emoji ?? '🎁',
-      p_title: editPrize.title,
-      p_cost: Number(editPrize.cost) || 0,
-      p_image_url: editPrize.image_url ?? null,
-      p_delivery_type: editPrize.delivery_type ?? 'contact',
-      p_delivery_url: editPrize.delivery_url ?? null,
-      p_delivery_label: editPrize.delivery_label ?? null,
-      p_active: editPrize.active ?? true,
-      p_sort: Number(editPrize.sort) || 0,
-    });
-    const { data } = await rpc('rps_admin_prizes');
-    if (data) setCatalog(data as PrizeRow[]);
+    await upsertPrize(editPrize);
+    await reloadPrizes();
     setSavingPrize(false);
     setEditPrize(null);
   };
   const deletePrize = async (id: number) => {
+    if (!window.confirm('Видалити цей приз?')) return;
     await rpc('rps_admin_prize_delete', { p_id: id });
     setCatalog((prev) => prev.filter((p) => p.id !== id));
   };
+  const togglePrizeActive = async (p: PrizeRow) => {
+    setCatalog((prev) => prev.map((x) => (x.id === p.id ? { ...x, active: !x.active } : x)));
+    await upsertPrize({ ...p, active: !p.active });
+  };
+  const duplicatePrize = (p: PrizeRow) => {
+    setEditPrize({ ...p, id: undefined, title: `${p.title} (копія)`, sort: (catalog.at(-1)?.sort ?? 0) + 1 });
+  };
+  const movePrize = async (p: PrizeRow, dir: -1 | 1) => {
+    const idx = catalog.findIndex((x) => x.id === p.id);
+    const swapIdx = idx + dir;
+    if (swapIdx < 0 || swapIdx >= catalog.length) return;
+    const other = catalog[swapIdx];
+    const next = [...catalog];
+    next[idx] = { ...p, sort: other.sort };
+    next[swapIdx] = { ...other, sort: p.sort };
+    next.sort((a, b) => a.sort - b.sort || a.id - b.id);
+    setCatalog(next);
+    await Promise.all([upsertPrize({ ...p, sort: other.sort }), upsertPrize({ ...other, sort: p.sort })]);
+  };
+
   const uploadImage = async (file: File) => {
     const ext = file.name.split('.').pop() || 'jpg';
     const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -221,14 +355,18 @@ const Admin: React.FC = () => {
     return data.publicUrl;
   };
 
-  if (authed === null) return <div className="grid min-h-screen place-items-center bg-slate-900 text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>;
-  if (!authed) return <Login onIn={(t) => setToken(t)} />;
-
-  const filtered = users.filter((u) => {
+  const filtered = useMemo(() => users.filter((u) => {
+    if (onlyAccounts && !u.is_account) return false;
     if (!q.trim()) return true;
     const s = q.toLowerCase();
     return (u.nick || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s) || (u.login || '').toLowerCase().includes(s);
-  });
+  }), [users, q, onlyAccounts]);
+
+  const visibleReds = useMemo(() => reds.filter((r) => orderFilter === 'all' || r.status === orderFilter), [reds, orderFilter]);
+  const visibleReviews = useMemo(() => reviews.filter((r) => reviewFilter === 'all' || (reviewFilter === 'hidden' ? r.hidden : !r.hidden)), [reviews, reviewFilter]);
+
+  if (authed === null) return <div className="grid min-h-screen place-items-center bg-slate-900 text-slate-400"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (!authed) return <Login onIn={(t) => setToken(t)} />;
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'stats', label: 'Огляд', icon: BarChart3 },
@@ -236,19 +374,23 @@ const Admin: React.FC = () => {
     { id: 'orders', label: 'Заявки', icon: Gift, badge: stats?.redemptions_pending },
     { id: 'catalog', label: 'Призи', icon: Package, badge: catalog.length },
     { id: 'reviews', label: 'Відгуки', icon: MessageSquare, badge: stats?.reviews },
-    { id: 'settings', label: 'Гра', icon: Settings },
+    { id: 'settings', label: 'Гра / Турніри', icon: Settings },
   ];
+  const activeTab = tabs.find((t) => t.id === tab);
 
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Шапка */}
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2 font-extrabold text-slate-900">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600 text-white"><ShieldCheck className="h-5 w-5" /></span>
-            <span className="hidden sm:inline">Адмін-панель</span>
+            <span>Адмін-панель</span>
           </div>
           <div className="flex items-center gap-2">
+            <a href="/" className="hidden items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 sm:flex">
+              <ExternalLink className="h-4 w-4" /> На сайт
+            </a>
             <button onClick={loadAll} className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">Оновити</span>
             </button>
@@ -257,8 +399,8 @@ const Admin: React.FC = () => {
             </button>
           </div>
         </div>
-        {/* Вкладки (скрол на мобільному) */}
-        <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-2 pb-2">
+        {/* Вкладки — горизонтальний скрол лише на мобільному */}
+        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-2 pb-2 lg:hidden">
           {tabs.map((t) => (
             <button
               key={t.id} onClick={() => setTab(t.id)}
@@ -271,198 +413,244 @@ const Admin: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-5">
-        {/* ОГЛЯД */}
-        {tab === 'stats' && stats && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {[
-              { label: 'Гравців усього', value: stats.players, icon: Users, c: 'text-sky-600 bg-sky-50' },
-              { label: 'Зареєстрованих', value: stats.accounts, icon: Crown, c: 'text-emerald-600 bg-emerald-50' },
-              { label: 'Монет в обігу', value: stats.coins, icon: Coins, c: 'text-amber-600 bg-amber-50' },
-              { label: 'Призи в роботі', value: stats.redemptions_pending, icon: Gift, c: 'text-rose-600 bg-rose-50' },
-              { label: 'Призів усього', value: stats.redemptions_total, icon: Gift, c: 'text-fuchsia-600 bg-fuchsia-50' },
-              { label: 'Відгуків', value: stats.reviews, icon: MessageSquare, c: 'text-indigo-600 bg-indigo-50' },
-              { label: 'Заявок (запис)', value: stats.bookings, icon: Check, c: 'text-teal-600 bg-teal-50' },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.c}`}><s.icon className="h-5 w-5" /></span>
-                <div className="mt-3 text-2xl font-extrabold text-slate-900">{fmt(s.value)}</div>
-                <div className="text-xs text-slate-500">{s.label}</div>
-              </div>
+      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-5">
+        {/* Бічна навігація — лише десктоп */}
+        <aside className="hidden w-56 shrink-0 lg:block">
+          <nav className="sticky top-24 space-y-1">
+            {tabs.map((t) => (
+              <button
+                key={t.id} onClick={() => setTab(t.id)}
+                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${tab === t.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'text-slate-600 hover:bg-white'}`}
+              >
+                <t.icon className="h-5 w-5" /> <span className="flex-1 text-left">{t.label}</span>
+                {!!t.badge && <span className={`rounded-full px-2 py-0.5 text-xs ${tab === t.id ? 'bg-white/25' : 'bg-slate-200 text-slate-600'}`}>{t.badge}</span>}
+              </button>
             ))}
-          </div>
-        )}
+          </nav>
+        </aside>
 
-        {/* КОРИСТУВАЧІ */}
-        {tab === 'users' && (
-          <div>
-            <div className="mb-3 flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Пошук: пошта, нік…" className="w-full bg-transparent text-sm outline-none" />
-            </div>
-            <div className="space-y-2.5">
-              {filtered.map((u) => (
-                <div key={u.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                        {u.is_admin && <Crown className="h-4 w-4 text-amber-500" />}
-                        <span className="truncate">{u.nick || 'Гравець'}</span>
-                        {u.is_account
-                          ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600">акаунт</span>
-                          : <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">гість</span>}
-                      </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-500">{u.email || u.login || '— без пошти —'}</div>
-                      <div className="mt-0.5 text-[11px] text-slate-400">
-                        активність: {fmtDate(u.last_activity)} · перемог: {u.wins ?? 0}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 font-extrabold text-amber-600">
-                      <Coins className="h-4 w-4" /> {fmt(u.balance)}
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {[100, 500, 1000].map((v) => (
-                      <button key={'p' + v} onClick={() => grant(u.id, v)} className="flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
-                        <Plus className="h-3 w-3" />{v}
-                      </button>
-                    ))}
-                    {[100, 500].map((v) => (
-                      <button key={'m' + v} onClick={() => grant(u.id, -v)} className="flex items-center gap-1 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-100">
-                        <Minus className="h-3 w-3" />{v}
-                      </button>
-                    ))}
-                  </div>
+        <main className="min-w-0 flex-1">
+          {activeTab && (
+            <h1 className="mb-4 flex items-center gap-2 text-xl font-extrabold text-slate-900">
+              <activeTab.icon className="h-6 w-6 text-emerald-600" /> {activeTab.label}
+            </h1>
+          )}
+
+          {/* ОГЛЯД */}
+          {tab === 'stats' && stats && (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {[
+                { label: 'Гравців усього', value: stats.players, icon: Users, c: 'text-sky-600 bg-sky-50' },
+                { label: 'Зареєстрованих', value: stats.accounts, icon: Crown, c: 'text-emerald-600 bg-emerald-50' },
+                { label: 'Монет в обігу', value: stats.coins, icon: Coins, c: 'text-amber-600 bg-amber-50' },
+                { label: 'Призи в роботі', value: stats.redemptions_pending, icon: Gift, c: 'text-rose-600 bg-rose-50' },
+                { label: 'Призів видано', value: stats.redemptions_total, icon: CheckCircle2, c: 'text-fuchsia-600 bg-fuchsia-50' },
+                { label: 'Відгуків', value: stats.reviews, icon: MessageSquare, c: 'text-indigo-600 bg-indigo-50' },
+                { label: 'Заявок (запис)', value: stats.bookings, icon: Check, c: 'text-teal-600 bg-teal-50' },
+                { label: 'Призів у каталозі', value: catalog.length, icon: Package, c: 'text-violet-600 bg-violet-50' },
+              ].map((s) => (
+                <div key={s.label} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${s.c}`}><s.icon className="h-5 w-5" /></span>
+                  <div className="mt-3 text-2xl font-extrabold text-slate-900">{fmt(s.value)}</div>
+                  <div className="text-xs text-slate-500">{s.label}</div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* КОРИСТУВАЧІ */}
+          {tab === 'users' && (
+            <div>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <div className="flex flex-1 items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+                  <Search className="h-4 w-4 text-slate-400" />
+                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Пошук: пошта, нік, логін…" className="w-full bg-transparent text-sm outline-none" />
+                </div>
+                <button
+                  onClick={() => setOnlyAccounts((v) => !v)}
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition ${onlyAccounts ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}
+                >
+                  <Crown className="h-4 w-4" /> Лише акаунти
+                </button>
+              </div>
+              <div className="grid gap-2.5 lg:grid-cols-2">
+                {filtered.map((u) => <UserCard key={u.id} u={u} onGrant={grant} />)}
+              </div>
               {filtered.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Нічого не знайдено.</p>}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* ЗАЯВКИ НА ПРИЗИ */}
-        {tab === 'orders' && (
-          <div className="space-y-2.5">
-            {reds.map((r) => {
-              const issued = r.status === 'issued';
-              return (
-                <div key={r.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="font-bold text-slate-900">{r.reward}</div>
-                      <div className="mt-0.5 text-xs text-slate-500">{r.nick} · {r.email || 'без пошти'} · {fmtDate(r.created)}</div>
-                      <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-600"><Coins className="h-3 w-3" />{fmt(r.cost)}</div>
+          {/* ЗАЯВКИ НА ПРИЗИ */}
+          {tab === 'orders' && (
+            <div>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {([['all', 'Усі'], ['pending', 'В роботі'], ['issued', 'Видані']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setOrderFilter(k)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${orderFilter === k ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid gap-2.5 lg:grid-cols-2">
+                {visibleReds.map((r) => {
+                  const issued = r.status === 'issued';
+                  return (
+                    <div key={r.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-bold text-slate-900">{r.reward}</div>
+                          <div className="mt-0.5 text-xs text-slate-500">{r.nick} · {r.email || 'без пошти'} · {fmtDate(r.created)}</div>
+                          <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-600"><Coins className="h-3 w-3" />{fmt(r.cost)}</div>
+                        </div>
+                        <button
+                          onClick={() => setRedStatus(r.id, issued ? 'pending' : 'issued')}
+                          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${issued ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                        >
+                          <Check className="h-4 w-4" /> {issued ? 'Видано' : 'Позначити виданим'}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setRed(r.id, issued ? 'pending' : 'issued')}
-                      className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${issued ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                    >
-                      <Check className="h-4 w-4" /> {issued ? 'Видано' : 'Позначити виданим'}
+                  );
+                })}
+              </div>
+              {visibleReds.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Заявок немає.</p>}
+            </div>
+          )}
+
+          {/* КАТАЛОГ ПРИЗІВ */}
+          {tab === 'catalog' && (
+            <div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-slate-500">Додавай призи з фото — їх одразу бачать гравці на сторінці «Призи».</p>
+                <button
+                  onClick={() => setEditPrize({ emoji: '🎁', title: '', cost: 0, delivery_type: 'contact', active: true, sort: (catalog.at(-1)?.sort ?? 0) + 1 })}
+                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                >
+                  <Plus className="h-4 w-4" /> Додати приз
+                </button>
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                {catalog.map((p, i) => (
+                  <div key={p.id} className={`flex gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ${p.active ? 'ring-slate-100' : 'ring-slate-200 opacity-60'}`}>
+                    <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                      {p.image_url
+                        ? <img src={p.image_url} alt={p.title} className="h-full w-full object-cover" />
+                        : <div className="flex h-full w-full items-center justify-center text-3xl">{p.emoji}</div>}
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="truncate font-bold text-slate-900">{p.title}</div>
+                      <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-600"><Coins className="h-3 w-3" />{fmt(p.cost)}</div>
+                      <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400">
+                        {p.delivery_type === 'link' ? <><Link2 className="h-3 w-3" /> посилання</> : <><MessageSquare className="h-3 w-3" /> заявка</>}
+                      </div>
+                      <div className="mt-auto flex flex-wrap gap-1 pt-2">
+                        <button onClick={() => setEditPrize(p)} className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"><Pencil className="h-3 w-3" /> Змінити</button>
+                        <button onClick={() => togglePrizeActive(p)} className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200" title={p.active ? 'Сховати' : 'Показати'}>{p.active ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}</button>
+                        <button onClick={() => duplicatePrize(p)} className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200" title="Дублювати"><Copy className="h-3 w-3" /></button>
+                        <button onClick={() => movePrize(p, -1)} disabled={i === 0} className="rounded-lg bg-slate-100 px-1.5 py-1 text-slate-600 hover:bg-slate-200 disabled:opacity-30" title="Вище"><ArrowUp className="h-3 w-3" /></button>
+                        <button onClick={() => movePrize(p, 1)} disabled={i === catalog.length - 1} className="rounded-lg bg-slate-100 px-1.5 py-1 text-slate-600 hover:bg-slate-200 disabled:opacity-30" title="Нижче"><ArrowDown className="h-3 w-3" /></button>
+                        <button onClick={() => deletePrize(p.id)} className="rounded-lg bg-rose-50 px-1.5 py-1 text-rose-600 hover:bg-rose-100" title="Видалити"><Trash2 className="h-3 w-3" /></button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {catalog.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Призів ще немає — додай перший ☝️</p>}
+            </div>
+          )}
+
+          {/* НАЛАШТУВАННЯ ГРИ / ТУРНІРИ */}
+          {tab === 'settings' && (
+            <div className="max-w-3xl space-y-4">
+              {/* Пресети */}
+              <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+                <h3 className="flex items-center gap-2 font-bold text-slate-900"><Wand2 className="h-5 w-5 text-emerald-600" /> Швидкі пресети</h3>
+                <p className="mt-1 text-xs text-slate-500">Один клік — і налаштування застосовані одразу. Зручно вмикати/вимикати турнір.</p>
+                <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                  {PRESETS.map((p) => (
+                    <button key={p.id} onClick={() => applyPreset(p.values)}
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"><p.icon className="h-5 w-5" /></span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-bold text-slate-900">{p.label}</span>
+                        <span className="block truncate text-xs text-slate-500">{p.desc}</span>
+                      </span>
                     </button>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
-            {reds.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Заявок на призи ще немає.</p>}
-          </div>
-        )}
+              </div>
 
-        {/* КАТАЛОГ ПРИЗІВ */}
-        {tab === 'catalog' && (
-          <div>
-            <button
-              onClick={() => setEditPrize({ emoji: '🎁', title: '', cost: 0, delivery_type: 'contact', active: true, sort: (catalog.at(-1)?.sort ?? 0) + 1 })}
-              className="mb-3 flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
-            >
-              <Plus className="h-4 w-4" /> Додати приз
-            </button>
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {catalog.map((p) => (
-                <div key={p.id} className={`flex gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ${p.active ? 'ring-slate-100' : 'ring-slate-200 opacity-60'}`}>
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                    {p.image_url
-                      ? <img src={p.image_url} alt="" className="h-full w-full object-cover" />
-                      : <div className="flex h-full w-full items-center justify-center text-2xl">{p.emoji}</div>}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-bold text-slate-900">{p.title}</div>
-                    <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-600"><Coins className="h-3 w-3" />{fmt(p.cost)}</div>
-                    <div className="mt-1 flex gap-1.5">
-                      <button onClick={() => setEditPrize(p)} className="flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200"><Pencil className="h-3 w-3" /> Змінити</button>
-                      <button onClick={() => deletePrize(p.id)} className="flex items-center gap-1 rounded-lg bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-100"><Trash2 className="h-3 w-3" /></button>
-                    </div>
+              {/* Групи налаштувань */}
+              {SETTINGS_GROUPS.map((group) => (
+                <div key={group.title} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+                  <h3 className="flex items-center gap-2 font-bold text-slate-900"><group.icon className="h-5 w-5 text-emerald-600" /> {group.title}</h3>
+                  <p className="mt-1 text-xs text-slate-500">{group.hint}</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {group.items.map(([k, label, def, desc]) => (
+                      <label key={k} className="block">
+                        <span className="text-xs font-semibold text-slate-600">{label}</span>
+                        <input
+                          type="number"
+                          value={config[k] ?? def}
+                          onChange={(e) => setConfig((c) => ({ ...c, [k]: Number(e.target.value) }))}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+                        />
+                        <span className="mt-1 block text-[11px] text-slate-400">{desc}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
               ))}
-            </div>
-            {catalog.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Призів ще немає.</p>}
-          </div>
-        )}
 
-        {/* НАЛАШТУВАННЯ ГРИ */}
-        {tab === 'settings' && (
-          <div className="max-w-xl">
-            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-              <h3 className="flex items-center gap-2 font-bold text-slate-900"><Settings className="h-5 w-5 text-emerald-600" /> Налаштування гри</h3>
-              <p className="mt-1 text-xs text-slate-500">Зручно для турнірів: зміни значення й натисни «Зберегти». Діє одразу.</p>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {([
-                  ['win_points', 'Бали за перемогу', 150],
-                  ['lose_points', 'Бали за участь', 80],
-                  ['stake', 'Ставка раунду', 100],
-                  ['round_seconds', 'Раунд (секунд)', 30],
-                  ['decay_start_days', 'Таяння: через днів', 3],
-                  ['decay_period_days', 'Таяння: період (днів)', 7],
-                  ['decay_pct', 'Таяння: % за крок', 1],
-                  ['starter_coins', 'Старт. монети (реєстрація)', 0],
-                ] as [string, string, number][]).map(([k, label, def]) => (
-                  <label key={k} className="block">
-                    <span className="text-xs font-medium text-slate-500">{label}</span>
-                    <input
-                      type="number"
-                      value={config[k] ?? def}
-                      onChange={(e) => setConfig((c) => ({ ...c, [k]: Number(e.target.value) }))}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
-                    />
-                  </label>
+              {/* Збереження — липке знизу */}
+              <div className="sticky bottom-3 z-10">
+                <button onClick={saveConfig} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 font-semibold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700">
+                  {cfgSaved ? <><Check className="h-5 w-5" /> Збережено ✓</> : <><Save className="h-5 w-5" /> Зберегти всі налаштування</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ВІДГУКИ */}
+          {tab === 'reviews' && (
+            <div>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {([['all', 'Усі'], ['visible', 'Видимі'], ['hidden', 'Сховані']] as const).map(([k, label]) => (
+                  <button key={k} onClick={() => setReviewFilter(k)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${reviewFilter === k ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}>
+                    {label}
+                  </button>
                 ))}
               </div>
-              <button onClick={saveConfig} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700">
-                {cfgSaved ? <><Check className="h-5 w-5" /> Збережено</> : <><Save className="h-5 w-5" /> Зберегти налаштування</>}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ВІДГУКИ */}
-        {tab === 'reviews' && (
-          <div className="space-y-2.5">
-            {reviews.map((r) => (
-              <div key={r.id} className={`rounded-2xl p-4 shadow-sm ring-1 ${r.hidden ? 'bg-slate-50 ring-slate-200 opacity-70' : 'bg-white ring-slate-100'}`}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{r.nick}</span>
-                      <span className="flex items-center gap-0.5 text-amber-400">
-                        {Array.from({ length: r.rating || 0 }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-amber-400" />)}
-                      </span>
+              <div className="grid gap-2.5 lg:grid-cols-2">
+                {visibleReviews.map((r) => (
+                  <div key={r.id} className={`rounded-2xl p-4 shadow-sm ring-1 ${r.hidden ? 'bg-slate-50 ring-slate-200 opacity-70' : 'bg-white ring-slate-100'}`}>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{r.nick}</span>
+                          <span className="flex items-center gap-0.5 text-amber-400">
+                            {Array.from({ length: r.rating || 0 }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-amber-400" />)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-slate-600">{r.text}</p>
+                        <div className="mt-0.5 text-[11px] text-slate-400">{fmtDate(r.created)}</div>
+                      </div>
+                      <button
+                        onClick={() => setReviewHidden(r.id, !r.hidden)}
+                        className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
+                      >
+                        {r.hidden ? <><Eye className="h-4 w-4" /> Показати</> : <><EyeOff className="h-4 w-4" /> Сховати</>}
+                      </button>
                     </div>
-                    <p className="mt-1 text-sm text-slate-600">{r.text}</p>
-                    <div className="mt-0.5 text-[11px] text-slate-400">{fmtDate(r.created)}</div>
                   </div>
-                  <button
-                    onClick={() => setReviewHidden(r.id, !r.hidden)}
-                    className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
-                  >
-                    {r.hidden ? <><Eye className="h-4 w-4" /> Показати</> : <><EyeOff className="h-4 w-4" /> Сховати</>}
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-            {reviews.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Відгуків ще немає.</p>}
-          </div>
-        )}
-      </main>
+              {visibleReviews.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Відгуків немає.</p>}
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Редагування призу */}
       {editPrize && (
@@ -487,11 +675,13 @@ const Admin: React.FC = () => {
                     const f = e.target.files?.[0]; if (!f) return;
                     const url = await uploadImage(f);
                     if (url) setEditPrize((p) => ({ ...p!, image_url: url }));
+                    else window.alert('Не вдалося завантажити фото. Спробуй ще раз.');
                   }} />
                 </label>
                 {editPrize.image_url && (
                   <button onClick={() => setEditPrize((p) => ({ ...p!, image_url: null }))} className="mt-1.5 w-full text-center text-xs text-rose-500 hover:underline">Прибрати фото</button>
                 )}
+                <p className="mt-1 text-center text-[11px] text-slate-400">Якщо фото нема — покажемо емодзі.</p>
               </div>
             </div>
 
@@ -502,7 +692,7 @@ const Admin: React.FC = () => {
               </label>
               <label className="col-span-3 block">
                 <span className="text-xs font-medium text-slate-500">Назва</span>
-                <input value={editPrize.title ?? ''} onChange={(e) => setEditPrize((p) => ({ ...p!, title: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                <input value={editPrize.title ?? ''} onChange={(e) => setEditPrize((p) => ({ ...p!, title: e.target.value }))} placeholder="напр. Балансир-дошка" className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
               </label>
               <label className="col-span-2 block">
                 <span className="text-xs font-medium text-slate-500">Ціна (монет)</span>
