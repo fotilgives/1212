@@ -49,6 +49,20 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [lastWin, setLastWin] = useState<Move | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [bonus, setBonus] = useState<{ amount: number; cycle_day: number; max_day: number } | null>(null);
+  // Ставка й тривалість раунду керуються з адмінки (rps_config). Дефолти 100/30.
+  const [stake, setStake] = useState(STAKE);
+  const [roundSeconds, setRoundSeconds] = useState(ROUND_SECONDS);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('rps_config').select('data').eq('id', 1).single();
+      const cfg = (data as { data?: Record<string, number> } | null)?.data;
+      const st = Number(cfg?.stake);
+      const rs = Number(cfg?.round_seconds);
+      if (Number.isFinite(st) && st >= 1) setStake(Math.floor(st));
+      if (Number.isFinite(rs) && rs >= 5) setRoundSeconds(Math.floor(rs));
+    })();
+  }, []);
 
   // Блеф завжди доступний (не прив'язаний до попередньої перемоги).
   const canBluff = true;
@@ -180,7 +194,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
   const placeBet = async () => {
     if (busy || myBet) return;
-    if (account.balance < STAKE) {
+    if (account.balance < stake) {
       onTopUp();
       return;
     }
@@ -191,7 +205,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       p_id: account.playerId,
       p_nick: account.nickname,
       p_move: move,
-      p_stake: STAKE,
+      p_stake: stake,
       p_shown_move: useBluff ? shownMove : move,
       p_is_bluff: useBluff,
     });
@@ -214,7 +228,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   };
 
   const low = remaining <= 5;
-  const progress = Math.min(1, Math.max(0, remaining / ROUND_SECONDS));
+  const progress = Math.min(1, Math.max(0, remaining / roundSeconds));
 
   return (
     <section id="game" className="mx-auto max-w-3xl px-3 py-10 sm:px-5 sm:py-16">
@@ -591,7 +605,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     <span className="grid h-8 w-8 place-items-center rounded-xl bg-amber-400/90 text-white">
                       <Coins className="h-4.5 w-4.5" />
                     </span>
-                    <span className="text-xl font-black text-slate-900">{STAKE}</span>
+                    <span className="text-xl font-black text-slate-900">{stake}</span>
                     <span className="text-sm font-medium text-slate-500">монет — фіксована для всіх</span>
                   </div>
 
@@ -602,11 +616,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     disabled={busy || remaining <= 1}
                     className="shine mt-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-emerald-300/50 transition hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50"
                   >
-                    {account.balance < STAKE
+                    {account.balance < stake
                       ? '💰 Поповнити баланс'
                       : remaining <= 1
                       ? 'Раунд закінчується…'
-                      : `Поставити ${STAKE} монет`}
+                      : `Поставити ${stake} монет`}
                   </motion.button>
                   {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
                 </motion.div>
