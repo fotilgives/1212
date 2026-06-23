@@ -230,7 +230,7 @@ export function useAccount(): Account {
 
   const redeem = useCallback(
     async (reward: string, cost: number): Promise<string | null> => {
-      const { error } = await supabase.rpc('rps_redeem', {
+      const { data, error } = await supabase.rpc('rps_redeem', {
         p_id: playerId,
         p_nick: nickRef.current,
         p_reward: reward,
@@ -241,11 +241,12 @@ export function useAccount(): Account {
         if ((error.message || '').includes('insufficient')) return 'Недостатньо монет';
         return 'Не вдалося оформити';
       }
+      const code = (data as { code?: string } | null)?.code;
       // Лист про оформлення призу клієнту + сповіщення власнику (fire-and-forget).
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'redeem', playerId, reward, cost, nickname: nickRef.current }),
+        body: JSON.stringify({ type: 'redeem', playerId, reward, cost, nickname: nickRef.current, code }),
       }).catch(() => {});
       return null;
     },

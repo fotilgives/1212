@@ -31,6 +31,7 @@ export default async function handler(req, res) {
       const reward = s(body.reward);
       const cost = Number(body.cost);
       const nickname = s(body.nickname);
+      const code = s(body.code);
       const profileUrl = origin ? `${origin}/#/profile` : '';
 
       let email = '';
@@ -38,15 +39,15 @@ export default async function handler(req, res) {
         email = s(await rpc('rps_player_email', { p_id: playerId })).trim().toLowerCase();
       }
       if (EMAIL_RE.test(email)) {
-        const m = buildPrizeEmail({ name: nickname, reward, cost: Number.isFinite(cost) ? cost : undefined, profileUrl, supportEmail, bannerUrl });
+        const m = buildPrizeEmail({ name: nickname, reward, cost: Number.isFinite(cost) ? cost : undefined, code, profileUrl, supportEmail, bannerUrl });
         try { await sendTransactionalEmail({ to: email, subject: m.subject, html: m.html, text: m.text }); }
         catch (e) { console.error('[notify] redeem client mail ERR:', e.message); }
       }
       await sendOwner(buildOwnerNotice({
         title: '🎁 Новий обмін на приз',
-        rows: [['Гравець', nickname || playerId || '—'], ['Email', email || '— (гість)'], ['Приз', reward || '—'], ['Списано монет', Number.isFinite(cost) ? String(cost) : '—']],
+        rows: [['Гравець', nickname || playerId || '—'], ['Email', email || '— (гість)'], ['Приз', reward || '—'], ['Код', code || '—'], ['Списано монет', Number.isFinite(cost) ? String(cost) : '—']],
       }));
-      try { await tgNotifyAdmins(`🎁 <b>Новий обмін на приз</b>\n\n👤 ${nickname || playerId || '—'}\n📧 ${email || '— (гість)'}\n🏆 ${reward || '—'}\n🪙 ${Number.isFinite(cost) ? cost : '—'} монет`); }
+      try { await tgNotifyAdmins(`🎁 <b>Новий обмін на приз</b>\n\n👤 ${nickname || playerId || '—'}\n📧 ${email || '— (гість)'}\n🏆 ${reward || '—'}\n🎟️ Код: <b>${code || '—'}</b>\n🪙 ${Number.isFinite(cost) ? cost : '—'} монет`); }
       catch (e) { console.error('[notify] redeem tg ERR:', e.message); }
       return res.status(200).json({ ok: true });
     }

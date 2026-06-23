@@ -23,6 +23,7 @@ interface Purchase {
   uah: number | null;
   status: string;
   at: string;
+  code?: string | null;
 }
 interface Activity {
   move: string;
@@ -289,6 +290,14 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                             >
                               <ExternalLink className="h-4 w-4" /> Відкрити курс у Telegram
                             </a>
+                          )}
+                          {!topup && !course && it.code && it.status !== 'rejected' && (
+                            <div className={`mt-2.5 rounded-xl border p-3 text-center ${badge.text === 'Видано' ? 'border-slate-200 bg-slate-50' : 'border-emerald-200 bg-emerald-50'}`}>
+                              <div className="text-[11px] font-semibold text-emerald-700">
+                                {badge.text === 'Видано' ? '🎟️ Використаний код' : '🎟️ Покажіть цей код спеціалісту, щоб скористатися'}
+                              </div>
+                              <div className="mt-1 font-mono text-xl font-extrabold tracking-widest text-slate-900">{it.code}</div>
+                            </div>
                           )}
                         </li>
                       );

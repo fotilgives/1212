@@ -226,25 +226,27 @@ export function buildBookingEmail({ name, service, phone, appUrl, supportEmail, 
   return { subject: `Заявку отримано — ${svc}`, html, text };
 }
 
-export function buildPrizeEmail({ name, reward, cost, profileUrl, supportEmail, bannerUrl }) {
+export function buildPrizeEmail({ name, reward, cost, code, profileUrl, supportEmail, bannerUrl }) {
   const safeName = name || 'друже';
   const text = [
     `Вітаємо, ${safeName}!`, '',
     `Ви оформили приз: ${reward}.`,
     Number.isFinite(cost) ? `Списано: ${cost} монет.` : '',
-    'Ми звʼяжемося з вами щодо отримання.',
+    code ? `Код для отримання: ${code}` : '',
+    'Покажіть цей код спеціалісту центру, щоб скористатися призом.',
     profileUrl ? `Історія: ${profileUrl}` : '',
   ].filter(Boolean).join('\n');
   const html = shell({
     bannerUrl, supportEmail,
     badge: 'Приз оформлено',
     title: 'Вітаємо з призом! 🎁',
-    intro: `Чудово, <strong>${escapeHtml(safeName)}</strong>! Ви обміняли монети на приз. Ми звʼяжемося щодо отримання.`,
+    intro: `Чудово, <strong>${escapeHtml(safeName)}</strong>! Ви обміняли монети на приз. Покажіть код нижче спеціалісту центру, щоб ним скористатися.`,
     rows: [
       ['Приз', reward || 'Винагорода'],
+      code ? ['Код для отримання', code] : null,
       Number.isFinite(cost) ? ['Списано монет', String(cost)] : null,
     ].filter(Boolean),
-    buttons: profileUrl ? [{ label: 'Історія покупок', href: profileUrl }] : [],
+    buttons: profileUrl ? [{ label: 'Мої призи', href: profileUrl }] : [],
   });
   return { subject: `Приз оформлено — ${reward || 'винагорода'}`, html, text };
 }
