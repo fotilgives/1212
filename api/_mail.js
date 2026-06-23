@@ -82,7 +82,7 @@ export function buildCourseAccessEmail({
 export function buildWelcomeEmail({ name, appUrl, supportEmail, bannerUrl }) {
   const safeName = escapeHtml(name || 'друже');
   const safeSupport = escapeHtml(supportEmail || 'support@example.com');
-  const url = appUrl || 'https://playheal.vercel.app';
+  const url = appUrl || 'https://reabilitolog-play.vercel.app';
   const text = [
     `Вітаємо в RehabPlay, ${name || 'друже'}!`,
     '',

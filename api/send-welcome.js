@@ -14,12 +14,12 @@ export default async function handler(req, res) {
     const name = String(body.name || '').trim();
     if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'bad email' });
 
-    const origin = normalizeOrigin(process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'playheal.vercel.app');
+    const origin = normalizeOrigin(process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
     const bannerUrl = origin ? `${origin}/images/email/welcome-banner.png` : '';
 
     const { subject, html, text } = buildWelcomeEmail({
       name,
-      appUrl: origin || 'https://playheal.vercel.app',
+      appUrl: origin || 'https://reabilitolog-play.vercel.app',
       supportEmail: process.env.COURSE_SUPPORT_EMAIL || 'support@example.com',
       bannerUrl,
     });

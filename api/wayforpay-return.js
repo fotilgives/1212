@@ -35,7 +35,7 @@ export default async function handler(req, res) {
           const alreadyEmailed = s(current?.status) === 'emailed' || !!current?.emailed_at;
           if (email && !alreadyEmailed) {
             const domain = await rpc('wfp_domain');
-            const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'playheal.vercel.app');
+            const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
             const profileUrl = origin ? `${origin}/#/profile` : '/#/profile';
             const bannerUrl = origin ? `${origin}/images/email/course-banner.svg` : '';
             const courseName = s(current?.course_name) || 'Курс з йоги (онлайн)';

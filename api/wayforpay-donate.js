@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
  */
 const ACCOUNT = process.env.WFP_MERCHANT_ACCOUNT || 'freelance_user_69089df759268';
 const SECRET = process.env.WFP_MERCHANT_SECRET;
-const DOMAIN = process.env.WFP_DOMAIN || 'playheal.vercel.app';
+const DOMAIN = process.env.WFP_DOMAIN || 'reabilitolog-play.vercel.app';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
