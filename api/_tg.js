@@ -100,7 +100,7 @@ export function mainMenuKeyboard() {
       [{ text: '📝 Записатися', callback_data: 'book' }],
       [{ text: '🤲 Послуги', callback_data: 'services' }, { text: '💸 Ціни', callback_data: 'prices' }],
       [{ text: '📍 Контакти', callback_data: 'contacts' }],
-      [{ text: '🎮 Грати', web_app: { url: SITE_URL } }, { text: '🌐 Сайт', url: SITE_URL }],
+      [{ text: '🌐 Сайт', url: SITE_URL }],
     ],
   };
 }
