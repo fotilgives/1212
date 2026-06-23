@@ -26,7 +26,7 @@ const Location: React.FC = () => {
       >
         <div className="flex flex-col justify-center p-2 sm:p-4">
           <h3 className="flex items-center gap-2 text-xl font-extrabold text-slate-900">
-            <MapPin className="h-6 w-6 text-emerald-600" /> reabilitolog-play.vercel.app
+            <MapPin className="h-6 w-6 text-emerald-600" /> Центр розвитку та здоров'я
           </h3>
           <p className="mt-4 text-base leading-relaxed text-slate-600">
             вулиця Шевченка, 44, Вінниця
@@ -66,7 +66,7 @@ const Location: React.FC = () => {
         
         <div className="overflow-hidden rounded-2xl ring-1 ring-slate-200">
           <iframe
-            title="reabilitolog-play.vercel.app — на мапі"
+            title="Центр розвитку та здоров'я — на мапі"
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2493.794567182449!2d28.438581199999998!3d49.22406230000001!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x472d5de19377df09%3A0x5de3b0db0143f75e!2sTsentr%20Rozvytku%20Ta%20Zdorov&#39;ya!5e1!3m2!1sru!2spl!4v1781862453626!5m2!1sru!2spl"
             className="h-80 w-full lg:h-full"
             style={{ border: 0, minHeight: '300px' }}

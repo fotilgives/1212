@@ -40,7 +40,7 @@ const Legal: React.FC = () => {
             <div className="flex items-start gap-2.5 text-sm text-slate-700">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
               <span>
-                <b>reabilitolog-play.vercel.app</b>
+                <b>Центр розвитку та здоров'я</b>
                 <br />
                 м. Вінниця, Україна
               </span>
