@@ -147,31 +147,46 @@ const App: React.FC = () => {
             className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
           >
             <motion.div
-              initial={{ scale: 0.92, y: 16 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 16 }}
+              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.9, y: 20, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl"
+              className="w-full max-w-sm overflow-hidden rounded-[1.75rem] bg-white shadow-2xl"
             >
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl">
-                {thanks === 'topup' ? '🪙' : thanks === 'course' ? '🧘' : '❤️'}
+              {/* Градієнтна шапка з анімованим бейджем */}
+              <div className="relative flex flex-col items-center gap-3 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 px-6 pb-7 pt-8 text-center">
+                <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-teal-300/20 blur-3xl" />
+                <motion.div
+                  initial={{ scale: 0, rotate: -20 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 14, delay: 0.1 }}
+                  className="relative grid h-20 w-20 place-items-center rounded-full bg-white text-4xl shadow-lg ring-4 ring-white/40"
+                >
+                  {thanks === 'topup' ? '🪙' : thanks === 'course' ? '🧘' : '❤️'}
+                </motion.div>
+                <h3 className="relative text-xl font-black text-white">
+                  {thanks === 'topup' ? 'Оплату отримано!' : thanks === 'course' ? 'Дякуємо за покупку!' : 'Дякуємо за підтримку!'}
+                </h3>
               </div>
-              <h3 className="mt-4 text-xl font-extrabold text-slate-900">
-                {thanks === 'topup' ? 'Оплату отримано!' : thanks === 'course' ? 'Дякуємо за покупку!' : 'Дякуємо за підтримку!'}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                {thanks === 'topup'
-                  ? 'Монети зараховуються на ваш баланс протягом кількох секунд.'
-                  : thanks === 'course'
-                  ? 'Доступ до курсу з йоги надішлемо на вашу пошту найближчим часом. Дякуємо!'
-                  : 'Ваш внесок отримано. Він допомагає розвивати центр і робити заняття доступнішими.'}
-              </p>
-              <button
-                onClick={() => setThanks(null)}
-                className="mt-6 w-full rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
-              >
-                Чудово
-              </button>
+
+              {/* Текст + кнопка */}
+              <div className="px-6 pb-6 pt-5 text-center">
+                <p className="text-sm leading-relaxed text-slate-500">
+                  {thanks === 'topup'
+                    ? 'Монети зараховуються на ваш баланс протягом кількох секунд.'
+                    : thanks === 'course'
+                    ? 'Доступ до курсу з йоги надішлемо на вашу пошту найближчим часом. Дякуємо!'
+                    : 'Ваш внесок отримано. Він допомагає розвивати центр і робити заняття доступнішими.'}
+                </p>
+                <button
+                  onClick={() => setThanks(null)}
+                  className="mt-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:from-emerald-700 hover:to-teal-600"
+                >
+                  Чудово 🎉
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
