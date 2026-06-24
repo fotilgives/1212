@@ -6,6 +6,7 @@ import {
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
   ArrowUp, ArrowDown, Copy, Sparkles, Clock, TrendingDown, Link2,
   CheckCircle2, ExternalLink, Wand2, Table2, HandHeart,
+  KeyRound, Trophy, Send, ChevronDown, ChevronUp, AlertCircle, Calendar, Lock,
 } from 'lucide-react';
 
 const TOKEN_KEY = 'rps_admin_token';
@@ -28,7 +29,8 @@ function clearToken() {
 }
 
 const fmt = (n: number) => (n ?? 0).toLocaleString('uk-UA');
-const fmtDate = (s?: string) => (s ? new Date(s).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '—');
+const fmtDate = (s?: string) =>
+  s ? new Date(s).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 
 interface UserRow {
   id: string; nick: string; email: string | null; login: string | null;
@@ -45,8 +47,26 @@ interface PrizeRow {
 }
 type Config = Record<string, number>;
 
-type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings' | 'script' | 'prices' | 'servs';
-type ScriptRow = { round_no: number; rk: number; sc: number; pp: number; br: number; bs: number; bp: number };
+type Tab = 'stats' | 'users' | 'orders' | 'catalog' | 'reviews' | 'settings' | 'script' | 'prices' | 'servs' | 'tournaments';
+
+interface ScriptRow {
+  round_no: number;
+  rock: number; scissors: number; paper: number;
+  r2s: number; r2p: number; s2r: number; s2p: number; p2r: number; p2s: number;
+  res_rock: number; res_scissors: number; res_paper: number;
+  rk?: number; sc?: number; pp?: number;
+  br?: number; bs?: number; bp?: number;
+}
+interface Settings { [key: string]: { value: string; label: string } }
+interface TournamentInvite { invite_id: number; player_id: string; nick: string; status: string; }
+interface Tournament {
+  id: number; name: string; description: string; date: string | null;
+  prepay_coins: number; created_at: string;
+  responses: { total: number; yes: number; no: number; later: number; pending: number };
+  invites: TournamentInvite[];
+}
+type GameSubTab = 'payouts' | 'bots' | 'bluff';
+
 type PriceRow = { id?: number; group_title: string; name: string; price: string; meta: string | null; sort: number; active: boolean };
 type ServiceRow = { id?: number; title: string; category: string | null; short: string | null; details: string | null; cases: string | null; cases_title: string | null; image_url: string | null; video_url: string | null; poster_url: string | null; sort: number; active: boolean };
 
@@ -76,6 +96,19 @@ const SETTINGS_GROUPS: { title: string; icon: React.ElementType; hint: string; i
     title: 'Реєстрація', icon: Gift, hint: 'Бонус новачкам.',
     items: [
       ['starter_coins', 'Стартові монети', 0, 'Бонус новому акаунту при реєстрації'],
+    ],
+  },
+  {
+    title: 'Реферальна програма', icon: Gift, hint: 'Налаштування бонусів за запрошення нових гравців.',
+    items: [
+      ['referral_new_bonus', 'Бонус новачку (монет)', 100, 'Бонус новому акаунту при реєстрації за реф-посиланням'],
+      ['referral_inviter_bonus', 'Бонус запросившому (монет)', 100, 'Бонус гравцю, який запросив друга'],
+    ],
+  },
+  {
+    title: 'Денний ліміт фонду', icon: ShieldCheck, hint: 'Максимальний денний ліміт монет для банку.',
+    items: [
+      ['daily_fund_limit', 'Денний ліміт банку', 5000, 'Скільки монет максимум може бути у щоденному фонді'],
     ],
   },
   {
@@ -215,11 +248,589 @@ const UserCard: React.FC<{ u: UserRow; onGrant: (id: string, delta: number) => v
   );
 };
 
+// ============ МОДАЛКА ЗМІНИ ПАРОЛЯ ============
+const ChangePasswordModal: React.FC<{ token: string; onClose: () => void }> = ({ token, onClose }) => {
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [newPass2, setNewPass2] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ type: 'error' | 'ok'; text: string } | null>(null);
+
+  const submit = async () => {
+    setMsg(null);
+    if (newPass !== newPass2) { setMsg({ type: 'error', text: 'Новий пароль та підтвердження не збігаються' }); return; }
+    if (newPass.length < 4) { setMsg({ type: 'error', text: 'Пароль має бути мінімум 4 символи' }); return; }
+    setBusy(true);
+    const { data } = await supabase.rpc('rps_admin_change_password', {
+      p_token: token, p_old_password: oldPass, p_new_password: newPass,
+    });
+    setBusy(false);
+    if (data === 'ok') {
+      setMsg({ type: 'ok', text: '✅ Пароль успішно змінено!' });
+      setOldPass(''); setNewPass(''); setNewPass2('');
+    } else if (data === 'bad_old_password') {
+      setMsg({ type: 'error', text: 'Невірний поточний пароль' });
+    } else if (data === 'password_short') {
+      setMsg({ type: 'error', text: 'Новий пароль занадто короткий' });
+    } else {
+      setMsg({ type: 'error', text: 'Помилка. Спробуй ще раз.' });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2 font-extrabold text-slate-900">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+              <KeyRound className="h-4 w-4" />
+            </span>
+            Зміна пароля
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-500">Поточний пароль</label>
+            <input
+              type="password" value={oldPass} onChange={(e) => setOldPass(e.target.value)}
+              placeholder="••••••••"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-500">Новий пароль</label>
+            <input
+              type="password" value={newPass} onChange={(e) => setNewPass(e.target.value)}
+              placeholder="Мінімум 4 символи"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-500">Підтвердити новий пароль</label>
+            <input
+              type="password" value={newPass2} onChange={(e) => setNewPass2(e.target.value)}
+              placeholder="Повторіть пароль"
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+            />
+          </div>
+        </div>
+
+        {msg && (
+          <div className={`mt-3 rounded-xl px-4 py-2.5 text-sm font-medium ${msg.type === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+            {msg.text}
+          </div>
+        )}
+
+        <button
+          onClick={submit}
+          disabled={busy || !oldPass || !newPass || !newPass2}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+          {busy ? 'Збереження…' : 'Змінити пароль'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============ ТАБЛИЦЯ ГРИ ============
+const GameTableTab: React.FC<{ token: string }> = ({ token }) => {
+  const [subTab, setSubTab] = useState<GameSubTab>('payouts');
+  const [script, setScript] = useState<ScriptRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.rpc('rps_admin_get_script', { p_token: token });
+      if (data) setScript(data as ScriptRow[]);
+      setLoading(false);
+    })();
+  }, [token]);
+
+  const update = (roundNo: number, field: keyof ScriptRow, val: string) => {
+    const num = parseInt(val) || 0;
+    setScript((prev) => prev.map((r) => r.round_no === roundNo ? { ...r, [field]: num } : r));
+    setSaved(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    await supabase.rpc('rps_admin_save_script', { p_token: token, p_data: script });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const subTabs: { id: GameSubTab; label: string; emoji: string }[] = [
+    { id: 'payouts', label: 'Виплати', emoji: '💰' },
+    { id: 'bots',    label: 'Боти на хід', emoji: '🤖' },
+    { id: 'bluff',   label: 'Блеф', emoji: '🤫' },
+  ];
+
+  const numInput = (row: ScriptRow, field: keyof ScriptRow) => (
+    <input
+      type="number" min={0} max={999}
+      value={row[field] as number}
+      onChange={(e) => update(row.round_no, field, e.target.value)}
+      className="w-14 rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-center text-xs font-semibold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+    />
+  );
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
+
+  return (
+    <div>
+      {/* Підвкладки */}
+      <div className="mb-4 flex gap-2 overflow-x-auto">
+        {subTabs.map((s) => (
+          <button
+            key={s.id} onClick={() => setSubTab(s.id)}
+            className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition ${subTab === s.id ? 'bg-emerald-600 text-white shadow' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'}`}
+          >
+            <span>{s.emoji}</span> {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-slate-100">
+              <th className="px-3 py-3 text-left text-slate-400 font-semibold">№</th>
+              {subTab === 'payouts' && <>
+                <th className="px-3 py-3 text-center text-slate-600">✊ Камінь</th>
+                <th className="px-3 py-3 text-center text-slate-600">✌️ Ножиці</th>
+                <th className="px-3 py-3 text-center text-slate-600">✋ Папір</th>
+              </>}
+              {subTab === 'bots' && <>
+                <th className="px-3 py-3 text-center text-slate-600">✊ Камінь</th>
+                <th className="px-3 py-3 text-center text-slate-600">✌️ Ножиці</th>
+                <th className="px-3 py-3 text-center text-slate-600">✋ Папір</th>
+                <th className="px-3 py-3 text-center text-slate-400">Разом</th>
+              </>}
+              {subTab === 'bluff' && <>
+                <th className="px-2 py-3 text-center text-slate-600">✊➔✌️</th>
+                <th className="px-2 py-3 text-center text-slate-600">✊➔✋</th>
+                <th className="px-2 py-3 text-center text-slate-600">✌️➔✊</th>
+                <th className="px-2 py-3 text-center text-slate-600">✌️➔✋</th>
+                <th className="px-2 py-3 text-center text-slate-600">✋➔✊</th>
+                <th className="px-2 py-3 text-center text-slate-600">✋➔✌️</th>
+              </>}
+            </tr>
+          </thead>
+          <tbody>
+            {script.map((row, i) => (
+              <tr key={row.round_no} className={`border-b border-slate-50 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                <td className="px-3 py-2 font-bold text-slate-400">{row.round_no}</td>
+                {subTab === 'payouts' && <>
+                  <td className="px-3 py-2 text-center">{numInput(row, 'res_rock')}</td>
+                  <td className="px-3 py-2 text-center">{numInput(row, 'res_scissors')}</td>
+                  <td className="px-3 py-2 text-center">{numInput(row, 'res_paper')}</td>
+                </>}
+                {subTab === 'bots' && <>
+                  <td className="px-3 py-2 text-center">{numInput(row, 'rock')}</td>
+                  <td className="px-3 py-2 text-center">{numInput(row, 'scissors')}</td>
+                  <td className="px-3 py-2 text-center">{numInput(row, 'paper')}</td>
+                  <td className="px-3 py-2 text-center font-bold text-slate-500">{row.rock + row.scissors + row.paper}</td>
+                </>}
+                {subTab === 'bluff' && <>
+                  <td className="px-2 py-2 text-center">{numInput(row, 'r2s')}</td>
+                  <td className="px-2 py-2 text-center">{numInput(row, 'r2p')}</td>
+                  <td className="px-2 py-2 text-center">{numInput(row, 's2r')}</td>
+                  <td className="px-2 py-2 text-center">{numInput(row, 's2p')}</td>
+                  <td className="px-2 py-2 text-center">{numInput(row, 'p2r')}</td>
+                  <td className="px-2 py-2 text-center">{numInput(row, 'p2s')}</td>
+                </>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <button
+        onClick={save} disabled={saving}
+        className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-semibold text-white transition ${saved ? 'bg-teal-500' : 'bg-emerald-600 hover:bg-emerald-700'} disabled:opacity-50`}
+      >
+        {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+        {saving ? 'Зберігаю…' : saved ? '✅ Збережено!' : 'Зберегти таблицю'}
+      </button>
+    </div>
+  );
+};
+
+// ============ НАЛАШТУВАННЯ ============
+const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
+  const [settings, setSettings] = useState<Settings>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase.rpc('rps_admin_get_settings', { p_token: token });
+      if (data) setSettings(data as Settings);
+      setLoading(false);
+    })();
+  }, [token]);
+
+  const update = (key: string, val: string) => {
+    setSettings((prev) => ({ ...prev, [key]: { ...prev[key], value: val } }));
+    setSaved(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    const payload: Record<string, string> = {};
+    Object.entries(settings).forEach(([k, v]) => { payload[k] = v.value; });
+    await supabase.rpc('rps_admin_save_settings', { p_token: token, p_data: payload });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>;
+
+  const groups: { title: string; emoji: string; keys: string[] }[] = [
+    {
+      title: 'Реферальна програма',
+      emoji: '🎁',
+      keys: ['referral_new_bonus', 'referral_inviter_bonus'],
+    },
+    {
+      title: 'Фонд та гра',
+      emoji: '⚙️',
+      keys: ['daily_fund_limit', 'round_seconds'],
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {groups.map((g) => (
+        <div key={g.title} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+          <h3 className="mb-4 flex items-center gap-2 font-bold text-slate-800">
+            <span>{g.emoji}</span> {g.title}
+          </h3>
+          <div className="space-y-3">
+            {g.keys.map((key) => {
+              const s = settings[key];
+              if (!s) return null;
+              return (
+                <div key={key}>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-500">{s.label}</label>
+                  <input
+                    type="number" min={0} value={s.value}
+                    onChange={(e) => update(key, e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-400 focus:bg-white"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      <button
+        onClick={save} disabled={saving}
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-semibold text-white transition ${saved ? 'bg-teal-500' : 'bg-emerald-600 hover:bg-emerald-700'} disabled:opacity-50`}
+      >
+        {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+        {saving ? 'Зберігаю…' : saved ? '✅ Збережено!' : 'Зберегти налаштування'}
+      </button>
+    </div>
+  );
+};
+
+// ============ ТУРНІРИ ============
+const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, users }) => {
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [expanded, setExpanded] = useState<number | null>(null);
+
+  // Форма
+  const [tName, setTName] = useState('');
+  const [tDesc, setTDesc] = useState('');
+  const [tDate, setTDate] = useState('');
+  const [tPrepay, setTPrepay] = useState('0');
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+  const [searchQ, setSearchQ] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase.rpc('rps_admin_get_tournaments', { p_token: token });
+    if (data) setTournaments(data as Tournament[]);
+    setLoading(false);
+  }, [token]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const togglePlayer = (id: string) => {
+    setSelectedPlayers((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    const filtered = users.filter((u) => u.is_account);
+    setSelectedPlayers(new Set(filtered.map((u) => u.id)));
+  };
+
+  const filteredUsers = users.filter((u) => {
+    if (!u.is_account) return false;
+    if (!searchQ.trim()) return true;
+    const s = searchQ.toLowerCase();
+    return (u.nick || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s);
+  });
+
+  const send = async () => {
+    if (!tName.trim()) { setSendMsg({ type: 'error', text: 'Введи назву турніру' }); return; }
+    if (selectedPlayers.size === 0) { setSendMsg({ type: 'error', text: 'Обери хоча б одного гравця' }); return; }
+    setSending(true); setSendMsg(null);
+    const { data } = await supabase.rpc('rps_admin_create_tournament', {
+      p_token:      token,
+      p_name:       tName.trim(),
+      p_desc:       tDesc.trim(),
+      p_date:       tDate || null,
+      p_prepay:     parseInt(tPrepay) || 0,
+      p_player_ids: Array.from(selectedPlayers),
+    });
+    setSending(false);
+    if (data && !data.error) {
+      setSendMsg({ type: 'ok', text: `✅ Запрошення надіслано ${data.invited || selectedPlayers.size} гравцям!` });
+      setTName(''); setTDesc(''); setTDate(''); setTPrepay('0'); setSelectedPlayers(new Set());
+      setShowForm(false);
+      load();
+    } else {
+      setSendMsg({ type: 'error', text: 'Помилка при створенні турніру' });
+    }
+  };
+
+  const statusColor = (s: string) =>
+    s === 'yes' ? 'text-emerald-600 bg-emerald-50' :
+    s === 'no' ? 'text-rose-600 bg-rose-50' :
+    s === 'later' ? 'text-amber-600 bg-amber-50' :
+    'text-slate-500 bg-slate-100';
+  const statusLabel = (s: string) =>
+    s === 'yes' ? '✅ Так' : s === 'no' ? '❌ Ні' : s === 'later' ? '🔔 Пізніше' : '⏳ Очікує';
+
+  return (
+    <div className="space-y-4">
+      {/* Кнопка створення */}
+      <button
+        onClick={() => { setShowForm(!showForm); setSendMsg(null); }}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+      >
+        <Send className="h-5 w-5" />
+        {showForm ? 'Скасувати' : '+ Нове запрошення на турнір'}
+      </button>
+
+      {/* Форма */}
+      {showForm && (
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 space-y-4">
+          <h3 className="font-bold text-slate-900 flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-amber-500" /> Нове турнірне запрошення
+          </h3>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-500">Назва турніру *</label>
+            <input
+              value={tName} onChange={(e) => setTName(e.target.value)}
+              placeholder="Наприклад: Великий турнір червня"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-500">Опис / деталі</label>
+            <textarea
+              value={tDesc} onChange={(e) => setTDesc(e.target.value)}
+              rows={2}
+              placeholder="Умови участі, призи, правила…"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white resize-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />Дата турніру
+              </label>
+              <input
+                type="datetime-local" value={tDate} onChange={(e) => setTDate(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                <Lock className="inline h-3.5 w-3.5 mr-1" />Передоплата (монет)
+              </label>
+              <input
+                type="number" min={0} value={tPrepay} onChange={(e) => setTPrepay(e.target.value)}
+                placeholder="0 = безкоштовно"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Вибір гравців */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-500">
+                Гравці ({selectedPlayers.size} обрано)
+              </label>
+              <button onClick={selectAll} className="text-xs font-semibold text-emerald-600 hover:underline">
+                Обрати всіх ({filteredUsers.length})
+              </button>
+            </div>
+            <div className="mb-2 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input
+                value={searchQ} onChange={(e) => setSearchQ(e.target.value)}
+                placeholder="Пошук гравця…"
+                className="w-full bg-transparent text-sm outline-none"
+              />
+            </div>
+            <div className="max-h-52 overflow-y-auto rounded-xl ring-1 ring-slate-100">
+              {filteredUsers.length === 0 && (
+                <p className="py-4 text-center text-xs text-slate-400">Немає зареєстрованих гравців</p>
+              )}
+              {filteredUsers.map((u) => (
+                <label
+                  key={u.id}
+                  className="flex cursor-pointer items-center gap-3 border-b border-slate-50 px-3 py-2.5 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedPlayers.has(u.id)}
+                    onChange={() => togglePlayer(u.id)}
+                    className="h-4 w-4 accent-emerald-600 rounded"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-slate-800 truncate">{u.nick || 'Гравець'}</div>
+                    <div className="text-xs text-slate-400 truncate">{u.email || u.login || '—'}</div>
+                  </div>
+                  <div className="flex items-center gap-0.5 text-xs font-bold text-amber-600 shrink-0">
+                    <Coins className="h-3 w-3" /> {fmt(u.balance)}
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {tPrepay !== '0' && parseInt(tPrepay) > 0 && (
+            <div className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              При відповіді «Так» з гравця буде списано {tPrepay} монет як передоплата.
+            </div>
+          )}
+
+          {sendMsg && (
+            <div className={`rounded-xl px-4 py-2.5 text-sm font-medium ${sendMsg.type === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>
+              {sendMsg.text}
+            </div>
+          )}
+
+          <button
+            onClick={send} disabled={sending}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+            {sending ? 'Надсилаю…' : `Надіслати запрошення (${selectedPlayers.size})`}
+          </button>
+        </div>
+      )}
+
+      {/* Список турнірів */}
+      {loading ? (
+        <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-slate-400" /></div>
+      ) : tournaments.length === 0 ? (
+        <p className="py-10 text-center text-sm text-slate-400">Турнірів ще немає. Створи перший!</p>
+      ) : (
+        <div className="space-y-3">
+          {tournaments.map((t) => (
+            <div key={t.id} className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100">
+              <button
+                onClick={() => setExpanded(expanded === t.id ? null : t.id)}
+                className="flex w-full items-start justify-between gap-3 p-4 text-left"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span className="font-bold text-slate-900 truncate">{t.name}</span>
+                    {t.prepay_coins > 0 && (
+                      <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                        {t.prepay_coins} монет
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">{fmtDate(t.created_at)}{t.date ? ` · Турнір: ${fmtDate(t.date)}` : ''}</div>
+                  {/* Статистика відповідей */}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                      Всього: {t.responses.total}
+                    </span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                      ✅ {t.responses.yes}
+                    </span>
+                    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600">
+                      ❌ {t.responses.no}
+                    </span>
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+                      🔔 {t.responses.later}
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                      ⏳ {t.responses.pending}
+                    </span>
+                  </div>
+                </div>
+                {expanded === t.id
+                  ? <ChevronUp className="h-4 w-4 shrink-0 text-slate-400 mt-1" />
+                  : <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 mt-1" />}
+              </button>
+
+              {expanded === t.id && (
+                <div className="border-t border-slate-100 px-4 pb-4 pt-3">
+                  {t.description && <p className="mb-3 text-sm text-slate-600">{t.description}</p>}
+                  <div className="space-y-2">
+                    {t.invites.map((inv) => (
+                      <div key={inv.invite_id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
+                        <span className="text-sm font-medium text-slate-800">{inv.nick || 'Гравець'}</span>
+                        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${statusColor(inv.status)}`}>
+                          {statusLabel(inv.status)}
+                        </span>
+                      </div>
+                    ))}
+                    {t.invites.length === 0 && <p className="text-xs text-slate-400 text-center py-2">Немає запрошених</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 // ============ ПАНЕЛЬ ============
 const Admin: React.FC = () => {
   const [token, setToken] = useState<string | null>(getToken());
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>('stats');
+  const [showChangePass, setShowChangePass] = useState(false);
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -243,7 +854,6 @@ const Admin: React.FC = () => {
     return supabase.rpc(fn, { p_token: token, ...args });
   }, [token]);
 
-  // Перевірка токена при завантаженні.
   useEffect(() => {
     if (!token) { setAuthed(false); return; }
     (async () => {
@@ -457,11 +1067,16 @@ const Admin: React.FC = () => {
     { id: 'prices', label: 'Прайс', icon: Coins, badge: prices.length },
     { id: 'script', label: 'Таблиця гри', icon: Table2 },
     { id: 'settings', label: 'Гра / Турніри', icon: Settings },
+    { id: 'tournaments', label: 'Турніри', icon: Trophy },
   ];
   const activeTab = tabs.find((t) => t.id === tab);
 
   return (
     <div className="min-h-screen bg-slate-100">
+      {showChangePass && token && (
+        <ChangePasswordModal token={token} onClose={() => setShowChangePass(false)} />
+      )}
+
       {/* Шапка */}
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
@@ -473,6 +1088,13 @@ const Admin: React.FC = () => {
             <a href="/" className="hidden items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 sm:flex">
               <ExternalLink className="h-4 w-4" /> На сайт
             </a>
+            <button
+              onClick={() => setShowChangePass(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-100"
+              title="Змінити пароль"
+            >
+              <KeyRound className="h-4 w-4" /> <span className="hidden sm:inline">Пароль</span>
+            </button>
             <button onClick={loadAll} className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200">
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">Оновити</span>
             </button>
@@ -702,84 +1324,7 @@ const Admin: React.FC = () => {
             </div>
           )}
 
-          {/* ТАБЛИЦЯ ГРИ — редагована сітка виплат на 35 раундів */}
-          {tab === 'script' && (
-            <div className="max-w-2xl space-y-4">
-              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5">
-                <h3 className="flex items-center gap-2 font-bold text-slate-900">
-                  <Table2 className="h-5 w-5 text-emerald-600" /> Таблиця гри за раунд
-                </h3>
-
-                {/* Перемикач: виплати або боти на хід */}
-                <div className="mt-3 inline-flex rounded-xl bg-slate-100 p-1 text-sm font-semibold">
-                  <button
-                    onClick={() => setScriptView('pay')}
-                    className={`rounded-lg px-3 py-1.5 transition ${scriptView === 'pay' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
-                  >
-                    💰 Виплати
-                  </button>
-                  <button
-                    onClick={() => setScriptView('bots')}
-                    className={`rounded-lg px-3 py-1.5 transition ${scriptView === 'bots' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
-                  >
-                    🤖 Боти на хід
-                  </button>
-                </div>
-
-                <p className="mt-2 text-xs text-slate-500">
-                  {scriptView === 'pay' ? (
-                    <>Виплата = число за зіграний хід (ставка 100:
-                    <span className="font-semibold text-rose-600"> &lt;100 програш</span>,
-                    <span className="font-semibold text-emerald-700"> &gt;100 виграш</span>).</>
-                  ) : (
-                    <>Скільки ботів ставлять кожен хід — це бачить гравець у пулах. Разом орієнтовно 14–20 на раунд.</>
-                  )}
-                </p>
-
-                {(() => {
-                  const keys = scriptView === 'pay' ? (['rk', 'sc', 'pp'] as const) : (['br', 'bs', 'bp'] as const);
-                  return (
-                    <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                      <div className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200 text-center text-[10px] font-bold uppercase tracking-wide text-slate-500 sm:text-[11px]">
-                        <div className="bg-slate-50 py-2">№</div>
-                        <div className="bg-slate-50 py-2">✊ Камінь</div>
-                        <div className="bg-slate-50 py-2">✌️ Ножиці</div>
-                        <div className="bg-slate-50 py-2">✋ Папір</div>
-                      </div>
-                      <div className="max-h-[62vh] overflow-y-auto">
-                        {script.map((row, i) => (
-                          <div key={row.round_no} className="grid grid-cols-[2.25rem_1fr_1fr_1fr] gap-px bg-slate-200">
-                            <div className="flex items-center justify-center bg-white text-xs font-bold text-slate-400">{row.round_no}</div>
-                            {keys.map((key) => (
-                              <input
-                                key={key}
-                                type="number"
-                                inputMode="numeric"
-                                value={row[key]}
-                                onChange={(e) => setScriptCell(i, key, Number(e.target.value))}
-                                className={`w-full bg-white px-1 py-2 text-center text-sm outline-none focus:bg-emerald-50 ${
-                                  scriptView === 'pay'
-                                    ? row[key] < 100 ? 'text-rose-600' : row[key] > 100 ? 'font-semibold text-emerald-700' : 'text-slate-700'
-                                    : 'text-slate-700'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-                {!script.length && <p className="mt-3 text-center text-sm text-slate-400">Завантаження…</p>}
-              </div>
-
-              <div className="sticky bottom-3 z-10">
-                <button onClick={saveScript} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 font-semibold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700">
-                  {scriptSaved ? <><Check className="h-5 w-5" /> Збережено ✓</> : <><Save className="h-5 w-5" /> Зберегти таблицю</>}
-                </button>
-              </div>
-            </div>
-          )}
+          {tab === 'script' && token && <GameTableTab token={token} />}
 
           {tab === 'settings' && (
             <div className="max-w-3xl space-y-4">
@@ -870,6 +1415,9 @@ const Admin: React.FC = () => {
               {visibleReviews.length === 0 && <p className="py-10 text-center text-sm text-slate-400">Відгуків немає.</p>}
             </div>
           )}
+
+          {/* ТУРНІРИ */}
+          {tab === 'tournaments' && token && <TournamentsTab token={token} users={users} />}
         </main>
       </div>
 

@@ -1,11 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Users, Wifi } from 'lucide-react';
+import { Coins, Users, Wifi, Trophy, X, Lock } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import AnimatedNumber from './AnimatedNumber';
 import Confetti from './Confetti';
 import { LogIn } from 'lucide-react';
+
+interface TournamentInvite {
+  invite_id: number;
+  tournament_id: number;
+  name: string;
+  description: string;
+  date: string | null;
+  prepay_coins: number;
+  status: string;
+}
 
 type Move = 'rock' | 'scissors' | 'paper';
 
@@ -52,6 +62,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   // Ставка й тривалість раунду керуються з адмінки (rps_config). Дефолти 100/30.
   const [stake, setStake] = useState(STAKE);
   const [roundSeconds, setRoundSeconds] = useState(ROUND_SECONDS);
+  const [invites, setInvites] = useState<TournamentInvite[]>([]);
+  const [currentInviteIdx, setCurrentInviteIdx] = useState(0);
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -94,6 +108,32 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     if (data) setBonus(data as { amount: number; cycle_day: number; max_day: number });
   }, []);
 
+  const fetchInvites = useCallback(async () => {
+    if (!account.isAccount) return;
+    const { data } = await supabase.rpc('rps_my_invites', { p_player_id: account.playerId });
+    if (data) { setInvites(data as TournamentInvite[]); setCurrentInviteIdx(0); }
+  }, [account.isAccount, account.playerId]);
+
+  const respondInvite = async (inviteId: number, status: 'yes' | 'no' | 'later') => {
+    setInviteBusy(true); setInviteMsg(null);
+    const { data } = await supabase.rpc('rps_tournament_respond', {
+      p_player_id: account.playerId,
+      p_invite_id: inviteId,
+      p_status:    status,
+    });
+    setInviteBusy(false);
+    if (data === 'ok') {
+      if (status === 'yes') account.refresh();
+      // прибрати поточне запрошення
+      setInvites((prev) => prev.filter((i) => i.invite_id !== inviteId));
+      setCurrentInviteIdx(0);
+    } else if (data === 'insufficient') {
+      setInviteMsg('Недостатньо монет для передоплати 😕');
+    } else {
+      setInviteMsg('Помилка. Спробуй ще раз.');
+    }
+  };
+
   const loadCurrent = useCallback(async () => {
     const { data, error } = await supabase.rpc('rps_tick');
     if (error || !data) return;
@@ -107,6 +147,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   useEffect(() => {
     loadCurrent();
     fetchBonus();
+    fetchInvites();
     const ch = supabase
       .channel('rps-game')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
@@ -452,6 +493,97 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             </div>
           </div>
         )}
+
+        {/* ── Банер турнірного запрошення ── */}
+        <AnimatePresence>
+          {invites.length > 0 && invites[currentInviteIdx] && (() => {
+            const inv = invites[currentInviteIdx];
+            return (
+              <motion.div
+                key={inv.invite_id}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="relative mx-5 mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-4 text-white shadow-xl shadow-violet-300/40 sm:mx-7"
+              >
+                {/* Фонова декорація */}
+                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-indigo-300/20 blur-2xl" />
+
+                {/* Кнопка закрити */}
+                <button
+                  onClick={() => setInvites((p) => p.filter((i) => i.invite_id !== inv.invite_id))}
+                  className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white/80 transition hover:bg-white/30"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/20">
+                      <Trophy className="h-4 w-4 text-amber-300" />
+                    </span>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-200">Запрошення на турнір</p>
+                      <p className="font-black text-base leading-tight">{inv.name}</p>
+                    </div>
+                  </div>
+
+                  {inv.description && (
+                    <p className="mb-2 text-xs text-violet-100/80 leading-relaxed">{inv.description}</p>
+                  )}
+
+                  <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+                    {inv.date && (
+                      <span className="rounded-full bg-white/15 px-2.5 py-1 font-semibold">
+                        📅 {new Date(inv.date).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
+                    )}
+                    {inv.prepay_coins > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-amber-400/25 px-2.5 py-1 font-semibold text-amber-200">
+                        <Lock className="h-3 w-3" /> Передоплата: {inv.prepay_coins} монет
+                      </span>
+                    )}
+                  </div>
+
+                  {inviteMsg && (
+                    <p className="mb-2 rounded-xl bg-white/15 px-3 py-1.5 text-xs font-semibold text-rose-200">{inviteMsg}</p>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => respondInvite(inv.invite_id, 'yes')}
+                      disabled={inviteBusy}
+                      className="flex flex-col items-center gap-1 rounded-xl bg-emerald-500 py-2.5 text-xs font-bold text-white shadow transition hover:bg-emerald-400 disabled:opacity-50"
+                    >
+                      <span className="text-lg">✅</span> Так
+                    </button>
+                    <button
+                      onClick={() => respondInvite(inv.invite_id, 'later')}
+                      disabled={inviteBusy}
+                      className="flex flex-col items-center gap-1 rounded-xl bg-white/20 py-2.5 text-xs font-bold text-white transition hover:bg-white/30 disabled:opacity-50"
+                    >
+                      <span className="text-lg">🔔</span> Пізніше
+                    </button>
+                    <button
+                      onClick={() => respondInvite(inv.invite_id, 'no')}
+                      disabled={inviteBusy}
+                      className="flex flex-col items-center gap-1 rounded-xl bg-white/10 py-2.5 text-xs font-bold text-white/80 transition hover:bg-white/20 disabled:opacity-50"
+                    >
+                      <span className="text-lg">❌</span> Ні
+                    </button>
+                  </div>
+
+                  {invites.length > 1 && (
+                    <p className="mt-2 text-center text-[10px] text-violet-200/60">
+                      {currentInviteIdx + 1} з {invites.length} запрошень
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })()}
+        </AnimatePresence>
 
         <div className="p-4 sm:p-6">
           {/* Nickname + account */}

@@ -7,6 +7,13 @@
         "WAVESPEED_API_KEY": "wsk_live_pHXnHXEst0VX_tSvMOOcrkzYzW-WggMeAhmuvlNx-iY",
         "WAVESPEED_LOG_FILE": "/tmp/wavespeed-mcp.log"
       }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--read-only=false", "--project-ref=ewtybyrtdvhibdtdvrmq"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sb_secret_ZEzsNJv-3fsthow3hSHCfg_y1QYrFgD"
+      }
     }
   }
 }
