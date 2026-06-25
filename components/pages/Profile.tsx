@@ -106,6 +106,16 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     window.open(url, '_blank');
   };
 
+  const shareWhatsApp = () => {
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + '\n' + inviteLink)}`;
+    window.open(url, '_blank');
+  };
+
+  const shareFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteLink)}`;
+    window.open(url, '_blank');
+  };
+
   const shareNative = async () => {
     if (navigator.share) {
       try {
@@ -240,28 +250,40 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             {copied ? 'Скопійовано' : 'Копіювати'}
           </button>
         </div>
-        <div className="mt-2.5 flex gap-2">
+        <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <button
             onClick={shareTelegram}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#229ED9] py-2 text-xs font-bold text-white transition hover:bg-[#1c85b7]"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-[#229ED9] py-2 text-xs font-bold text-white transition hover:bg-[#1c85b7]"
           >
             Telegram
           </button>
           <button
             onClick={shareViber}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#7360F2] py-2 text-xs font-bold text-white transition hover:bg-[#5c4cc4]"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-[#7360F2] py-2 text-xs font-bold text-white transition hover:bg-[#5c4cc4]"
           >
             Viber
           </button>
-          {typeof navigator !== 'undefined' && navigator.share && (
-            <button
-              onClick={shareNative}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2 text-xs font-bold text-white transition hover:bg-emerald-700"
-            >
-              <Share2 className="h-3.5 w-3.5" /> Поділитись
-            </button>
-          )}
+          <button
+            onClick={shareWhatsApp}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] py-2 text-xs font-bold text-white transition hover:bg-[#20ba5a]"
+          >
+            WhatsApp
+          </button>
+          <button
+            onClick={shareFacebook}
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-[#1877F2] py-2 text-xs font-bold text-white transition hover:bg-[#166fe5]"
+          >
+            Facebook
+          </button>
         </div>
+        {typeof navigator !== 'undefined' && navigator.share && (
+          <button
+            onClick={shareNative}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"
+          >
+            <Share2 className="h-4 w-4" /> Поділитись через інші додатки
+          </button>
+        )}
       </div>
 
       {/* Вкладки */}
