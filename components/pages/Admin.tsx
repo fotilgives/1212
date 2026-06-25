@@ -830,7 +830,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                         {copiedTId === t.id ? 'Скоп.' : 'Копія'}
                       </button>
                     </div>
-                    <div className="mt-2 grid grid-cols-4 gap-1.5">
+                    <div className="mt-2 grid grid-cols-5 gap-1.5">
                       {(() => {
                         const link = `${SITE_URL_ADMIN}/?tournament=${t.id}`;
                         const txt = `🏆 Запрошення на турнір «${t.name}»! Переходь за посиланням і приєднуйся:`;
@@ -844,6 +844,18 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                               className="rounded-xl bg-[#25D366] py-2 text-[11px] font-bold text-white transition hover:bg-[#20ba5a]">WhatsApp</button>
                             <button onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`, '_blank')}
                               className="rounded-xl bg-[#1877F2] py-2 text-[11px] font-bold text-white transition hover:bg-[#166fe5]">Facebook</button>
+                            <button onClick={() => {
+                                if (navigator.share) {
+                                  navigator.share({ title: t.name, text: txt, url: link }).catch(() => {});
+                                } else {
+                                  navigator.clipboard?.writeText(`${txt}\n${link}`);
+                                  setCopiedTId(t.id);
+                                  setTimeout(() => setCopiedTId(null), 2000);
+                                }
+                              }}
+                              className="rounded-xl bg-slate-800 flex items-center justify-center py-2 text-white transition hover:bg-slate-700">
+                                <Share2 className="h-4 w-4" />
+                            </button>
                           </>
                         );
                       })()}
