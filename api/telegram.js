@@ -1,7 +1,7 @@
 import { rpc, s } from './_wfp.js';
 import {
   tgSend, tgAnswerCallback, tgNotifyAdmins, mainMenuKeyboard, servicesKeyboard,
-  SERVICES, SERVICES_TEXT, PRICES_TEXT, CONTACTS_TEXT, SITE_URL, hasToken,
+  SERVICES, SERVICES_TEXT, PRICES_TEXT, CONTACTS_TEXT, SITE_URL, hasToken, ADMIN_IDS,
 } from './_tg.js';
 
 const GREETING =
@@ -121,6 +121,31 @@ export default async function handler(req, res) {
       else if (cmd === '/contacts') await tgSend(chat, CONTACTS_TEXT, { reply_markup: mainMenuKeyboard() });
       else if (cmd === '/site' || cmd === '/game') await tgSend(chat, `🌐 ${SITE_URL}`, { reply_markup: mainMenuKeyboard() });
       else if (cmd === '/cancel') { await clearStep(chat); await tgSend(chat, 'Скасовано. Повернутись у меню: /menu'); }
+      else if (cmd === '/password' || cmd === '/changepassword') {
+        if (!ADMIN_IDS.includes(String(chat))) {
+          await tgSend(chat, '❌ У вас немає прав для виконання цієї команди.');
+          res.status(200).json({ ok: true }); return;
+        }
+        const args = text.slice(cmd.length).trim();
+        if (!args) {
+          await tgSend(chat, '🔑 Використання: <code>/password новий_пароль</code>');
+          res.status(200).json({ ok: true }); return;
+        }
+        try {
+          const result = await rpc('rps_tg_change_admin_password', { p_new_password: args });
+          if (result === 'ok') {
+            await tgSend(chat, '✅ Пароль адміністратора успішно змінено!');
+          } else if (result === 'password_short') {
+            await tgSend(chat, '⚠️ Пароль занадто короткий (мінімум 4 символи).');
+          } else {
+            await tgSend(chat, `❌ Помилка: ${result}`);
+          }
+        } catch (e) {
+          console.error('[tg] change password ERR:', e.message);
+          await tgSend(chat, '❌ Не вдалося змінити пароль.');
+        }
+        res.status(200).json({ ok: true }); return;
+      }
       else await tgSend(chat, 'Команда не розпізнана. Меню: /menu', { reply_markup: mainMenuKeyboard() });
       res.status(200).json({ ok: true }); return;
     }

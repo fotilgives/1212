@@ -10,9 +10,9 @@
     },
     "supabase": {
       "command": "npx",
-      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--read-only=false", "--project-ref=ewtybyrtdvhibdtdvrmq"],
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--read-only=false", "--project-ref=udptbbtlersuxumbpplb"],
       "env": {
-        "SUPABASE_ACCESS_TOKEN": "sb_secret_ZEzsNJv-3fsthow3hSHCfg_y1QYrFgD"
+        "SUPABASE_ACCESS_TOKEN": "sbp_a39e1c2f29b88d2e5390e5da88c64fff3b28168c"
       }
     }
   }

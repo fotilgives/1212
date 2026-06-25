@@ -364,7 +364,7 @@ const GameTableTab: React.FC<{ token: string }> = ({ token }) => {
 
   const save = async () => {
     setSaving(true);
-    await supabase.rpc('rps_admin_save_script', { p_token: token, p_data: script });
+    await supabase.rpc('rps_admin_set_script', { p_token: token, p_rows: script });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);

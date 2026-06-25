@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, ExternalLink, Lock, Receipt } from 'lucide-react';
+import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, ExternalLink, Lock, Receipt, Share2 } from 'lucide-react';
 import type { Account } from '../../hooks/useAccount';
 import { supabase } from '../../lib/supabase';
 import AnimatedNumber from '../AnimatedNumber';
@@ -50,6 +50,34 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
     }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2500);
+  };
+
+  const shareText = "Приєднуйся до гри та отримуй призи й оздоровчі процедури у Центрі розвитку та здоров'я! 🎁💪";
+
+  const shareTelegram = () => {
+    const url = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${encodeURIComponent(shareText)}`;
+    window.open(url, '_blank');
+  };
+
+  const shareViber = () => {
+    const url = `viber://forward?text=${encodeURIComponent(shareText + '\n' + inviteLink)}`;
+    window.open(url, '_blank');
+  };
+
+  const shareNative = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Центр розвитку та здоров'я",
+          text: shareText,
+          url: inviteLink,
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      copyInvite();
+    }
   };
 
   // Відгук
@@ -206,6 +234,28 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
           >
             {copied ? <><Check className="h-4 w-4" /> Скопійовано</> : <><Copy className="h-4 w-4" /> Скопіювати посилання</>}
           </button>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={shareTelegram}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#229ED9] py-2 text-xs font-bold text-white transition hover:bg-[#1c85b7]"
+            >
+              Telegram
+            </button>
+            <button
+              onClick={shareViber}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#7360F2] py-2 text-xs font-bold text-white transition hover:bg-[#5c4cc4]"
+            >
+              Viber
+            </button>
+            {typeof navigator !== 'undefined' && navigator.share && (
+              <button
+                onClick={shareNative}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2 text-xs font-bold text-white transition hover:bg-indigo-700"
+              >
+                <Share2 className="h-3.5 w-3.5" /> Поділитись
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Залишити відгук */}

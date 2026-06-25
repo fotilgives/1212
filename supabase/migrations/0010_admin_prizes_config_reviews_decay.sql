@@ -163,6 +163,7 @@ BEGIN
   RETURN bal;
 END; $function$;
 
+DROP FUNCTION IF EXISTS public.rps_redeem(uuid, text, text, integer);
 CREATE OR REPLACE FUNCTION public.rps_redeem(p_id uuid, p_nick text, p_reward text, p_cost integer)
  RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
 AS $function$

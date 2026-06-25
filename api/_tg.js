@@ -1,6 +1,6 @@
 // Спільні хелпери Telegram-бота.
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const ADMIN_IDS = (process.env.TELEGRAM_ADMIN_IDS || '776148901,6194420485')
+export const ADMIN_IDS = (process.env.TELEGRAM_ADMIN_IDS || '776148901,6194420485')
   .split(',').map((x) => x.trim()).filter(Boolean);
 
 export const SITE_URL = 'https://reabilitolog-play.vercel.app';
