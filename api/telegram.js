@@ -63,7 +63,7 @@ async function finishBooking(chat, data) {
   await clearStep(chat);
   await tgSend(chat,
     `✅ <b>Заявку прийнято!</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}\n\nМи зателефонуємо найближчим часом, щоб узгодити час. Дякуємо! 💚`,
-    { reply_markup: mainMenuKeyboard() });
+    { reply_markup: mainMenuKeyboard(chat) });
   await tgNotifyAdmins(`🗓️ <b>Новий запис (Telegram)</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}`);
 }
 
@@ -92,9 +92,36 @@ export default async function handler(req, res) {
       await tgAnswerCallback(cq.id);
       if (chat) {
         if (dataStr === 'book') await startBooking(chat);
-        else if (dataStr === 'services') await tgSend(chat, await servicesText(), { reply_markup: mainMenuKeyboard() });
-        else if (dataStr === 'prices') await tgSend(chat, await pricesText(), { reply_markup: mainMenuKeyboard() });
-        else if (dataStr === 'contacts') await tgSend(chat, CONTACTS_TEXT, { reply_markup: mainMenuKeyboard() });
+        else if (dataStr === 'services') await tgSend(chat, await servicesText(), { reply_markup: mainMenuKeyboard(chat) });
+        else if (dataStr === 'prices') await tgSend(chat, await pricesText(), { reply_markup: mainMenuKeyboard(chat) });
+        else if (dataStr === 'contacts') await tgSend(chat, CONTACTS_TEXT, { reply_markup: mainMenuKeyboard(chat) });
+        else if (dataStr === 'admin_password') {
+          if (ADMIN_IDS.includes(String(chat))) {
+            await setStep(chat, 'admin_wait_password', {});
+            await tgSend(chat, '🔑 Введіть новий пароль для адміністратора:');
+          }
+        }
+        else if (dataStr === 'admin_webhook') {
+          if (ADMIN_IDS.includes(String(chat))) {
+            const url = `https://${req.headers.host}/api/telegram`;
+            const token = process.env.TELEGRAM_BOT_TOKEN;
+            try {
+              const r = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+              });
+              const resJson = await r.json();
+              if (resJson.ok) {
+                await tgSend(chat, `✅ Webhook успішно оновлено на:\n<code>${url}</code>`);
+              } else {
+                await tgSend(chat, `❌ Помилка оновлення Webhook:\n${resJson.description}`);
+              }
+            } catch (e) {
+              await tgSend(chat, `❌ Помилка: ${e.message}`);
+            }
+          }
+        }
         else if (dataStr.startsWith('svc:')) {
           const idx = parseInt(dataStr.slice(4), 10);
           const service = SERVICES[idx] || SERVICES[SERVICES.length - 1];
@@ -114,13 +141,13 @@ export default async function handler(req, res) {
     // Команди
     if (text.startsWith('/')) {
       const cmd = text.split(/[\s@]/)[0].toLowerCase();
-      if (cmd === '/start' || cmd === '/menu') { await clearStep(chat); await tgSend(chat, GREETING, { reply_markup: mainMenuKeyboard() }); }
+      if (cmd === '/start' || cmd === '/menu') { await clearStep(chat); await tgSend(chat, GREETING, { reply_markup: mainMenuKeyboard(chat) }); }
       else if (cmd === '/book') await startBooking(chat);
-      else if (cmd === '/services') await tgSend(chat, await servicesText(), { reply_markup: mainMenuKeyboard() });
-      else if (cmd === '/prices') await tgSend(chat, await pricesText(), { reply_markup: mainMenuKeyboard() });
-      else if (cmd === '/contacts') await tgSend(chat, CONTACTS_TEXT, { reply_markup: mainMenuKeyboard() });
-      else if (cmd === '/site' || cmd === '/game') await tgSend(chat, `🌐 ${SITE_URL}`, { reply_markup: mainMenuKeyboard() });
-      else if (cmd === '/cancel') { await clearStep(chat); await tgSend(chat, 'Скасовано. Повернутись у меню: /menu'); }
+      else if (cmd === '/services') await tgSend(chat, await servicesText(), { reply_markup: mainMenuKeyboard(chat) });
+      else if (cmd === '/prices') await tgSend(chat, await pricesText(), { reply_markup: mainMenuKeyboard(chat) });
+      else if (cmd === '/contacts') await tgSend(chat, CONTACTS_TEXT, { reply_markup: mainMenuKeyboard(chat) });
+      else if (cmd === '/site' || cmd === '/game') await tgSend(chat, `🌐 ${SITE_URL}`, { reply_markup: mainMenuKeyboard(chat) });
+      else if (cmd === '/cancel') { await clearStep(chat); await tgSend(chat, 'Скасовано. Повернутись у меню: /menu', { reply_markup: mainMenuKeyboard(chat) }); }
       else if (cmd === '/whoami') {
         const isAdmin = ADMIN_IDS.includes(String(chat));
         await tgSend(chat, `🔍 Ваш chat ID: <code>${chat}</code>\nАдмін: ${isAdmin ? '✅ Так' : '❌ Ні'}\nСписок адмінів: <code>${ADMIN_IDS.join(', ')}</code>`);
@@ -153,7 +180,7 @@ export default async function handler(req, res) {
         }
         res.status(200).json({ ok: true }); return;
       }
-      else await tgSend(chat, 'Команда не розпізнана. Меню: /menu', { reply_markup: mainMenuKeyboard() });
+      else await tgSend(chat, 'Команда не розпізнана. Меню: /menu', { reply_markup: mainMenuKeyboard(chat) });
       res.status(200).json({ ok: true }); return;
     }
 

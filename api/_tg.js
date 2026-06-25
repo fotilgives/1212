@@ -93,16 +93,19 @@ export async function tgNotifyAdmins(text) {
 }
 
 // Головне меню (inline-кнопки).
-export function mainMenuKeyboard() {
-  return {
-    inline_keyboard: [
-      [{ text: '🚀 Відкрити застосунок', web_app: { url: SITE_URL } }],
-      [{ text: '📝 Записатися', callback_data: 'book' }],
-      [{ text: '🤲 Послуги', callback_data: 'services' }, { text: '💸 Ціни', callback_data: 'prices' }],
-      [{ text: '📍 Контакти', callback_data: 'contacts' }],
-      [{ text: '🌐 Сайт', url: SITE_URL }],
-    ],
-  };
+export function mainMenuKeyboard(chatId = null) {
+  const kb = [
+    [{ text: '🚀 Відкрити застосунок', web_app: { url: SITE_URL } }],
+    [{ text: '📝 Записатися', callback_data: 'book' }],
+    [{ text: '🤲 Послуги', callback_data: 'services' }, { text: '💸 Ціни', callback_data: 'prices' }],
+    [{ text: '📍 Контакти', callback_data: 'contacts' }],
+    [{ text: '🌐 Сайт', url: SITE_URL }],
+  ];
+  if (chatId && ADMIN_IDS.includes(String(chatId))) {
+    kb.push([{ text: '👑 [Адмін] Змінити пароль', callback_data: 'admin_password' }]);
+    kb.push([{ text: '⚙️ [Адмін] Оновити Webhook', callback_data: 'admin_webhook' }]);
+  }
+  return { inline_keyboard: kb };
 }
 
 export function servicesKeyboard() {
