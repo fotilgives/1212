@@ -97,6 +97,26 @@ export function useAccount(): Account {
       } catch {
         /* ignore */
       }
+      try {
+        const tournamentIdStr = new URLSearchParams(window.location.search).get('tournament');
+        if (tournamentIdStr) {
+          const tId = parseInt(tournamentIdStr, 10);
+          if (tId && !isNaN(tId)) {
+            const joinedKey = `rps_tournament_joined_${tId}`;
+            if (!localStorage.getItem(joinedKey)) {
+              const { data: res } = await supabase.rpc('rps_tournament_join', { p_player_id: playerId, p_tournament_id: tId });
+              if (res === 'ok' || res === 'already_joined') {
+                localStorage.setItem(joinedKey, '1');
+                alert("🏆 Ви успішно приєдналися до турніру!");
+              } else if (res === 'insufficient') {
+                alert("⚠️ Недостатньо монет для передоплати участі в турнірі.");
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to auto join tournament:', e);
+      }
       if (active) {
         await refresh();
         setReady(true);

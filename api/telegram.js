@@ -121,28 +121,35 @@ export default async function handler(req, res) {
       else if (cmd === '/contacts') await tgSend(chat, CONTACTS_TEXT, { reply_markup: mainMenuKeyboard() });
       else if (cmd === '/site' || cmd === '/game') await tgSend(chat, `🌐 ${SITE_URL}`, { reply_markup: mainMenuKeyboard() });
       else if (cmd === '/cancel') { await clearStep(chat); await tgSend(chat, 'Скасовано. Повернутись у меню: /menu'); }
+      else if (cmd === '/whoami') {
+        const isAdmin = ADMIN_IDS.includes(String(chat));
+        await tgSend(chat, `🔍 Ваш chat ID: <code>${chat}</code>\nАдмін: ${isAdmin ? '✅ Так' : '❌ Ні'}\nСписок адмінів: <code>${ADMIN_IDS.join(', ')}</code>`);
+      }
       else if (cmd === '/password' || cmd === '/changepassword') {
         if (!ADMIN_IDS.includes(String(chat))) {
-          await tgSend(chat, '❌ У вас немає прав для виконання цієї команди.');
+          await tgSend(chat, `❌ У вас немає прав. Ваш ID: <code>${chat}</code>\nДля допомоги: /whoami`);
           res.status(200).json({ ok: true }); return;
         }
-        const args = text.slice(cmd.length).trim();
-        if (!args) {
-          await tgSend(chat, '🔑 Використання: <code>/password новий_пароль</code>');
+        // Отримуємо аргументи: видаляємо команду з @bot_name якщо є, потім trim
+        const afterCmd = text.replace(/^\/\w+(@\w+)?/, '').trim();
+        if (!afterCmd) {
+          await tgSend(chat, '🔑 Використання: <code>/password НовийПароль123</code>\n\nПісля зміни потрібно повторно зайти в адмін-панель.');
           res.status(200).json({ ok: true }); return;
         }
         try {
-          const result = await rpc('rps_tg_change_admin_password', { p_new_password: args });
+          const result = await rpc('rps_tg_change_admin_password', { p_new_password: afterCmd });
           if (result === 'ok') {
-            await tgSend(chat, '✅ Пароль адміністратора успішно змінено!');
+            await tgSend(chat, '✅ Пароль адміністратора успішно змінено!\n\n🔐 Тепер зайди в адмін-панель з новим паролем.');
           } else if (result === 'password_short') {
             await tgSend(chat, '⚠️ Пароль занадто короткий (мінімум 4 символи).');
+          } else if (result === 'no_admin_found') {
+            await tgSend(chat, '❌ Адміністратора не знайдено в базі даних.');
           } else {
             await tgSend(chat, `❌ Помилка: ${result}`);
           }
         } catch (e) {
           console.error('[tg] change password ERR:', e.message);
-          await tgSend(chat, '❌ Не вдалося змінити пароль.');
+          await tgSend(chat, `❌ Не вдалося змінити пароль. Помилка: ${e.message}`);
         }
         res.status(200).json({ ok: true }); return;
       }

@@ -6,7 +6,7 @@ import {
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
   ArrowUp, ArrowDown, Copy, Sparkles, Clock, TrendingDown, Link2,
   CheckCircle2, ExternalLink, Wand2, Table2, HandHeart,
-  KeyRound, Trophy, Send, ChevronDown, ChevronUp, AlertCircle, Calendar, Lock,
+  KeyRound, Trophy, Send, ChevronDown, ChevronUp, AlertCircle, Calendar, Lock, Share2,
 } from 'lucide-react';
 
 const TOKEN_KEY = 'rps_admin_token';
@@ -551,11 +551,14 @@ const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
 };
 
 // ============ ТУРНІРИ ============
+const SITE_URL_ADMIN = typeof window !== 'undefined' ? window.location.origin : 'https://reabilitolog-play.vercel.app';
+
 const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, users }) => {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [copiedTId, setCopiedTId] = useState<number | null>(null);
 
   // Форма
   const [tName, setTName] = useState('');
@@ -805,6 +808,49 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               {expanded === t.id && (
                 <div className="border-t border-slate-100 px-4 pb-4 pt-3">
                   {t.description && <p className="mb-3 text-sm text-slate-600">{t.description}</p>}
+
+                  {/* Публічне посилання для соцмереж */}
+                  <div className="mb-4 rounded-2xl bg-indigo-50 p-3 ring-1 ring-indigo-100">
+                    <p className="mb-2 text-xs font-bold text-indigo-800">🔗 Посилання для соцмереж (будь-хто зможе приєднатись):</p>
+                    <div className="flex items-center gap-2">
+                      <input
+                        readOnly
+                        value={`${SITE_URL_ADMIN}/?tournament=${t.id}`}
+                        className="min-w-0 flex-1 truncate rounded-xl border border-indigo-200 bg-white px-3 py-2 text-xs text-slate-600 outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(`${SITE_URL_ADMIN}/?tournament=${t.id}`);
+                          setCopiedTId(t.id);
+                          setTimeout(() => setCopiedTId(null), 2000);
+                        }}
+                        className="flex shrink-0 items-center gap-1 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-indigo-700"
+                      >
+                        {copiedTId === t.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedTId === t.id ? 'Скоп.' : 'Копія'}
+                      </button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-4 gap-1.5">
+                      {(() => {
+                        const link = `${SITE_URL_ADMIN}/?tournament=${t.id}`;
+                        const txt = `🏆 Запрошення на турнір «${t.name}»! Переходь за посиланням і приєднуйся:`;
+                        return (
+                          <>
+                            <button onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(txt)}`, '_blank')}
+                              className="rounded-xl bg-[#229ED9] py-2 text-[11px] font-bold text-white transition hover:bg-[#1c85b7]">Telegram</button>
+                            <button onClick={() => window.open(`viber://forward?text=${encodeURIComponent(txt + '\n' + link)}`, '_blank')}
+                              className="rounded-xl bg-[#7360F2] py-2 text-[11px] font-bold text-white transition hover:bg-[#5c4cc4]">Viber</button>
+                            <button onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(txt + '\n' + link)}`, '_blank')}
+                              className="rounded-xl bg-[#25D366] py-2 text-[11px] font-bold text-white transition hover:bg-[#20ba5a]">WhatsApp</button>
+                            <button onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`, '_blank')}
+                              className="rounded-xl bg-[#1877F2] py-2 text-[11px] font-bold text-white transition hover:bg-[#166fe5]">Facebook</button>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Список запрошених гравців */}
                   <div className="space-y-2">
                     {t.invites.map((inv) => (
                       <div key={inv.invite_id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
@@ -814,7 +860,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                         </span>
                       </div>
                     ))}
-                    {t.invites.length === 0 && <p className="text-xs text-slate-400 text-center py-2">Немає запрошених</p>}
+                    {t.invites.length === 0 && <p className="text-xs text-slate-400 text-center py-2">Немає запрошених гравців (використай посилання вище)</p>}
                   </div>
                 </div>
               )}
