@@ -276,7 +276,7 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             Facebook
           </button>
         </div>
-        {typeof navigator !== 'undefined' && navigator.share && (
+        {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
           <button
             onClick={shareNative}
             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"

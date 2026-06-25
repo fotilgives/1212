@@ -270,7 +270,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
               Facebook
             </button>
           </div>
-          {typeof navigator !== 'undefined' && navigator.share && (
+          {typeof navigator !== 'undefined' && typeof navigator.share === 'function' && (
             <button
               onClick={shareNative}
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white transition hover:bg-indigo-700"
