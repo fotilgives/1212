@@ -601,7 +601,6 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
 
   const send = async () => {
     if (!tName.trim()) { setSendMsg({ type: 'error', text: 'Введи назву турніру' }); return; }
-    if (selectedPlayers.size === 0) { setSendMsg({ type: 'error', text: 'Обери хоча б одного гравця' }); return; }
     setSending(true); setSendMsg(null);
     const { data } = await supabase.rpc('rps_admin_create_tournament', {
       p_token:      token,
@@ -752,7 +751,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
           >
             {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-            {sending ? 'Надсилаю…' : `Надіслати запрошення (${selectedPlayers.size})`}
+            {selectedPlayers.size > 0 ? `Створити турнір та надіслати запрошення (${selectedPlayers.size})` : 'Створити турнір'}
           </button>
         </div>
       )}
