@@ -7,7 +7,7 @@ import PriceList from '../PriceList';
 import MediaShowcase from '../MediaShowcase';
 import FreeSlots from '../FreeSlots';
 
-const SPECIALISTS = ['Володимир Мазур', 'Інший спеціаліст'] as const;
+const SPECIALISTS = ['Володимир Мальцев', 'Інший спеціаліст'] as const;
 
 interface ServiceItem {
   title: string;
