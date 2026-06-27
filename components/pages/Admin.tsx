@@ -6,7 +6,7 @@ import {
   Settings, Package, Trash2, Pencil, Save, Image as ImageIcon, Upload, X,
   ArrowUp, ArrowDown, Copy, Sparkles, Clock, TrendingDown, Link2,
   CheckCircle2, ExternalLink, Wand2, Table2, HandHeart,
-  KeyRound, Trophy, Send, ChevronDown, ChevronUp, AlertCircle, Calendar, Lock, Share2,
+  KeyRound, Trophy, Send, ChevronDown, ChevronUp, AlertCircle, Calendar, Lock, Share2, Download,
 } from 'lucide-react';
 
 const TOKEN_KEY = 'rps_admin_token';
@@ -882,8 +882,61 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
     </div>
   );
 };
+// ============ PWA (адмін-додаток для телефона) ============
+// На сторінці /admin підмінюємо маніфест на адмінський (start_url → /#/admin),
+// додаємо apple-мета й реєструємо service worker. На виході з адмінки прибираємо
+// підміну, щоб публічний сайт не успадкував адмінський маніфест.
+interface BIPEvent extends Event { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }>; }
+function useAdminPwa() {
+  const [deferred, setDeferred] = useState<BIPEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    const head = document.head;
+    const added: HTMLElement[] = [];
+    const add = (tag: string, attrs: Record<string, string>) => {
+      const el = document.createElement(tag);
+      Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+      head.appendChild(el);
+      added.push(el);
+      return el;
+    };
+    add('link', { rel: 'manifest', href: '/admin.webmanifest', id: 'admin-manifest' });
+    add('meta', { name: 'theme-color', content: '#059669', id: 'admin-theme' });
+    add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+    add('meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' });
+    add('meta', { name: 'apple-mobile-web-app-title', content: 'Адмін' });
+    add('link', { rel: 'apple-touch-icon', href: '/images/logo.png' });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+    const onPrompt = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
+    const onInstalled = () => { setInstalled(true); setDeferred(null); };
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    if (window.matchMedia('(display-mode: standalone)').matches) setInstalled(true);
+
+    return () => {
+      added.forEach((el) => el.remove());
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
+  }, []);
+
+  const promptInstall = useCallback(async () => {
+    if (!deferred) return;
+    await deferred.prompt();
+    try { await deferred.userChoice; } catch { /* ignore */ }
+    setDeferred(null);
+  }, [deferred]);
+
+  return { canInstall: !!deferred && !installed, promptInstall };
+}
+
 // ============ ПАНЕЛЬ ============
 const Admin: React.FC = () => {
+  const { canInstall, promptInstall } = useAdminPwa();
   const [token, setToken] = useState<string | null>(getToken());
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>('stats');
@@ -1142,6 +1195,15 @@ const Admin: React.FC = () => {
             <span>Адмін-панель</span>
           </div>
           <div className="flex items-center gap-2">
+            {canInstall && (
+              <button
+                onClick={promptInstall}
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700"
+                title="Встановити як додаток"
+              >
+                <Download className="h-4 w-4" /> <span className="hidden sm:inline">Встановити</span>
+              </button>
+            )}
             <a href="/" className="hidden items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200 sm:flex">
               <ExternalLink className="h-4 w-4" /> На сайт
             </a>

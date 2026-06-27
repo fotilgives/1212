@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserRound, LogIn } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   open: boolean;
@@ -18,6 +19,21 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [rememberMe, setRememberMe] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Бонуси реферала з адмінки (rps_config). Дефолти — поки не підвантажено.
+  const [newBonus, setNewBonus] = useState(100);
+  const [inviterBonus, setInviterBonus] = useState(100);
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data } = await supabase.from('rps_config').select('data').eq('id', 1).single();
+      const cfg = (data as { data?: Record<string, number> } | null)?.data || {};
+      const nb = Number(cfg.referral_new_bonus);
+      const ib = Number(cfg.referral_inviter_bonus);
+      if (Number.isFinite(nb) && nb >= 0) setNewBonus(Math.floor(nb));
+      if (Number.isFinite(ib) && ib >= 0) setInviterBonus(Math.floor(ib));
+    })();
+  }, [open]);
 
   // Автозаповнення коду запрошення з ?ref=<uuid> у лінку; перемикаємо на реєстрацію.
   useEffect(() => {
@@ -121,7 +137,11 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
                     placeholder="Код запрошення (необовʼязково)"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
                   />
-                  <p className="mt-1 px-1 text-xs text-emerald-700">🎁 Код друга = +500 монет тобі й другу</p>
+                  <p className="mt-1 px-1 text-xs text-emerald-700">
+                    {newBonus === inviterBonus
+                      ? `🎁 Код друга = +${newBonus} монет тобі й другу`
+                      : `🎁 Код друга = +${newBonus} монет тобі, +${inviterBonus} другу`}
+                  </p>
                 </div>
               )}
             </div>
