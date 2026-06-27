@@ -114,4 +114,27 @@ export function servicesKeyboard() {
   };
 }
 
+export function datesKeyboard() {
+  const daysUk = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+  const monthsUk = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+  const dates = [];
+  const now = new Date();
+  
+  for (let i = 0; i < 14 && dates.length < 7; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    if (d.getDay() !== 0) { // Пропускаємо неділю (вихідний)
+      const dayName = daysUk[d.getDay()];
+      const dateNum = d.getDate();
+      const monthName = monthsUk[d.getMonth()];
+      const formatted = `${dayName}, ${dateNum} ${monthName}`;
+      dates.push(formatted);
+    }
+  }
+
+  const kb = dates.map((label) => [{ text: `📅 ${label}`, callback_data: `dt:${label}` }]);
+  kb.push([{ text: '💬 Узгодити в переписці / інша дата', callback_data: 'dt:узгодити в переписці' }]);
+  return { inline_keyboard: kb };
+}
+
 export const hasToken = () => !!TOKEN;

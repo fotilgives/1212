@@ -57,19 +57,29 @@ export default async function handler(req, res) {
     const phone = s(body.phone).trim();
     const email = s(body.email).trim().toLowerCase();
     const service = s(body.service).trim();
+    const date = s(body.date || body.when).trim();
     const note = s(body.note).trim();
 
     if (EMAIL_RE.test(email)) {
-      const m = buildBookingEmail({ name, service, phone, appUrl: origin, supportEmail, bannerUrl });
+      const m = buildBookingEmail({ name, service, phone, date, appUrl: origin, supportEmail, bannerUrl });
       try { await sendTransactionalEmail({ to: email, subject: m.subject, html: m.html, text: m.text }); }
       catch (e) { console.error('[notify] booking client mail ERR:', e.message); }
     }
     await sendOwner(buildOwnerNotice({
       title: '🗓️ Новий запис на послугу',
-      rows: [['Імʼя', name || '—'], ['Телефон', phone || '—'], ['Email', email || '—'], ['Послуга', service || '—'], ['Коментар', note || '—']],
+      rows: [
+        ['Імʼя', name || '—'],
+        ['Телефон', phone || '—'],
+        ['Email', email || '—'],
+        ['Послуга', service || '—'],
+        date ? ['Бажана дата', date] : null,
+        ['Коментар', note || '—'],
+      ].filter(Boolean),
     }));
-    try { await tgNotifyAdmins(`🗓️ <b>Новий запис (сайт)</b>\n\n👤 ${name || '—'}\n📞 ${phone || '—'}\n📧 ${email || '—'}\n🤲 ${service || '—'}${note ? `\n📝 ${note}` : ''}`); }
-    catch (e) { console.error('[notify] booking tg ERR:', e.message); }
+    try {
+      const dateStr = date ? `\n📅 <b>Дата:</b> ${date}` : '';
+      await tgNotifyAdmins(`🗓️ <b>Новий запис (сайт)</b>\n\n👤 ${name || '—'}\n📞 ${phone || '—'}\n📧 ${email || '—'}\n🤲 ${service || '—'}${dateStr}${note ? `\n📝 ${note}` : ''}`);
+    } catch (e) { console.error('[notify] booking tg ERR:', e.message); }
 
     return res.status(200).json({ ok: true });
   } catch (err) {

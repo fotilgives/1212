@@ -1,6 +1,6 @@
 import { rpc, s } from './_wfp.js';
 import {
-  tgSend, tgAnswerCallback, tgNotifyAdmins, mainMenuKeyboard, servicesKeyboard,
+  tgSend, tgAnswerCallback, tgNotifyAdmins, mainMenuKeyboard, servicesKeyboard, datesKeyboard,
   SERVICES, SERVICES_TEXT, PRICES_TEXT, CONTACTS_TEXT, SITE_URL, hasToken, ADMIN_IDS,
 } from './_tg.js';
 
@@ -51,16 +51,16 @@ async function startBooking(chat) {
   await tgSend(chat, '📝 Чудово! Як вас звати?');
 }
 
-// Після обраної послуги питаємо зручний час текстом (адмін підтверджує запис).
+// Після обраної послуги показуємо кнопочки з робочими даними.
 async function askWhen(chat, data) {
   await setStep(chat, 'when', data);
-  await tgSend(chat, '🕐 Напишіть зручний день і час (напр. «Пн після 14:00»), або «—» якщо байдуже:');
+  await tgSend(chat, '🗓️ Оберіть бажаний робочий день візиту (або напишіть у повідомленні):\n\n<i>*Точний час буде узгоджено з вами додатково у переписці чи дзвінку.</i>', { reply_markup: datesKeyboard() });
 }
 
 async function finishBooking(chat, data, when = '') {
   const name = s(data.name), phone = s(data.phone), service = s(data.service);
   const w = s(when).trim();
-  const note = w && w !== '—' ? `Заявка з Telegram-бота\nЗручний час: ${w}` : 'Заявка з Telegram-бота';
+  const note = w && w !== '—' ? `Заявка з Telegram-бота\nБажана дата: ${w}` : 'Заявка з Telegram-бота';
   try {
     await rpc('rps_book', { p_name: name, p_phone: phone, p_service: service, p_note: note, p_email: null });
   } catch (e) {
@@ -69,9 +69,9 @@ async function finishBooking(chat, data, when = '') {
     return;
   }
   await clearStep(chat);
-  const whenLine = w && w !== '—' ? `\n🕐 ${w}` : '';
+  const whenLine = w && w !== '—' ? `\n📅 <b>Бажана дата:</b> ${w}` : '';
   await tgSend(chat,
-    `✅ <b>Заявку прийнято!</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${whenLine}\n\nМи зателефонуємо найближчим часом, щоб підтвердити час. Дякуємо! 💚`,
+    `✅ <b>Заявку прийнято!</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${whenLine}\n\nМи зв'яжемося з вами найближчим часом, щоб узгодити зручний точний час. Дякуємо! 💚`,
     { reply_markup: mainMenuKeyboard(chat) });
   await tgNotifyAdmins(`🗓️ <b>Новий запис (Telegram)</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${whenLine}`);
 }
@@ -136,6 +136,11 @@ export default async function handler(req, res) {
           const service = SERVICES[idx] || SERVICES[SERVICES.length - 1];
           const st = await getStep(chat);
           await askWhen(chat, { ...st.data, service });
+        }
+        else if (dataStr.startsWith('dt:')) {
+          const dateSelected = dataStr.slice(3);
+          const st = await getStep(chat);
+          await finishBooking(chat, st.data, dateSelected);
         }
       }
       res.status(200).json({ ok: true }); return;

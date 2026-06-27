@@ -201,29 +201,31 @@ function shell({ bannerUrl, badge, title, intro, rows, buttons, footerNote, supp
   </div>`;
 }
 
-export function buildBookingEmail({ name, service, phone, appUrl, supportEmail, bannerUrl }) {
+export function buildBookingEmail({ name, service, phone, date, appUrl, supportEmail, bannerUrl }) {
   const safeName = name || 'друже';
   const svc = service || 'консультацію';
   const text = [
     `Вітаємо, ${safeName}!`, '',
     `Ми отримали вашу заявку на: ${svc}.`,
-    phone ? `Ми зателефонуємо на ${phone}, щоб узгодити зручний час.` : 'Ми звʼяжемося з вами найближчим часом.',
+    date ? `Бажана дата візиту: ${date}` : '',
+    phone ? `Ми зателефонуємо на ${phone}, щоб узгодити точний час.` : 'Ми звʼяжемося з вами найближчим часом.',
     appUrl ? `Сайт: ${appUrl}` : '',
     supportEmail ? `Підтримка: ${supportEmail}` : '',
   ].filter(Boolean).join('\n');
   const html = shell({
     bannerUrl, supportEmail,
-    badge: 'Заявку прийнято',
+    badge: 'Заявку прийнято 🗓️',
     title: 'Дякуємо за запис! 🌿',
-    intro: `Вітаємо, <strong>${escapeHtml(safeName)}</strong>! Ми отримали вашу заявку та незабаром звʼяжемося, щоб узгодити зручний час візиту.`,
+    intro: `Вітаємо, <strong>${escapeHtml(safeName)}</strong>! Ми успішно отримали вашу заявку та незабаром звʼяжемося з вами, щоб підібрати та узгодити точний час візиту.`,
     rows: [
-      ['Напрямок', svc],
+      ['Напрямок / Послуга', svc],
+      date ? ['Бажана дата візиту', date] : null,
       phone ? ['Ваш телефон', phone] : null,
     ].filter(Boolean),
-    buttons: appUrl ? [{ label: 'Відкрити сайт', href: appUrl, primary: true }] : [],
-    footerNote: 'Якщо плани зміняться — просто відповідай на цей лист. До зустрічі у Центрі розвитку та реабілітації 💚',
+    buttons: appUrl ? [{ label: 'Перейти на сайт', href: appUrl, primary: true }] : [],
+    footerNote: 'Якщо плани зміняться — просто відповідайте на цей лист. До зустрічі у Центрі розвитку та реабілітації 💚',
   });
-  return { subject: `Заявку отримано — ${svc}`, html, text };
+  return { subject: `Заявку прийнято — ${svc}`, html, text };
 }
 
 export function buildPrizeEmail({ name, reward, cost, code, profileUrl, supportEmail, bannerUrl }) {

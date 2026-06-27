@@ -173,10 +173,26 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
   const [email, setEmail] = useState('');
   const [service, setService] = useState(SERVICE_OPTIONS[0]);
   const [specialist, setSpecialist] = useState<string>(SPECIALISTS[0]);
+  const [preferredDate, setPreferredDate] = useState<string>('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const preferredDates = React.useMemo(() => {
+    const daysUk = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const monthsUk = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+    const list: string[] = ['Найближчий вільний день (узгодити)'];
+    const now = new Date();
+    for (let i = 0; i < 14 && list.length < 8; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      if (d.getDay() !== 0) {
+        list.push(`${daysUk[d.getDay()]}, ${d.getDate()} ${monthsUk[d.getMonth()]}`);
+      }
+    }
+    return list;
+  }, []);
 
   // Selected service for detail modal
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
@@ -230,7 +246,8 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
       return;
     }
     setBusy(true);
-    const fullNote = `Спеціаліст: ${specialist}${note.trim() ? `\n${note.trim()}` : ''}`;
+    const dateChoice = preferredDate || preferredDates[0];
+    const fullNote = `Спеціаліст: ${specialist}\nБажана дата: ${dateChoice}${note.trim() ? `\nКоментар: ${note.trim()}` : ''}`;
     const { error } = await supabase.rpc('rps_book', {
       p_name: name,
       p_phone: phone,
@@ -245,7 +262,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
     fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'booking', name, phone, email: email.trim(), service, note: fullNote }),
+      body: JSON.stringify({ type: 'booking', name, phone, email: email.trim(), service, date: dateChoice, note: fullNote }),
     }).catch(() => {});
   };
 
@@ -430,6 +447,16 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             >
               {SPECIALISTS.map((s) => (
                 <option key={s}>{s}</option>
+              ))}
+            </select>
+
+            <select
+              value={preferredDate}
+              onChange={(e) => setPreferredDate(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-800 outline-none focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+            >
+              {preferredDates.map((d) => (
+                <option key={d} value={d}>📅 {d}</option>
               ))}
             </select>
 
