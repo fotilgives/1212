@@ -5,6 +5,9 @@ import { supabase } from '../../lib/supabase';
 import SmartImage from '../SmartImage';
 import PriceList from '../PriceList';
 import MediaShowcase from '../MediaShowcase';
+import FreeSlots from '../FreeSlots';
+
+const SPECIALISTS = ['Володимир Мазур', 'Інший спеціаліст'] as const;
 
 interface ServiceItem {
   title: string;
@@ -170,6 +173,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [service, setService] = useState(SERVICE_OPTIONS[0]);
+  const [specialist, setSpecialist] = useState<string>(SPECIALISTS[0]);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -227,11 +231,12 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
       return;
     }
     setBusy(true);
+    const fullNote = `Спеціаліст: ${specialist}${note.trim() ? `\n${note.trim()}` : ''}`;
     const { error } = await supabase.rpc('rps_book', {
       p_name: name,
       p_phone: phone,
       p_service: service,
-      p_note: note,
+      p_note: fullNote,
       p_email: email.trim() || null,
     });
     setBusy(false);
@@ -241,7 +246,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
     fetch('/api/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'booking', name, phone, email: email.trim(), service, note }),
+      body: JSON.stringify({ type: 'booking', name, phone, email: email.trim(), service, note: fullNote }),
     }).catch(() => {});
   };
 
@@ -418,7 +423,20 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
                 <option key={s}>{s}</option>
               ))}
             </select>
-            
+
+            <select
+              value={specialist}
+              onChange={(e) => setSpecialist(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+            >
+              {SPECIALISTS.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+
+            {/* Вільні віконця — лише при записі до Володимира */}
+            {specialist === SPECIALISTS[0] && <FreeSlots />}
+
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
