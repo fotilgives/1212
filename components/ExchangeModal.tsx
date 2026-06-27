@@ -12,10 +12,8 @@ interface Props {
 }
 
 // Суми фіксованих пакетів (грн). Монети рахуються з курсу coin_rate (з БД).
-const PACK_UAH = [50, 100, 200];
+const PACK_UAH = [50, 100, 200, 500];
 const DEFAULT_COIN_RATE = 5;
-// Тестовий пакет із фіксованою кількістю монет (не залежить від курсу).
-const TEST_PACK = { id: 'ptest', uah: 1, coins: 20000, test: true };
 
 const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) => {
   const [busy, setBusy]   = useState<string | null>(null);
@@ -24,10 +22,8 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) =
   const [customUah, setCustomUah] = useState('');
   const [rate, setRate]   = useState(DEFAULT_COIN_RATE); // 1 грн = rate балів (налаштовується в адмінці)
 
-  const packs: { id: string; uah: number; coins: number; test?: boolean }[] = [
-    ...PACK_UAH.map((uah) => ({ id: `p${uah}`, uah, coins: uah * rate })),
-    TEST_PACK,
-  ];
+  const packs: { id: string; uah: number; coins: number; test?: boolean }[] =
+    PACK_UAH.map((uah) => ({ id: `p${uah}`, uah, coins: uah * rate }));
   const customNum = Math.floor(Number(customUah) || 0);
   const customCoins = customNum >= 1 ? customNum * rate : 0;
 
@@ -150,11 +146,6 @@ const ExchangeModal: React.FC<Props> = ({ open, onClose, account, onHistory }) =
                         disabled={!!busy}
                         className="relative rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50 disabled:opacity-60"
                       >
-                        {p.test && (
-                          <span className="absolute right-2 top-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
-                            тест
-                          </span>
-                        )}
                         <div className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
                           {p.uah} <span className="text-base font-bold text-slate-400">грн</span>
                         </div>

@@ -1,10 +1,10 @@
 import { rpc } from './_wfp.js';
 
 // Фіксовані пакети — лише сума у грн; монети рахуються з курсу coin_rate.
-const PACKAGE_AMOUNTS = { p50: 50, p100: 100, p200: 200 };
+const PACKAGE_AMOUNTS = { p50: 50, p100: 100, p200: 200, p500: 500 };
 
-// Тестовий пакет із фіксованою кількістю монет (не залежить від курсу).
-const TEST_PACKAGES = { ptest: { amount: 1, coins: 20000 } };
+// Тестовий пакет вимкнено (лишаємо мапу порожньою — клієнт його більше не шле).
+const TEST_PACKAGES = {};
 
 // Курс монет (1 грн = N балів) задається в адмінці — rps_config.coin_rate. Дефолт 5.
 const DEFAULT_COIN_RATE = 5;
