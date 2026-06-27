@@ -3,7 +3,6 @@ import {
   tgSend, tgAnswerCallback, tgNotifyAdmins, mainMenuKeyboard, servicesKeyboard,
   SERVICES, SERVICES_TEXT, PRICES_TEXT, CONTACTS_TEXT, SITE_URL, hasToken, ADMIN_IDS,
 } from './_tg.js';
-import { getUpcomingSlots } from './_slots.js';
 
 const GREETING =
   '👋 Вітаємо в <b>Центрі розвитку та здоровʼя</b>!\n\n' +
@@ -52,33 +51,16 @@ async function startBooking(chat) {
   await tgSend(chat, '📝 Чудово! Як вас звати?');
 }
 
-// Показ вибору вільного віконця після обраної послуги (ті самі дані, що й на сайті).
-async function askSlot(chat, data) {
-  let days = [];
-  try { days = await getUpcomingSlots(7); } catch (e) { console.error('[tg] slots ERR:', e.message); }
-  if (!days.length) { await finishBooking(chat, data); return; } // немає віконець — пропускаємо
-  await setStep(chat, 'slot_day', { ...data, days });
-  const kb = days.map((d, i) => [{ text: d.label, callback_data: `day:${i}` }]);
-  kb.push([{ text: '⏭️ Пропустити (узгодимо при дзвінку)', callback_data: 'slotskip' }]);
-  await tgSend(chat, '🗓️ Оберіть зручний день до Володимира:', { reply_markup: { inline_keyboard: kb } });
+// Після обраної послуги питаємо зручний час текстом (адмін підтверджує запис).
+async function askWhen(chat, data) {
+  await setStep(chat, 'when', data);
+  await tgSend(chat, '🕐 Напишіть зручний день і час (напр. «Пн після 14:00»), або «—» якщо байдуже:');
 }
 
-// Кнопки часу для обраного дня (по 4 в рядок).
-async function askTime(chat, data, dayIdx) {
-  const day = (data.days || [])[dayIdx];
-  if (!day) { await finishBooking(chat, data); return; }
-  await setStep(chat, 'slot_time', { ...data, dayIdx });
-  const rows = [];
-  for (let i = 0; i < day.times.length; i += 4) {
-    rows.push(day.times.slice(i, i + 4).map((t, j) => ({ text: t, callback_data: `tm:${i + j}` })));
-  }
-  rows.push([{ text: '⬅️ Інший день', callback_data: 'slotback' }]);
-  await tgSend(chat, `🕐 ${day.label} — оберіть годину:`, { reply_markup: { inline_keyboard: rows } });
-}
-
-async function finishBooking(chat, data, slotLabel = '') {
+async function finishBooking(chat, data, when = '') {
   const name = s(data.name), phone = s(data.phone), service = s(data.service);
-  const note = slotLabel ? `Заявка з Telegram-бота\nБажане віконце: ${slotLabel}` : 'Заявка з Telegram-бота';
+  const w = s(when).trim();
+  const note = w && w !== '—' ? `Заявка з Telegram-бота\nЗручний час: ${w}` : 'Заявка з Telegram-бота';
   try {
     await rpc('rps_book', { p_name: name, p_phone: phone, p_service: service, p_note: note, p_email: null });
   } catch (e) {
@@ -87,11 +69,11 @@ async function finishBooking(chat, data, slotLabel = '') {
     return;
   }
   await clearStep(chat);
-  const slotLine = slotLabel ? `\n🗓️ ${slotLabel}` : '';
+  const whenLine = w && w !== '—' ? `\n🕐 ${w}` : '';
   await tgSend(chat,
-    `✅ <b>Заявку прийнято!</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${slotLine}\n\nМи зателефонуємо найближчим часом, щоб підтвердити час. Дякуємо! 💚`,
+    `✅ <b>Заявку прийнято!</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${whenLine}\n\nМи зателефонуємо найближчим часом, щоб підтвердити час. Дякуємо! 💚`,
     { reply_markup: mainMenuKeyboard(chat) });
-  await tgNotifyAdmins(`🗓️ <b>Новий запис (Telegram)</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${slotLine}`);
+  await tgNotifyAdmins(`🗓️ <b>Новий запис (Telegram)</b>\n\n👤 ${name}\n📞 ${phone}\n🤲 ${service}${whenLine}`);
 }
 
 export default async function handler(req, res) {
@@ -153,26 +135,7 @@ export default async function handler(req, res) {
           const idx = parseInt(dataStr.slice(4), 10);
           const service = SERVICES[idx] || SERVICES[SERVICES.length - 1];
           const st = await getStep(chat);
-          await askSlot(chat, { ...st.data, service });
-        }
-        else if (dataStr.startsWith('day:')) {
-          const st = await getStep(chat);
-          await askTime(chat, st.data, parseInt(dataStr.slice(4), 10));
-        }
-        else if (dataStr === 'slotback') {
-          const st = await getStep(chat);
-          await askSlot(chat, st.data);
-        }
-        else if (dataStr === 'slotskip') {
-          const st = await getStep(chat);
-          await finishBooking(chat, st.data);
-        }
-        else if (dataStr.startsWith('tm:')) {
-          const st = await getStep(chat);
-          const day = (st.data.days || [])[st.data.dayIdx];
-          const time = day?.times?.[parseInt(dataStr.slice(3), 10)];
-          const label = day && time ? `${day.label}, ${time}` : '';
-          await finishBooking(chat, st.data, label);
+          await askWhen(chat, { ...st.data, service });
         }
       }
       res.status(200).json({ ok: true }); return;
@@ -241,6 +204,8 @@ export default async function handler(req, res) {
       if (digits.length < 7) { await tgSend(chat, 'Схоже, номер некоректний. Напишіть телефон ще раз 🙏'); res.status(200).json({ ok: true }); return; }
       await setStep(chat, 'service', { ...st.data, phone: text });
       await tgSend(chat, '🤲 Оберіть послугу:', { reply_markup: servicesKeyboard() });
+    } else if (st.step === 'when') {
+      await finishBooking(chat, st.data, text);
     } else {
       await tgSend(chat, GREETING, { reply_markup: mainMenuKeyboard() });
     }
