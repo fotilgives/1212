@@ -502,9 +502,9 @@ const SettingsTab: React.FC<{ token: string }> = ({ token }) => {
 
   const groups: { title: string; emoji: string; keys: string[] }[] = [
     {
-      title: 'Реферальна програма',
+      title: 'Реєстрація та реферали',
       emoji: '🎁',
-      keys: ['referral_new_bonus', 'referral_inviter_bonus'],
+      keys: ['starter_coins', 'referral_new_bonus', 'referral_inviter_bonus'],
     },
     {
       title: 'Фонд та гра',
