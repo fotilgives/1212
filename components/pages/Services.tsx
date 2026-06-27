@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase';
 import SmartImage from '../SmartImage';
 import PriceList from '../PriceList';
 import MediaShowcase from '../MediaShowcase';
-import FreeSlots from '../FreeSlots';
+import FreeSlots, { type PickedSlot } from '../FreeSlots';
 
 const SPECIALISTS = ['Володимир Мальцев', 'Інший спеціаліст'] as const;
 
@@ -174,6 +174,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
   const [email, setEmail] = useState('');
   const [service, setService] = useState(SERVICE_OPTIONS[0]);
   const [specialist, setSpecialist] = useState<string>(SPECIALISTS[0]);
+  const [slot, setSlot] = useState<PickedSlot | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -231,7 +232,8 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
       return;
     }
     setBusy(true);
-    const fullNote = `Спеціаліст: ${specialist}${note.trim() ? `\n${note.trim()}` : ''}`;
+    const slotLine = slot && specialist === SPECIALISTS[0] ? `\nБажане віконце: ${slot.label}, ${slot.time}` : '';
+    const fullNote = `Спеціаліст: ${specialist}${slotLine}${note.trim() ? `\n${note.trim()}` : ''}`;
     const { error } = await supabase.rpc('rps_book', {
       p_name: name,
       p_phone: phone,
@@ -435,7 +437,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             </select>
 
             {/* Вільні віконця — лише при записі до Володимира */}
-            {specialist === SPECIALISTS[0] && <FreeSlots />}
+            {specialist === SPECIALISTS[0] && <FreeSlots selected={slot} onPick={setSlot} />}
 
             <textarea
               value={note}
