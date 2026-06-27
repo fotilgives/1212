@@ -1,3 +1,13 @@
+-- Фонд центру (singleton) — пропущено в початковій схемі
+CREATE TABLE IF NOT EXISTS public.rps_center_bonus (
+  id            integer     PRIMARY KEY DEFAULT 1,
+  amount        integer     NOT NULL DEFAULT 0,
+  cycle_day     integer     NOT NULL DEFAULT 1,
+  last_accrual  date,
+  last_claim_at timestamptz,
+  updated_at    timestamptz NOT NULL DEFAULT now()
+);
+
 -- =============================================================================
 -- Виплата ТОЧНО за таблицею + фонд центру (ліміт 5000/день)
 -- =============================================================================

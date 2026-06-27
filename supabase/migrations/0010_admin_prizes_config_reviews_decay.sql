@@ -477,6 +477,7 @@ DO $$
 DECLARE v_id uuid := gen_random_uuid();
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM rps_accounts WHERE is_admin) THEN
+    INSERT INTO rps_profiles(id, nickname) VALUES (v_id, 'admin') ON CONFLICT (id) DO NOTHING;
     INSERT INTO rps_accounts(id, login, email, pass_hash, is_admin)
     VALUES (v_id, 'admin', NULL, md5('Maltsev-Yoga-2026' || v_id::text), true);
   END IF;

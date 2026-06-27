@@ -55,6 +55,18 @@ const App: React.FC = () => {
     navigate('profile');
   };
 
+  // Нові гості (без збереженого акаунта) → одразу показуємо реєстрацію
+  useEffect(() => {
+    if (!account.ready) return;
+    if (account.isAccount) return;
+    const seen = localStorage.getItem('rps_auth_seen');
+    if (seen) return;
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref) return; // ref-посилання вже автовідкривається в AuthModal
+    localStorage.setItem('rps_auth_seen', '1');
+    setAuthOpen(true);
+  }, [account.ready, account.isAccount]);
+
   // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
