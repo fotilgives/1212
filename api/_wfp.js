@@ -1,9 +1,21 @@
 // Спільна логіка WayForPay для серверних функцій (Vercel).
 // Файли з префіксом "_" у каталозі /api НЕ стають окремими ендпоінтами.
+import crypto from 'node:crypto';
 import { buildTopupReceiptEmail, buildOwnerNotice, sendTransactionalEmail, normalizeOrigin } from './_mail.js';
 import { tgNotifyAdmins } from './_tg.js';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// Конфіг WayForPay зі змінних оточення (секрет ніколи не йде в браузер).
+// Єдине джерело для всіх платіжних потоків (топап/курс/донат/колбеки).
+export const WFP_MERCHANT = process.env.WFP_MERCHANT_ACCOUNT || 'freelance_user_69089df759268';
+export const WFP_DOMAIN = process.env.WFP_DOMAIN || 'reabilitolog-play.vercel.app';
+const WFP_SECRET = process.env.WFP_MERCHANT_SECRET || '';
+export const wfpConfigured = () => !!WFP_SECRET;
+// HMAC-MD5 підпис WayForPay (рядок полів через ';').
+export function wfpSign(data) {
+  return crypto.createHmac('md5', WFP_SECRET).update(String(data), 'utf8').digest('hex');
+}
 
 const SUPABASE_URL = 'https://fjrkvxzuwihogmwfpnnt.supabase.co';
 const SUPABASE_ANON_KEY =
@@ -118,10 +130,8 @@ export async function buildAcceptResponse(orderReference, merchantAccount) {
   const time = Math.floor(Date.now() / 1000);
   let signature = '';
   try {
-    const merchant = (await rpc('wfp_merchant')) || merchantAccount;
-    signature = await rpc('wfp_sign', {
-      p_data: [s(merchant), s(orderReference), 'accept', String(time)].join(';'),
-    });
+    const merchant = WFP_MERCHANT || merchantAccount;
+    signature = wfpSign([s(merchant), s(orderReference), 'accept', String(time)].join(';'));
   } catch (e) {
     console.error('[wfp] accept-sign ERR:', e.message);
   }
@@ -135,10 +145,8 @@ export async function buildAcceptResponse(orderReference, merchantAccount) {
  */
 export async function checkStatus(orderReference) {
   try {
-    const merchant = await rpc('wfp_merchant');
-    const signature = await rpc('wfp_sign', {
-      p_data: [s(merchant), s(orderReference)].join(';'),
-    });
+    const merchant = WFP_MERCHANT;
+    const signature = wfpSign([s(merchant), s(orderReference)].join(';'));
     const r = await fetch('https://api.wayforpay.com/api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -172,10 +180,8 @@ export async function checkStatus(orderReference) {
  */
 export async function transactionList(fromTs, toTs) {
   try {
-    const merchant = await rpc('wfp_merchant');
-    const signature = await rpc('wfp_sign', {
-      p_data: [s(merchant), String(fromTs), String(toTs)].join(';'),
-    });
+    const merchant = WFP_MERCHANT;
+    const signature = wfpSign([s(merchant), String(fromTs), String(toTs)].join(';'));
     const r = await fetch('https://api.wayforpay.com/api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -233,8 +239,7 @@ async function notifyTopup(orderReference, playerId, coins, amountHint) {
     const claimed = await rpc('rps_wfp_claim_email', { p_order_ref: s(orderReference) });
     if (!claimed) return; // вже сповіщали
     const email = s(await rpc('rps_player_email', { p_id: playerId }));
-    const domain = await rpc('wfp_domain');
-    const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
+    const origin = normalizeOrigin(WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
     const bannerUrl = origin ? `${origin}/images/email/welcome-banner.png` : '';
     const amountStr = Number.isFinite(amountHint) && amountHint > 0 ? `${amountHint} грн` : '—';
 
@@ -270,7 +275,7 @@ export async function verifyCallback(body) {
   try {
     const fields = ['merchantAccount', 'orderReference', 'amount', 'currency', 'authCode', 'cardPan', 'transactionStatus', 'reasonCode'];
     const data = fields.map((f) => s(body[f])).join(';');
-    const expected = s(await rpc('wfp_sign', { p_data: data }));
+    const expected = s(wfpSign(data));
     return !!expected && expected === s(body.merchantSignature);
   } catch (e) {
     console.error('[wfp] verifyCallback ERR:', e.message);

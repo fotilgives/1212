@@ -1,4 +1,4 @@
-import { rpc } from './_wfp.js';
+import { rpc, WFP_MERCHANT, WFP_DOMAIN, wfpSign, wfpConfigured } from './_wfp.js';
 
 // Фіксовані пакети — лише сума у грн; монети рахуються з курсу coin_rate.
 const PACKAGE_AMOUNTS = { p50: 50, p100: 100, p200: 200, p500: 500 };
@@ -57,16 +57,16 @@ export default async function handler(req, res) {
     const productName = `${pkg.coins} ігрових монет`;
     const currency    = 'UAH';
 
-    const [merchant, domain] = await Promise.all([rpc('wfp_merchant'), rpc('wfp_domain')]);
-    if (!merchant || !domain) return res.status(500).json({ error: 'Не вдалося отримати конфіг.' });
+    if (!wfpConfigured())
+      return res.status(500).json({ error: 'Платіжний сервіс ще не налаштований. Додайте WFP_MERCHANT_SECRET у Vercel.' });
 
+    const merchant = WFP_MERCHANT;
+    const domain = WFP_DOMAIN;
     const sigStr = [
       merchant, domain, orderRef, String(orderDate),
       String(pkg.amount), currency, productName, '1', String(pkg.amount),
     ].join(';');
-
-    const signature = await rpc('wfp_sign', { p_data: sigStr });
-    if (!signature) return res.status(500).json({ error: 'Не вдалося згенерувати підпис.' });
+    const signature = wfpSign(sigStr);
 
     const origin = `https://${domain}`;
     return res.status(200).json({

@@ -1,4 +1,4 @@
-import { rpc, s } from './_wfp.js';
+import { rpc, s, WFP_MERCHANT, WFP_DOMAIN, wfpSign, wfpConfigured } from './_wfp.js';
 
 /**
  * Створення платежу WayForPay за онлайн-курс йоги (фіксована ціна).
@@ -41,15 +41,16 @@ export default async function handler(req, res) {
     const orderDate = Math.floor(Date.now() / 1000);
     const currency = 'UAH';
 
-    const [merchant, domain] = await Promise.all([rpc('wfp_merchant'), rpc('wfp_domain')]);
-    if (!merchant || !domain) return res.status(500).json({ error: 'Не вдалося отримати конфіг.' });
+    if (!wfpConfigured())
+      return res.status(500).json({ error: 'Платіжний сервіс ще не налаштований. Додайте WFP_MERCHANT_SECRET у Vercel.' });
 
+    const merchant = WFP_MERCHANT;
+    const domain = WFP_DOMAIN;
     const sigStr = [
       merchant, domain, orderRef, String(orderDate),
       String(COURSE_PRICE), currency, COURSE_NAME, '1', String(COURSE_PRICE),
     ].join(';');
-    const signature = await rpc('wfp_sign', { p_data: sigStr });
-    if (!signature) return res.status(500).json({ error: 'Не вдалося згенерувати підпис.' });
+    const signature = wfpSign(sigStr);
 
     const origin = `https://${domain}`;
     const fields = {

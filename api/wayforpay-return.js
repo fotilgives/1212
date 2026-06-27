@@ -1,4 +1,4 @@
-import { parseBody, confirmAndCredit, checkStatus, rpc, s } from './_wfp.js';
+import { parseBody, confirmAndCredit, checkStatus, rpc, s, WFP_DOMAIN } from './_wfp.js';
 import { buildCourseAccessEmail, normalizeOrigin, sendTransactionalEmail } from './_mail.js';
 
 const COURSE_GROUP_URL = 'https://t.me/+o9i9tJpoj4A3MTcy';
@@ -34,8 +34,7 @@ export default async function handler(req, res) {
           const email = s(current?.email || body.clientEmail || body.email || body.customerEmail);
           const alreadyEmailed = s(current?.status) === 'emailed' || !!current?.emailed_at;
           if (email && !alreadyEmailed) {
-            const domain = await rpc('wfp_domain');
-            const origin = normalizeOrigin(domain || process.env.WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
+            const origin = normalizeOrigin(WFP_DOMAIN || process.env.VERCEL_URL || 'reabilitolog-play.vercel.app');
             const profileUrl = origin ? `${origin}/#/profile` : '/#/profile';
             const bannerUrl = origin ? `${origin}/images/email/course-banner.svg` : '';
             const courseName = s(current?.course_name) || 'Курс з йоги (онлайн)';
