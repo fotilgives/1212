@@ -7,7 +7,6 @@ import {
   BookOpen,
   Heart,
   Sparkles,
-  Phone,
   CheckCircle2,
   CalendarCheck,
   MapPin,
@@ -205,15 +204,6 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
   // Shared CTA buttons
   const CTAs = (
     <div className="flex flex-col gap-3 sm:flex-row">
-      <motion.a
-        href="tel:+380638069916"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="shine flex items-center justify-center gap-2 rounded-full bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-emerald-300/40 hover:bg-emerald-700 transition"
-      >
-        <Phone className="h-4 w-4" />
-        Записатися на прийом
-      </motion.a>
       <motion.button
         onClick={onPlay}
         whileHover={{ scale: 1.02 }}
