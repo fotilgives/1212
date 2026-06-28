@@ -16,13 +16,13 @@ interface Props {
 }
 
 const LINKS: { to: Route; label: string; href: string; icon: React.ComponentType<{ className?: string }>; header?: boolean }[] = [
-  { to: 'about', label: 'Про мене', href: '#/about', icon: User, header: true },
-  { to: 'services', label: 'Послуги', href: '#/services', icon: HandHeart, header: true },
-  { to: 'prices', label: 'Ціни', href: '#/prices', icon: Coins, header: true },
-  { to: 'game', label: 'Гра', href: '#/game', icon: Gamepad2, header: true },
-  { to: 'prizes', label: 'Призи', href: '#/prizes', icon: Gift, header: true },
-  { to: 'philosophy', label: 'Філософія', href: '#/philosophy', icon: Brain },
-  { to: 'donate', label: 'Підтримати', href: '#/donate', icon: Heart },
+  { to: 'about', label: 'Про мене', href: '/about', icon: User, header: true },
+  { to: 'services', label: 'Послуги', href: '/services', icon: HandHeart, header: true },
+  { to: 'prices', label: 'Ціни', href: '/prices', icon: Coins, header: true },
+  { to: 'game', label: 'Гра', href: '/game', icon: Gamepad2, header: true },
+  { to: 'prizes', label: 'Призи', href: '/prizes', icon: Gift, header: true },
+  { to: 'philosophy', label: 'Філософія', href: '/philosophy', icon: Brain },
+  { to: 'donate', label: 'Підтримати', href: '/donate', icon: Heart },
 ];
 
 const PHONE = '+380638069916';
@@ -49,7 +49,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
   // Плавний перехід до блока «Як нас знайти» (тепер окрема сторінка).
   const goToLocation = () => {
     setOpen(false);
-    window.location.hash = '#/location';
+    navigate('location');
   };
 
   return (
@@ -63,7 +63,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <div className="flex items-center gap-4">
-          <a href="#/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
+          <a href="/" onClick={(e) => { e.preventDefault(); setOpen(false); navigate('home'); }} className="flex items-center gap-2.5">
             <motion.span whileHover={{ rotate: -6, scale: 1.06 }}>
               <BrandMark size={38} />
             </motion.span>
@@ -79,6 +79,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
             <a
               key={l.to}
               href={l.href}
+              onClick={(e) => { e.preventDefault(); navigate(l.to); }}
               className={`relative transition hover:text-emerald-700 ${route === l.to ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
             >
               {l.label}
@@ -88,7 +89,8 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
             </a>
           ))}
           <a
-            href="#/location"
+            href="/location"
+            onClick={(e) => { e.preventDefault(); navigate('location'); }}
             className={`flex items-center gap-1.5 transition hover:text-emerald-700 ${route === 'location' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
           >
             <MapPin className="h-4 w-4" /> Де нас знайти
@@ -185,7 +187,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
                     <motion.a
                       key={l.to}
                       href={l.href}
-                      onClick={() => setOpen(false)}
+                      onClick={(e) => { e.preventDefault(); setOpen(false); navigate(l.to); }}
                       initial={{ opacity: 0, x: -12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.04 * i, duration: 0.3 }}
@@ -202,8 +204,8 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
                 })}
 
                 <a
-                  href="#/location"
-                  onClick={() => setOpen(false)}
+                  href="/location"
+                  onClick={(e) => { e.preventDefault(); setOpen(false); navigate('location'); }}
                   className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold transition ${
                     route === 'location' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'
                   }`}

@@ -77,7 +77,7 @@ const App: React.FC = () => {
     const isCourse = params.get('course') === 'thanks';
     if (isDonate || isTopup || isCourse) {
       setThanks(isCourse ? 'course' : isTopup ? 'topup' : 'donate');
-      window.history.replaceState({}, '', window.location.pathname + (window.location.hash || '#/'));
+      window.history.replaceState({}, '', window.location.pathname);
       if (isTopup) {
         // монети нараховує серверний callback; оновлюємо баланс (realtime теж підхопить).
         setTimeout(() => account.refresh(), 1500);

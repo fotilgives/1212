@@ -17,15 +17,17 @@ export type Route =
 const ROUTES: Route[] = ['home', 'game', 'about', 'services', 'prizes', 'philosophy', 'prices', 'location', 'donate', 'legal', 'profile', 'admin'];
 
 const parse = (): Route => {
-  // Адмінка доступна за чистим шляхом /admin (Vercel rewrite віддає SPA).
-  if (window.location.pathname.replace(/\/+$/, '') === '/admin') return 'admin';
-  const h = window.location.hash.replace(/^#\/?/, '');
-  const r = h.split('?')[0] as Route;
-  return (ROUTES.includes(r) ? r : 'home') as Route;
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/admin') return 'admin';
+  if (path === '/' || path === '') return 'home';
+  const segment = path.replace(/^\//, '') as Route;
+  return (ROUTES.includes(segment) ? segment : 'home') as Route;
 };
 
 export function navigate(to: Route) {
-  window.location.hash = to === 'home' ? '/' : `/${to}`;
+  const path = to === 'home' ? '/' : `/${to}`;
+  window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
 }
 
 /**
@@ -61,8 +63,8 @@ export function useRoute(): Route {
         return next;
       });
     };
-    window.addEventListener('hashchange', onChange);
-    return () => window.removeEventListener('hashchange', onChange);
+    window.addEventListener('popstate', onChange);
+    return () => window.removeEventListener('popstate', onChange);
   }, []);
   return route;
 }
