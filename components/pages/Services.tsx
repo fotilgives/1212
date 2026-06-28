@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarCheck, Check, ArrowRight, X, Play } from 'lucide-react';
+import { CalendarCheck, Check, ArrowRight, X, Play, Phone } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import SmartImage from '../SmartImage';
 import PriceList from '../PriceList';
@@ -477,6 +477,12 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
             >
               {busy ? 'Відправляємо заявку…' : 'Записатися на прийом'}
             </button>
+            <a
+              href="tel:+380638069916"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-3.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-300"
+            >
+              <Phone className="h-4 w-4" /> Подзвонити
+            </a>
           </div>
         )}
       </motion.div>
