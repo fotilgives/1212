@@ -102,7 +102,7 @@ const PriceList: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="text-center"
       >
-        <span className="eyebrow">💸 Прайс</span>
+        <span className="eyebrow">Прайс</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
           Ціни на послуги
         </h2>

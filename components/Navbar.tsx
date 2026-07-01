@@ -46,11 +46,9 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
     };
   }, [open]);
 
-  // Плавний перехід до блока «Як нас знайти» (тепер окрема сторінка).
-  const goToLocation = () => {
-    setOpen(false);
-    navigate('location');
-  };
+  // Головна відкривається темним forest-hero, що заходить під прозорий navbar —
+  // тоді текст світлий; після скролу (або на інших сторінках) вмикається світле скло.
+  const onDark = route === 'home' && !scrolled && !open;
 
   return (
     <motion.header
@@ -58,7 +56,7 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled || open ? 'glass border-b border-white/50 shadow-sm' : 'bg-transparent'
+        onDark ? 'bg-transparent' : scrolled || open ? 'glass border-b border-forest-800/10 shadow-sm' : 'bg-transparent'
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
@@ -68,8 +66,12 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
               <BrandMark size={38} />
             </motion.span>
             <span className="leading-tight">
-              <span className="block text-[14px] sm:text-[15px] lg:text-lg font-extrabold tracking-tight">Центр розвитку та здоров'я</span>
-              <span className="block text-[10px] sm:text-[11px] font-medium text-slate-400">рух · баланс · відновлення</span>
+              <span className={`font-display block max-w-[46vw] text-[13px] font-bold leading-snug tracking-tight sm:max-w-none sm:text-[15px] lg:text-lg transition-colors ${onDark ? 'text-ivory-50' : 'text-forest-900'}`}>
+                Центр розвитку та здоров'я
+              </span>
+              <span className={`hidden text-[9px] font-medium uppercase tracking-[0.2em] transition-colors sm:block sm:text-[10px] ${onDark ? 'text-gold-300/80' : 'text-gold-600/80'}`}>
+                рух · баланс · відновлення
+              </span>
             </span>
           </a>
         </div>
@@ -80,18 +82,26 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
               key={l.to}
               href={l.href}
               onClick={(e) => { e.preventDefault(); navigate(l.to); }}
-              className={`relative transition hover:text-emerald-700 ${route === l.to ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+              className={`relative transition ${
+                route === l.to
+                  ? onDark ? 'font-bold text-gold-300' : 'font-bold text-forest-800'
+                  : onDark ? 'text-ivory-50/75 hover:text-gold-300' : 'text-forest-900/60 hover:text-forest-800'
+              }`}
             >
               {l.label}
               {route === l.to && (
-                <motion.span layoutId="nav-underline" className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-emerald-500" />
+                <motion.span layoutId="nav-underline" className={`absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full ${onDark ? 'bg-gold-400' : 'bg-gold-500'}`} />
               )}
             </a>
           ))}
           <a
             href="/location"
             onClick={(e) => { e.preventDefault(); navigate('location'); }}
-            className={`flex items-center gap-1.5 transition hover:text-emerald-700 ${route === 'location' ? 'font-bold text-emerald-700' : 'text-slate-600'}`}
+            className={`flex items-center gap-1.5 transition ${
+              route === 'location'
+                ? onDark ? 'font-bold text-gold-300' : 'font-bold text-forest-800'
+                : onDark ? 'text-ivory-50/75 hover:text-gold-300' : 'text-forest-900/60 hover:text-forest-800'
+            }`}
           >
             <MapPin className="h-4 w-4" /> Де нас знайти
           </a>
@@ -101,7 +111,11 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
           <button
             onClick={() => navigate('profile')}
             title="Мій кабінет"
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-full bg-white/70 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-600 ring-1 transition hover:ring-amber-400 ${route === 'profile' ? 'ring-amber-400' : 'ring-amber-200'}`}
+            className={`flex cursor-pointer items-center gap-1 rounded-full px-2 py-1.5 text-xs font-bold ring-1 transition sm:gap-1.5 sm:px-3 sm:text-sm ${
+              onDark
+                ? 'glass-dark text-gold-300 ring-white/15 hover:ring-gold-300/50'
+                : `bg-white/70 text-gold-600 hover:ring-gold-500/60 ${route === 'profile' ? 'ring-gold-500/60' : 'ring-gold-500/25'}`
+            }`}
           >
             <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <AnimatedNumber value={balance} />
@@ -110,19 +124,23 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.94 }}
             onClick={onExchange}
-            className="flex items-center gap-1 rounded-full bg-emerald-600 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+            className="btn-gold flex cursor-pointer items-center gap-1 rounded-full px-2 py-1.5 text-xs font-bold sm:px-3 sm:text-sm"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Поповнити</span>
           </motion.button>
-          
+
           {account.isAccount ? (
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.94 }}
               onClick={() => navigate('profile')}
-              className={`hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition sm:flex ${
-                route === 'profile' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`hidden cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition sm:flex ${
+                route === 'profile'
+                  ? 'bg-forest-800 text-ivory-50'
+                  : onDark
+                  ? 'bg-white/[0.08] text-ivory-50 ring-1 ring-white/15 hover:bg-white/[0.14]'
+                  : 'bg-forest-800/5 text-forest-800 hover:bg-forest-800/10'
               }`}
             >
               <User className="h-4 w-4" />
@@ -133,7 +151,11 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.94 }}
               onClick={onLogin}
-              className="hidden items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-sm font-semibold text-emerald-600 ring-1 ring-emerald-200 transition hover:bg-emerald-50 sm:flex"
+              className={`hidden cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition sm:flex ${
+                onDark
+                  ? 'bg-white/[0.08] text-ivory-50 ring-1 ring-white/15 hover:bg-white/[0.14]'
+                  : 'bg-white/70 text-forest-700 ring-1 ring-forest-700/20 hover:bg-forest-700/5'
+              }`}
             >
               <LogIn className="h-4 w-4" />
               Увійти
@@ -142,7 +164,9 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
 
           <button
             onClick={() => setOpen((o) => !o)}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-white/70 text-slate-600 ring-1 ring-slate-200 lg:hidden"
+            className={`grid h-9 w-9 cursor-pointer place-items-center rounded-xl ring-1 transition lg:hidden ${
+              onDark ? 'bg-white/10 text-ivory-50 ring-white/15' : 'bg-white/70 text-forest-800 ring-forest-800/10'
+            }`}
             aria-label="Меню"
           >
             <AnimatePresence mode="wait" initial={false}>
@@ -170,14 +194,14 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 top-[60px] z-40 bg-slate-900/20 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 top-[60px] z-40 bg-forest-950/25 backdrop-blur-sm lg:hidden"
             />
             <motion.nav
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-x-0 top-full z-50 origin-top border-t border-white/50 bg-white/95 backdrop-blur-xl shadow-xl lg:hidden max-h-[calc(100dvh-70px)] overflow-y-auto overscroll-contain pb-6"
+              className="absolute inset-x-0 top-full z-50 origin-top border-t border-forest-800/10 bg-ivory-50/95 backdrop-blur-xl shadow-xl lg:hidden max-h-[calc(100dvh-70px)] overflow-y-auto overscroll-contain pb-6"
             >
               <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
                 {LINKS.map((l, i) => {
@@ -192,10 +216,10 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.04 * i, duration: 0.3 }}
                       className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold transition ${
-                        active ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'
+                        active ? 'bg-forest-800/[0.06] text-forest-800' : 'text-forest-900/75 hover:bg-forest-800/[0.04]'
                       }`}
                     >
-                      <span className={`grid h-9 w-9 place-items-center rounded-xl ${active ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      <span className={`grid h-9 w-9 place-items-center rounded-xl ${active ? 'bg-forest-800 text-gold-300' : 'bg-forest-800/[0.06] text-forest-800/60'}`}>
                         <Icon className="h-4.5 w-4.5" />
                       </span>
                       {l.label}
@@ -207,58 +231,58 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
                   href="/location"
                   onClick={(e) => { e.preventDefault(); setOpen(false); navigate('location'); }}
                   className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold transition ${
-                    route === 'location' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'
+                    route === 'location' ? 'bg-forest-800/[0.06] text-forest-800' : 'text-forest-900/75 hover:bg-forest-800/[0.04]'
                   }`}
                 >
-                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${route === 'location' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  <span className={`grid h-9 w-9 place-items-center rounded-xl ${route === 'location' ? 'bg-forest-800 text-gold-300' : 'bg-forest-800/[0.06] text-forest-800/60'}`}>
                     <MapPin className="h-4.5 w-4.5" />
                   </span>
                   Де нас знайти
                 </a>
 
-                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+                <div className="mt-2 grid grid-cols-2 gap-2 border-t border-forest-800/10 pt-3">
                   <button
                     onClick={() => {
                       setOpen(false);
                       goToBooking();
                     }}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+                    className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl bg-forest-800 px-4 py-3 text-sm font-bold text-ivory-50 shadow-lg shadow-forest-800/25 transition hover:bg-forest-700"
                   >
                     <CalendarCheck className="h-4 w-4" /> Записатися
                   </button>
                   <a
                     href={`tel:${PHONE}`}
                     onClick={() => setOpen(false)}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 ring-1 ring-emerald-100 transition hover:bg-emerald-100"
+                    className="btn-gold flex cursor-pointer items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold"
                   >
                     <Phone className="h-4 w-4" /> Подзвонити
                   </a>
                 </div>
 
                 {/* Графік роботи */}
-                <div className="mt-2 rounded-2xl bg-slate-50 px-4 py-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                    <Clock className="h-3.5 w-3.5 text-emerald-600" /> Графік роботи
+                <div className="mt-2 rounded-2xl bg-forest-800/[0.04] px-4 py-3 ring-1 ring-forest-800/5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-forest-900">
+                    <Clock className="h-3.5 w-3.5 text-gold-600" /> Графік роботи
                   </div>
                   <dl className="mt-2 space-y-1 text-xs">
                     {SCHEDULE_ROWS.map((r) => (
                       <div key={r.days} className="flex items-center justify-between">
-                        <dt className="text-slate-500">{r.days}</dt>
-                        <dd className={r.dim ? 'font-medium text-slate-400' : 'font-semibold text-slate-700'}>{r.time}</dd>
+                        <dt className="text-forest-900/50">{r.days}</dt>
+                        <dd className={r.dim ? 'font-medium text-forest-900/35' : 'font-semibold text-forest-900/80'}>{r.time}</dd>
                       </div>
                     ))}
                   </dl>
                 </div>
 
                 {/* Mobile Auth */}
-                <div className="mt-2 pt-2 border-t border-slate-100">
+                <div className="mt-2 border-t border-forest-800/10 pt-2">
                   <button
                     onClick={() => { setOpen(false); navigate('profile'); }}
-                    className={`mb-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold transition ${
-                      route === 'profile' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700 hover:bg-slate-50'
+                    className={`mb-1 flex w-full cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold transition ${
+                      route === 'profile' ? 'bg-forest-800/[0.06] text-forest-800' : 'text-forest-900/75 hover:bg-forest-800/[0.04]'
                     }`}
                   >
-                    <span className={`grid h-9 w-9 place-items-center rounded-xl ${route === 'profile' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    <span className={`grid h-9 w-9 place-items-center rounded-xl ${route === 'profile' ? 'bg-forest-800 text-gold-300' : 'bg-forest-800/[0.06] text-forest-800/60'}`}>
                       <User className="h-4.5 w-4.5" />
                     </span>
                     Мій кабінет
@@ -266,9 +290,9 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
                   {account.isAccount ? (
                     <button
                       onClick={() => { setOpen(false); account.logout(); }}
-                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold text-forest-900/75 transition hover:bg-forest-800/[0.04]"
                     >
-                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-500">
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-forest-800/[0.06] text-forest-800/60">
                         <LogOut className="h-4.5 w-4.5" />
                       </span>
                       Вийти з кабінету
@@ -276,9 +300,9 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
                   ) : (
                     <button
                       onClick={() => { setOpen(false); onLogin(); }}
-                      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold text-emerald-700 transition bg-emerald-50 hover:bg-emerald-100"
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-2xl bg-forest-800/[0.06] px-3 py-3 text-[15px] font-semibold text-forest-800 transition hover:bg-forest-800/[0.09]"
                     >
-                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white">
+                      <span className="grid h-9 w-9 place-items-center rounded-xl bg-forest-800 text-gold-300">
                         <LogIn className="h-4.5 w-4.5" />
                       </span>
                       Увійти в кабінет

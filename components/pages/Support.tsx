@@ -59,7 +59,7 @@ const Support: React.FC = () => {
   return (
     <main className="mx-auto max-w-2xl px-5 pb-20 pt-12 sm:pt-16">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-center">
-        <span className="eyebrow">❤️ Підтримка</span>
+        <span className="eyebrow">Підтримка</span>
         <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Підтримати центр</h1>
         <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-slate-500">
           Ваш добровільний внесок допомагає розвивати центр, оновлювати обладнання та робити заняття
