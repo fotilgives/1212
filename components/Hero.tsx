@@ -155,15 +155,13 @@ const ExpandCard: React.FC<{
   );
 };
 
-// ─── Arch portrait (спільний для mobile/desktop) ──────────────────────────────
+// ─── Portrait card (спільний для mobile/desktop) ──────────────────────────────
 const ArchPortrait: React.FC<{ className?: string }> = ({ className = '' }) => (
   <div className={`relative ${className}`}>
-    {/* Світіння за аркою */}
-    <div className="pointer-events-none absolute -inset-6 -z-0 rounded-[999px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,106,0.22),transparent_70%)] blur-2xl" />
+    {/* Світіння за карткою */}
+    <div className="pointer-events-none absolute -inset-4 -z-0 rounded-[2.5rem] bg-[radial-gradient(ellipse_at_center,rgba(212,175,106,0.22),transparent_70%)] blur-2xl" />
 
-    <div className="arch relative z-10 overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-gold-300/30">
-      {/* Золоте паспарту */}
-      <div className="arch-frame" />
+    <div className="relative z-10 overflow-hidden rounded-[1.75rem] shadow-2xl shadow-black/40 ring-1 ring-gold-300/30">
       <SmartImage
         src="/images/about.jpg"
         alt="Володимир Мальцев — масажист-реабілітолог"
@@ -171,7 +169,7 @@ const ArchPortrait: React.FC<{ className?: string }> = ({ className = '' }) => (
         fallback={<div className="flex aspect-[3/4] w-full items-center justify-center bg-forest-700 text-6xl">👨‍⚕️</div>}
       />
       {/* Затемнення знизу для читабельності бейджа */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-forest-950/80 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-forest-950/85 to-transparent" />
 
       {/* Ім'я поверх фото */}
       <div className="absolute bottom-0 left-0 right-0 z-10 p-4 text-center">
@@ -183,8 +181,8 @@ const ArchPortrait: React.FC<{ className?: string }> = ({ className = '' }) => (
       </div>
     </div>
 
-    {/* Бейдж «Запис відкрито» */}
-    <div className="absolute left-1/2 top-5 z-20 -translate-x-1/2">
+    {/* Бейдж «Запис відкрито» — над карткою, не на обличчі */}
+    <div className="absolute left-1/2 -top-4 z-20 -translate-x-1/2">
       <span className="glass-dark inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold text-ivory-50 ring-1 ring-white/15 whitespace-nowrap">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
         Запис відкрито
@@ -305,9 +303,9 @@ const Hero: React.FC<Props> = ({ onPlay }) => {
       ═════════════════════════════════════════════════════ */}
       <div className="relative -mt-16 overflow-hidden bg-gradient-to-b from-forest-900 via-forest-800 to-forest-950 pt-16 text-ivory-50">
         {/* Aurora-світіння */}
-        <div className="aurora left-[-15%] top-[-10%] h-[520px] w-[520px]" style={{ background: 'radial-gradient(circle, rgba(29,107,86,0.55), transparent 70%)' }} />
+        <div className="aurora left-[-15%] top-[-10%] h-[520px] w-[520px]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.45), transparent 70%)' }} />
         <div className="aurora right-[-12%] top-[30%] h-[440px] w-[440px]" style={{ background: 'radial-gradient(circle, rgba(193,154,75,0.28), transparent 70%)', animationDelay: '-8s' }} />
-        <div className="aurora bottom-[-20%] left-[30%] h-[400px] w-[400px]" style={{ background: 'radial-gradient(circle, rgba(23,89,72,0.5), transparent 70%)', animationDelay: '-4s' }} />
+        <div className="aurora bottom-[-20%] left-[30%] h-[400px] w-[400px]" style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.45), transparent 70%)', animationDelay: '-4s' }} />
         {/* Кінозернистість */}
         <div className="grain" />
 

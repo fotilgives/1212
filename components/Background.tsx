@@ -29,7 +29,7 @@ const Background: React.FC = () => {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-ivory-50 via-ivory-100 to-ivory-200/70">
       {/* Верхній м'який ореол */}
-      <div className="absolute left-1/2 top-[-12%] h-[460px] w-[820px] max-w-[120vw] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(29,107,86,0.10),transparent_70%)] blur-2xl" />
+      <div className="absolute left-1/2 top-[-12%] h-[460px] w-[820px] max-w-[120vw] -translate-x-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(16,185,129,0.12),transparent_70%)] blur-2xl" />
 
       {/* Сітка-крапки */}
       <div className="bg-grid absolute inset-0 opacity-50" />

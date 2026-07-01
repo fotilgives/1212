@@ -11,13 +11,13 @@
   --color-brand-600: #059669;
   --color-brand-700: #047857;
 
-  /* Forest — глибокий зелений преміум-тон */
-  --color-forest-950: #04150f;
-  --color-forest-900: #071f18;
-  --color-forest-800: #0c352a;
-  --color-forest-700: #11463a;
-  --color-forest-600: #175948;
-  --color-forest-500: #1d6b56;
+  /* Forest → смарагд: яскравіший зелений преміум-тон (запит власника) */
+  --color-forest-950: #022c22;
+  --color-forest-900: #064e3b;
+  --color-forest-800: #065f46;
+  --color-forest-700: #047857;
+  --color-forest-600: #059669;
+  --color-forest-500: #10b981;
 
   /* Ivory / Cream — тепла база */
   --color-ivory-50: #fbf9f4;
@@ -82,7 +82,7 @@ button {
 
 /* Анімований градієнтний текст (світлі секції) */
 .text-gradient {
-  background: linear-gradient(100deg, #175948, #1d6b56, #a87f35, #175948);
+  background: linear-gradient(100deg, #047857, #059669, #a87f35, #047857);
   background-size: 250% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -122,7 +122,7 @@ button {
 
 /* Темне скло для елементів поверх forest-фону */
 .glass-dark {
-  background: rgba(7, 31, 24, 0.55);
+  background: rgba(4, 60, 45, 0.55);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
@@ -130,13 +130,13 @@ button {
   .glass-dark {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background: rgba(7, 31, 24, 0.82) !important;
+    background: rgba(4, 60, 45, 0.82) !important;
   }
 }
 
 /* Сітка-крапки на фоні (плавно зникає до країв) */
 .bg-grid {
-  background-image: radial-gradient(rgba(23, 89, 72, 0.10) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(5, 150, 105, 0.12) 1px, transparent 1px);
   background-size: 26px 26px;
   -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 35%, transparent 78%);
   mask-image: radial-gradient(ellipse at 50% 0%, #000 35%, transparent 78%);
@@ -158,7 +158,7 @@ button {
   background: rgba(251, 249, 244, 0.8);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 20px 50px -24px rgba(12, 53, 42, 0.28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.65) inset, 0 20px 50px -24px rgba(6, 95, 70, 0.25);
 }
 @media (max-width: 1024px) {
   .card-glow {
@@ -200,21 +200,6 @@ button {
   box-shadow: inset 0 0 0 1px rgba(227, 200, 134, 0.25);
 }
 
-/* Арка — фірмова форма фото (wellness editorial) */
-.arch {
-  border-radius: 999px 999px 1.5rem 1.5rem;
-}
-
-/* Тонка золота обвідна рамка з відступом — «паспарту» навколо фото */
-.arch-frame {
-  position: absolute;
-  inset: 0.65rem;
-  border: 1px solid rgba(227, 200, 134, 0.55);
-  border-radius: 999px 999px 1.1rem 1.1rem;
-  pointer-events: none;
-  z-index: 20;
-}
-
 /* Блиск на кнопці */
 .shine {
   position: relative;
@@ -237,7 +222,7 @@ button {
 /* Золота CTA-кнопка */
 .btn-gold {
   background: linear-gradient(135deg, #e3c886 0%, #c19a4b 55%, #d4af6a 100%);
-  color: #071f18;
+  color: #022c22;
   box-shadow: 0 12px 30px -10px rgba(193, 154, 75, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.45);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s;
 }
