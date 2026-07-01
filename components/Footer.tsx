@@ -156,9 +156,15 @@ const Footer: React.FC = () => {
 
         <div className="mt-6 flex flex-col items-center justify-between gap-4 text-xs text-slate-400 sm:flex-row">
           <p>© {new Date().getFullYear()} Центр розвитку та здоров'я. Усі права захищені.</p>
-          <p className="flex items-center gap-1.5">
-            Зроблено з <Heart className="h-3.5 w-3.5 text-gold-500" /> для здоров'я та руху
-          </p>
+          <a
+            href="https://www.instagram.com/aysite_company/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-1.5 rounded-full bg-white/5 px-4 py-2 ring-1 ring-white/10 transition hover:bg-gold-500/10 hover:ring-gold-400/40"
+          >
+            Зроблено з <Heart className="h-3.5 w-3.5 fill-gold-500 text-gold-500 transition group-hover:scale-110" />
+            <span className="font-bold tracking-wide text-gold-400 transition group-hover:text-gold-300">AYSITE</span>
+          </a>
         </div>
       </div>
     </footer>
