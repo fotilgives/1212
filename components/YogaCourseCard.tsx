@@ -37,7 +37,7 @@ const YogaCourseCard: React.FC<{ account: Account }> = ({ account }) => {
         </div>
 
         <div className="flex flex-col p-6 sm:p-8">
-          <span className="eyebrow">Авторський курс · Мальцев Володимир</span>
+          <span className="eyebrow">🧘 Авторський курс · Мальцев Володимир</span>
           <h2 className="mt-3 text-2xl font-extrabold leading-tight tracking-tight text-slate-900">
             Курс з йоги
           </h2>

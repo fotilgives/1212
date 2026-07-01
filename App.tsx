@@ -98,7 +98,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col text-slate-900 selection:bg-gold-200 selection:text-forest-900">
+    <div className="flex min-h-screen flex-col overflow-x-hidden text-slate-900 selection:bg-emerald-100 selection:text-emerald-900">
       <ScrollProgress />
       <Background />
       <Navbar balance={account.balance} route={route} onExchange={openExchange} account={account} onLogin={() => setAuthOpen(true)} />
@@ -169,9 +169,9 @@ const App: React.FC = () => {
               className="w-full max-w-sm overflow-hidden rounded-[1.75rem] bg-white shadow-2xl"
             >
               {/* Градієнтна шапка з анімованим бейджем */}
-              <div className="relative flex flex-col items-center gap-3 bg-gradient-to-br from-forest-700 via-forest-800 to-forest-950 px-6 pb-7 pt-8 text-center">
-                <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-gold-300/15 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-emerald-300/15 blur-3xl" />
+              <div className="relative flex flex-col items-center gap-3 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 px-6 pb-7 pt-8 text-center">
+                <div className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-teal-300/20 blur-3xl" />
                 <motion.div
                   initial={{ scale: 0, rotate: -20 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -180,7 +180,7 @@ const App: React.FC = () => {
                 >
                   {thanks === 'topup' ? '🪙' : thanks === 'course' ? '🧘' : '❤️'}
                 </motion.div>
-                <h3 className="font-display relative text-xl font-semibold text-white">
+                <h3 className="relative text-xl font-black text-white">
                   {thanks === 'topup' ? 'Оплату отримано!' : thanks === 'course' ? 'Дякуємо за покупку!' : 'Дякуємо за підтримку!'}
                 </h3>
               </div>
@@ -196,7 +196,7 @@ const App: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setThanks(null)}
-                  className="btn-gold mt-5 w-full cursor-pointer rounded-2xl py-3.5 text-sm font-bold"
+                  className="mt-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:from-emerald-700 hover:to-teal-600"
                 >
                   Чудово 🎉
                 </button>

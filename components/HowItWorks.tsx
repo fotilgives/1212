@@ -5,20 +5,17 @@ import { Wallet, Gamepad2, Heart } from 'lucide-react';
 const steps = [
   {
     icon: Wallet,
-    n: '01',
-    title: 'Поповни баланс',
+    title: '1. Поповни баланс',
     text: 'Обмінюй гроші на ігрові монети. У демо-режимі монети нараховуються миттєво й безкоштовно.',
   },
   {
     icon: Gamepad2,
-    n: '02',
-    title: 'Зроби ставку в раунді',
+    title: '2. Зроби ставку в раунді',
     text: 'У кожному раунді - одна ставка: камінь, ножиці чи папір. Усі ставки гравців складаються у спільний банк.',
   },
   {
     icon: Heart,
-    n: '03',
-    title: 'Забери виграш',
+    title: '3. Забери виграш',
     text: 'Камінь б’є ножиці, ножиці - папір, папір - камінь. Переможці ділять банк битих. Монети потім можна витратити на послуги або підтримати реабілітолога.',
   },
 ];
@@ -33,13 +30,13 @@ const HowItWorks: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center text-center"
       >
-        <span className="eyebrow">Правила гри</span>
-        <h2 className="mt-4 font-display text-3xl font-semibold text-forest-800 md:text-4xl">
+        <span className="eyebrow">✨ Правила гри</span>
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
           Бонусна гра
         </h2>
       </motion.div>
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
-        {steps.map(({ icon: Icon, n, title, text }, i) => (
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        {steps.map(({ icon: Icon, title, text }, i) => (
           <motion.div
             key={title}
             initial={{ opacity: 0, y: 24 }}
@@ -47,19 +44,16 @@ const HowItWorks: React.FC = () => {
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
             whileHover={{ y: -5 }}
-            className="card-glow relative overflow-hidden rounded-3xl p-5 ring-1 ring-forest-800/5 transition hover:shadow-xl hover:shadow-forest-800/10"
+            className="glass rounded-2xl p-4 shadow-sm ring-1 ring-white/60 transition hover:shadow-lg hover:shadow-emerald-900/5"
           >
-            <span className="font-display pointer-events-none absolute -right-1 -top-4 text-[64px] font-semibold italic leading-none text-forest-800/[0.07]">
-              {n}
-            </span>
             <motion.span
               whileHover={{ rotate: -8, scale: 1.08 }}
-              className="grid h-10 w-10 place-items-center rounded-2xl bg-forest-800 text-gold-300 shadow-md shadow-forest-800/20"
+              className="grid h-9 w-9 place-items-center rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-200"
             >
-              <Icon className="h-4.5 w-4.5" />
+              <Icon className="h-4 w-4" />
             </motion.span>
-            <h3 className="mt-4 font-display text-base font-semibold text-forest-900">{title}</h3>
-            <p className="mt-1.5 text-xs leading-relaxed text-forest-900/55">{text}</p>
+            <h3 className="mt-3 text-sm font-bold text-slate-900">{title}</h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{text}</p>
           </motion.div>
         ))}
       </div>

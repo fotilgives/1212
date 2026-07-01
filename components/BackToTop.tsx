@@ -27,7 +27,7 @@ const BackToTop: React.FC = () => {
           whileTap={{ scale: 0.92 }}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label="Нагору"
-          className="fixed bottom-6 left-5 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest-800/90 text-gold-300 shadow-xl ring-1 ring-gold-300/30 backdrop-blur transition hover:bg-forest-700 sm:left-6"
+          className="fixed bottom-6 left-5 z-40 grid h-11 w-11 place-items-center rounded-full bg-white/90 text-emerald-700 shadow-xl ring-1 ring-emerald-100 backdrop-blur transition hover:bg-white sm:left-6"
         >
           <ArrowUp className="h-5 w-5" />
         </motion.button>

@@ -161,7 +161,7 @@ const MediaShowcase: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="text-center"
       >
-        <span className="eyebrow">Як проходять заняття</span>
+        <span className="eyebrow">🎬 Як проходять заняття</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
           Наші кабінети та напрямки
         </h2>

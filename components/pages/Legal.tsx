@@ -147,7 +147,7 @@ const Legal: React.FC = () => {
   return (
     <main className="mx-auto max-w-5xl px-4 pb-20 pt-10 sm:px-5 sm:pt-16">
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center">
-        <span className="eyebrow">Документи</span>
+        <span className="eyebrow">📄 Документи</span>
         <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Правова інформація</h1>
         <p className="mx-auto mt-3 max-w-xl text-sm text-slate-500">
           Публічна оферта, політика конфіденційності, умови повернення коштів та безпека платежів.

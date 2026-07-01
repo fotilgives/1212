@@ -287,7 +287,7 @@ const Services: React.FC<Props> = ({ embedded = false }) => {
     <Wrapper className={embedded ? '' : 'mx-auto max-w-5xl px-5 pb-20 pt-12 sm:pt-16'}>
       {!embedded && (
         <div className="text-center mb-10">
-          <span className="eyebrow">Наші послуги</span>
+          <span className="eyebrow">🤲 Наші послуги</span>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Послуги та напрямки</h1>
           <p className="mx-auto mt-3 max-w-xl text-slate-500 text-sm">Оберіть напрямок реабілітації або одразу залиште заявку — підберемо програму під вас.</p>
           <button
