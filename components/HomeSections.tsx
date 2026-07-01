@@ -68,7 +68,7 @@ const HomeSections: React.FC<Props> = ({ account, onExchange, onLogin }) => {
         transition={{ duration: 0.5 }}
         className="flex flex-col items-center text-center"
       >
-        <span className="eyebrow">👥 Наша команда</span>
+        <span className="eyebrow">Наша команда</span>
         <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
           Наша команда
         </h2>
@@ -88,7 +88,7 @@ const HomeSections: React.FC<Props> = ({ account, onExchange, onLogin }) => {
         transition={{ duration: 0.5 }}
         className="mt-16 flex flex-col items-center text-center"
       >
-        <span className="eyebrow">📂 Усе в одному місці</span>
+        <span className="eyebrow">Усе в одному місці</span>
         <p className="mt-3 max-w-xl text-sm text-slate-500">
           Оберіть потрібну послугу, дізнайтеся про бонусну програму або почитайте про мій підхід до
           відновлення та балансу.

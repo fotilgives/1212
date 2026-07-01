@@ -136,7 +136,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
       <div className="text-center">
         {!embedded && (
           <>
-            <span className="eyebrow">🎁 Призи</span>
+            <span className="eyebrow">Призи</span>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Обмін монет на призи</h1>
           </>
         )}

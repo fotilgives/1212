@@ -32,11 +32,11 @@ const ReviewsWall: React.FC = () => {
   return (
     <section className="mx-auto max-w-5xl px-4 py-10 sm:px-5">
       <div className="text-center">
-        <span className="eyebrow">⭐ Відгуки</span>
-        <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Що кажуть учасники</h2>
+        <span className="eyebrow">Відгуки</span>
+        <h2 className="mt-4 font-display text-3xl font-semibold text-forest-800 sm:text-4xl">Що кажуть учасники</h2>
         <button
           onClick={goWrite}
-          className="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-200 transition hover:bg-amber-600"
+          className="btn-gold mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold"
         >
           <PenLine className="h-4 w-4" /> Залишити відгук
         </button>
@@ -53,14 +53,14 @@ const ReviewsWall: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.4, delay: (i % 3) * 0.05 }}
-              className="relative rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100"
+              className="card-glow relative rounded-3xl p-5 ring-1 ring-forest-800/5"
             >
-              <Quote className="absolute right-4 top-4 h-6 w-6 text-emerald-100" />
-              <div className="flex items-center gap-0.5 text-amber-400">
-                {Array.from({ length: r.rating || 0 }).map((_, k) => <Star key={k} className="h-4 w-4 fill-amber-400" />)}
+              <Quote className="absolute right-4 top-4 h-6 w-6 text-gold-300/50" />
+              <div className="flex items-center gap-0.5 text-gold-500">
+                {Array.from({ length: r.rating || 0 }).map((_, k) => <Star key={k} className="h-4 w-4 fill-gold-400 text-gold-400" />)}
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{r.text}</p>
-              <div className="mt-3 text-xs font-bold text-slate-900">— {r.nickname}</div>
+              <p className="mt-2.5 text-sm leading-relaxed text-forest-900/70">{r.text}</p>
+              <div className="font-display mt-3 text-sm font-semibold italic text-forest-900">— {r.nickname}</div>
             </motion.div>
           ))}
         </div>
