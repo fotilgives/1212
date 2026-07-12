@@ -31,6 +31,7 @@ import PricesPage from './components/pages/Prices';
 import Support from './components/pages/Support';
 import Legal from './components/pages/Legal';
 import AuthModal from './components/AuthModal';
+import TournamentJoinModal from './components/TournamentJoinModal';
 
 const Admin = lazy(() => import('./components/pages/Admin'));
 
@@ -40,6 +41,20 @@ const App: React.FC = () => {
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [thanks, setThanks] = useState<null | 'donate' | 'topup' | 'course'>(null);
+  const [tournamentJoin, setTournamentJoin] = useState<number | null>(null);
+
+  // Запрошення в турнір ?tournament=<id> — показуємо екран ЗГОДИ (без авто-списання).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tournament');
+    const tId = t ? parseInt(t, 10) : NaN;
+    if (tId && !isNaN(tId) && !localStorage.getItem(`rps_tournament_joined_${tId}`)) {
+      setTournamentJoin(tId);
+    }
+  }, []);
+  const closeTournament = () => {
+    setTournamentJoin(null);
+    window.history.replaceState({}, '', window.location.pathname + (window.location.hash || '#/'));
+  };
 
   const openExchange = () => {
     if (!account.isAccount) {
@@ -210,6 +225,15 @@ const App: React.FC = () => {
       <BackToTop />
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} onHistory={openHistory} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} account={account} />
+      {tournamentJoin != null && (
+        <TournamentJoinModal
+          tournamentId={tournamentJoin}
+          account={account}
+          onClose={closeTournament}
+          onTopUp={openExchange}
+          onLogin={() => setAuthOpen(true)}
+        />
+      )}
     </div>
   );
 };
