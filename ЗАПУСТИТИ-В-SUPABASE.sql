@@ -5,6 +5,8 @@
 --  Після нього: Settings → API → «Reload schema cache» (або чекай ~30 c).
 -- ============================================================================
 
+begin;  -- атомарно: або застосується все, або нічого (гра не лишиться зламаною)
+
 -- ── 1. Колонки та індекс ──────────────────────────────────────────────────
 alter table public.rps_tournaments
   add column if not exists stake int not null default 100,
@@ -204,7 +206,10 @@ returns jsonb language sql security definer set search_path to 'public' stable a
 $function$;
 
 -- ── 6. Гра: турнірний режим (ізольований баланс, лише учасники) ────────────
-create or replace function public.rps_place_bet(
+-- rps_place_bet у робочій базі може мати інший тип результату — дропаємо, щоб
+-- можна було перестворити з поверненням jsonb (те, що очікує фронтенд).
+drop function if exists public.rps_place_bet(uuid, text, text, integer, text, boolean);
+create function public.rps_place_bet(
   p_id uuid, p_nick text, p_move text, p_stake integer,
   p_shown_move text default null, p_is_bluff boolean default false
 ) returns jsonb language plpgsql security definer set search_path to 'public' as $function$
@@ -368,5 +373,7 @@ grant execute on function public.rps_tournament_join(uuid,bigint) to anon, authe
 grant execute on function public.rps_my_tournament_status(uuid) to anon, authenticated;
 grant execute on function public.rps_tournament_leaderboard(bigint) to anon, authenticated;
 grant execute on function public.rps_admin_get_tournaments(uuid) to anon, authenticated;
+
+commit;
 
 notify pgrst, 'reload schema';
