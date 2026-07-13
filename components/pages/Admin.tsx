@@ -609,7 +609,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   const send = async () => {
     if (!tName.trim()) { setSendMsg({ type: 'error', text: 'Введи назву турніру' }); return; }
     setSending(true); setSendMsg(null);
-    const { data } = await supabase.rpc('rps_admin_create_tournament', {
+    const { data, error } = await supabase.rpc('rps_admin_create_tournament', {
       p_token:      token,
       p_name:       tName.trim(),
       p_desc:       tDesc.trim(),
@@ -626,8 +626,52 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
       setShowForm(false);
       load();
     } else {
-      setSendMsg({ type: 'error', text: 'Помилка при створенні турніру' });
+      setSendMsg({ type: 'error', text: `Помилка при створенні турніру${error?.message ? `: ${error.message}` : data?.error ? `: ${data.error}` : ''}` });
     }
+  };
+
+  const deleteTournament = async (id: number) => {
+    if (!window.confirm('Видалити турнір остаточно? Дію не можна скасувати.')) return;
+    setBusyId(id);
+    const { data } = await supabase.rpc('rps_admin_tournament_delete', { p_token: token, p_id: id });
+    setBusyId(null);
+    if (data === 'ok') load();
+    else alert('Не вдалося видалити турнір.');
+  };
+
+  // Редагування (лише для неактивних турнірів)
+  const [editId, setEditId] = useState<number | null>(null);
+  const [eName, setEName] = useState('');
+  const [eDesc, setEDesc] = useState('');
+  const [eDate, setEDate] = useState('');
+  const [ePrepay, setEPrepay] = useState('0');
+  const [eStake, setEStake] = useState('100');
+  const [eRoundSecs, setERoundSecs] = useState('30');
+  const [eBusy, setEBusy] = useState(false);
+  const [eMsg, setEMsg] = useState<string | null>(null);
+
+  const startEdit = (t: Tournament) => {
+    setEditId(t.id);
+    setEName(t.name);
+    setEDesc(t.description || '');
+    setEDate(t.date ? t.date.slice(0, 16) : '');
+    setEPrepay(String(t.prepay_coins));
+    setEStake(String(t.stake));
+    setERoundSecs(String(t.round_seconds));
+    setEMsg(null);
+  };
+
+  const saveEdit = async () => {
+    if (editId == null) return;
+    setEBusy(true); setEMsg(null);
+    const { data, error } = await supabase.rpc('rps_admin_tournament_update', {
+      p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(), p_date: eDate || null,
+      p_prepay: parseInt(ePrepay) || 0, p_stake: parseInt(eStake) || 100, p_round_seconds: parseInt(eRoundSecs) || 30,
+    });
+    setEBusy(false);
+    if (data === 'ok') { setEditId(null); load(); }
+    else if (data === 'is_active') setEMsg('Не можна редагувати активний турнір — спершу заверши його.');
+    else setEMsg(`Помилка${error?.message ? `: ${error.message}` : ''}`);
   };
 
   const startTournament = async (id: number) => {
@@ -897,6 +941,21 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                     >
                       🏆 Рейтинг
                     </button>
+                    {t.status !== 'active' && (
+                      <button
+                        onClick={() => startEdit(t)}
+                        className="flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-200"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Редагувати
+                      </button>
+                    )}
+                    <button
+                      onClick={() => deleteTournament(t.id)}
+                      disabled={busyId === t.id}
+                      className="flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Видалити
+                    </button>
                   </div>
                   {t.status === 'active' && (
                     <p className="mb-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
@@ -973,6 +1032,49 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Модалка редагування турніру */}
+      {editId != null && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4" onClick={() => setEditId(null)}>
+          <div className="w-full max-w-sm space-y-3 overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl" style={{ maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-slate-900">Редагувати турнір</h3>
+              <button onClick={() => setEditId(null)} className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+            </div>
+            <input value={eName} onChange={(e) => setEName(e.target.value)} placeholder="Назва турніру"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+            <textarea value={eDesc} onChange={(e) => setEDesc(e.target.value)} rows={2} placeholder="Опис / деталі"
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Дата турніру</label>
+                <input type="datetime-local" value={eDate} onChange={(e) => setEDate(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Передоплата (монет)</label>
+                <input type="number" min={0} value={ePrepay} onChange={(e) => setEPrepay(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Ставка раунду</label>
+                <input type="number" min={1} value={eStake} onChange={(e) => setEStake(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Тривалість раунду (сек)</label>
+                <input type="number" min={5} value={eRoundSecs} onChange={(e) => setERoundSecs(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white" />
+              </div>
+            </div>
+            {eMsg && <p className="text-xs font-semibold text-rose-600">{eMsg}</p>}
+            <button onClick={saveEdit} disabled={eBusy}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50">
+              {eBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />} Зберегти зміни
+            </button>
+          </div>
         </div>
       )}
 
