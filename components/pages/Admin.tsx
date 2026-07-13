@@ -609,16 +609,26 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   const send = async () => {
     if (!tName.trim()) { setSendMsg({ type: 'error', text: 'Введи назву турніру' }); return; }
     setSending(true); setSendMsg(null);
-    const { data, error } = await supabase.rpc('rps_admin_create_tournament', {
+    const base = {
       p_token:      token,
       p_name:       tName.trim(),
       p_desc:       tDesc.trim(),
       p_date:       tDate || null,
       p_prepay:     parseInt(tPrepay) || 0,
       p_player_ids: Array.from(selectedPlayers),
+    };
+    // Основний виклик — з власною ставкою та тривалістю раунду.
+    let { data, error } = await supabase.rpc('rps_admin_create_tournament', {
+      ...base,
       p_stake:      parseInt(tStake) || 100,
       p_round_seconds: parseInt(tRoundSecs) || 30,
     });
+    // Якщо схема-кеш PostgREST ще не знає нову 8-арг версію — падаємо на
+    // сумісну 6-арг (створює зі ставкою 100 / раунд 30), щоб турнір усе одно
+    // створився без очікування перезавантаження кешу.
+    if (error && /schema cache|PGRST202|could not find/i.test(error.message || '')) {
+      ({ data, error } = await supabase.rpc('rps_admin_create_tournament', base));
+    }
     setSending(false);
     if (data && !data.error) {
       setSendMsg({ type: 'ok', text: `✅ Запрошення надіслано ${data.invited || selectedPlayers.size} гравцям!` });
