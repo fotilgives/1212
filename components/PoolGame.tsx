@@ -17,6 +17,24 @@ interface TournamentInvite {
   status: string;
 }
 
+interface TournamentStatus {
+  active: boolean;
+  tournament_id?: number;
+  name?: string;
+  stake?: number;
+  round_seconds?: number;
+  prepay_coins?: number;
+  participant?: boolean;
+  tournament_balance?: number;
+}
+
+interface LeaderRow {
+  rank: number;
+  nickname: string;
+  tournament_balance: number;
+  wins: number;
+}
+
 type Move = 'rock' | 'scissors' | 'paper';
 
 const MOVES: { id: Move; label: string; emoji: string }[] = [
@@ -66,6 +84,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [currentInviteIdx, setCurrentInviteIdx] = useState(0);
   const [inviteBusy, setInviteBusy] = useState(false);
   const [inviteMsg, setInviteMsg] = useState<string | null>(null);
+  // Активний турнір: якщо є — гра йде за його ставкою/тривалістю раунду й
+  // окремим ізольованим турнірним балансом (не чіпає основний рахунок).
+  const [tstatus, setTstatus] = useState<TournamentStatus | null>(null);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -108,6 +131,18 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     if (data) setBonus(data as { amount: number; cycle_day: number; max_day: number });
   }, []);
 
+  const fetchTournamentStatus = useCallback(async () => {
+    const { data } = await supabase.rpc('rps_my_tournament_status', { p_player_id: account.playerId });
+    if (data) setTstatus(data as TournamentStatus);
+  }, [account.playerId]);
+
+  const openLeaderboard = useCallback(async () => {
+    if (!tstatus?.tournament_id) return;
+    const { data } = await supabase.rpc('rps_tournament_leaderboard', { p_tournament_id: tstatus.tournament_id });
+    setLeaderboard((data as LeaderRow[]) || []);
+    setLeaderboardOpen(true);
+  }, [tstatus?.tournament_id]);
+
   const fetchInvites = useCallback(async () => {
     if (!account.isAccount) return;
     const { data } = await supabase.rpc('rps_my_invites', { p_player_id: account.playerId });
@@ -148,8 +183,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     loadCurrent();
     fetchBonus();
     fetchInvites();
+    fetchTournamentStatus();
     const ch = supabase
       .channel('rps-game')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rps_tournaments' }, () => {
+        fetchTournamentStatus();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_tournament_invites', filter: `player_id=eq.${account.playerId}` }, () => {
+        fetchTournamentStatus();
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
         const r = p.new as RoundRow;
         roundIdRef.current = r.id;
@@ -242,10 +284,19 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const potOf = (m: Move) => bets.filter((b) => b.move === m).reduce((s, b) => s + b.stake, 0);
   const bank = bets.reduce((s, b) => s + b.stake, 0);
 
+  // Під час активного турніру гра йде за його параметрами й ізольованим балансом.
+  const tournamentActive = !!tstatus?.active;
+  const isParticipant = tournamentActive && !!tstatus?.participant;
+  const effectiveStake = tournamentActive && isParticipant ? (tstatus?.stake ?? stake) : stake;
+  const effectiveRoundSeconds = tournamentActive ? (tstatus?.round_seconds ?? roundSeconds) : roundSeconds;
+  const displayBalance = isParticipant ? (tstatus?.tournament_balance ?? 0) : account.balance;
+
   const placeBet = async () => {
     if (busy || myBet) return;
-    if (account.balance < stake) {
-      onTopUp();
+    if (tournamentActive && !isParticipant) return; // не учасник — гра заблокована в UI нижче
+    if (displayBalance < effectiveStake) {
+      if (tournamentActive) setErr('Недостатньо монет турнірного балансу для цієї ставки.');
+      else onTopUp();
       return;
     }
     const useBluff = bluff && canBluff && shownMove !== move;
@@ -255,13 +306,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       p_id: account.playerId,
       p_nick: account.nickname,
       p_move: move,
-      p_stake: stake,
+      p_stake: effectiveStake,
       p_shown_move: useBluff ? shownMove : move,
       p_is_bluff: useBluff,
     });
     if (error) {
       const msg = error.message || '';
-      if (msg.includes('insufficient')) onTopUp();
+      if (msg.includes('tournament_locked')) { setErr('Триває турнір — гра доступна лише учасникам.'); fetchTournamentStatus(); }
+      else if (msg.includes('insufficient_tournament')) setErr('Недостатньо монет турнірного балансу.');
+      else if (msg.includes('insufficient')) { if (tournamentActive) setErr('Недостатньо турнірного балансу.'); else onTopUp(); }
       else if (msg.includes('bluff locked')) setErr('Блеф відкриється після першої перемоги 🔒');
       else if (msg.includes('round closed')) {
         setErr('Раунд щойно завершився - зачекай наступний 🙂');
@@ -272,13 +325,14 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       setLastResult(null);
       setMyPlay({ real: move, shown: useBluff ? shownMove : move, bluff: useBluff });
       await account.refresh();
+      await fetchTournamentStatus();
       if (roundIdRef.current) await fetchBets(roundIdRef.current);
     }
     setBusy(false);
   };
 
   const low = remaining <= 5;
-  const progress = Math.min(1, Math.max(0, remaining / roundSeconds));
+  const progress = Math.min(1, Math.max(0, remaining / effectiveRoundSeconds));
 
   return (
     <section id="game" className="mx-auto max-w-3xl px-3 py-10 sm:px-5 sm:py-16">
@@ -375,6 +429,27 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             <p className="mt-2 text-center text-[11px] text-slate-400">Натискаючи «Грати», ти приймаєш правила гри</p>
           </div>
         </motion.div>
+      ) : tournamentActive && !isParticipant ? (
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="overflow-hidden rounded-[2.25rem] bg-white p-8 text-center shadow-[0_30px_80px_-25px_rgba(6,78,59,0.4)] ring-1 ring-emerald-100/70"
+        >
+          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-amber-100 text-amber-600">
+            <Trophy className="h-8 w-8" />
+          </span>
+          <h2 className="mt-4 text-xl font-black text-slate-900">Триває турнір «{tstatus?.name}» 🏆</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
+            Зараз гра доступна лише зареєстрованим учасникам цього турніру. Загальна гра для всіх повернеться одразу після його завершення.
+          </p>
+          <button
+            onClick={openLeaderboard}
+            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-200 transition hover:bg-amber-600"
+          >
+            🏆 Переглянути рейтинг турніру
+          </button>
+        </motion.div>
       ) : (
       <motion.div
         initial={{ opacity: 0, y: 24 }}
@@ -407,9 +482,23 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             </div>
             <div className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-white/15 px-3.5 py-2 text-sm font-black ring-1 ring-white/25 backdrop-blur-sm">
               <Coins className="h-4 w-4 text-amber-300" />
-              <AnimatedNumber value={account.balance} />
+              <AnimatedNumber value={displayBalance} />
             </div>
           </div>
+
+          {isParticipant && (
+            <div className="relative mt-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/25 px-3 py-1 text-[11px] font-bold text-amber-100">
+                <Trophy className="h-3.5 w-3.5" /> Турнір «{tstatus?.name}» · турнірний баланс
+              </span>
+              <button
+                onClick={openLeaderboard}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold text-white transition hover:bg-white/25"
+              >
+                🏆 Рейтинг
+              </button>
+            </div>
+          )}
 
           {/* Timer + stats — hero */}
           <div className="relative mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
@@ -828,7 +917,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     <span className="grid h-8 w-8 place-items-center rounded-xl bg-amber-400/90 text-white">
                       <Coins className="h-4.5 w-4.5" />
                     </span>
-                    <span className="text-xl font-black text-slate-900">{stake}</span>
+                    <span className="text-xl font-black text-slate-900">{effectiveStake}</span>
                     <span className="text-sm font-medium text-slate-500">монет — фіксована для всіх</span>
                   </div>
 
@@ -836,14 +925,16 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={placeBet}
-                    disabled={busy || remaining <= 1}
+                    disabled={busy || remaining <= 1 || (tournamentActive && displayBalance < effectiveStake)}
                     className="shine mt-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-emerald-300/50 transition hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50"
                   >
-                    {account.balance < stake
-                      ? '💰 Поповнити баланс'
+                    {displayBalance < effectiveStake
+                      ? tournamentActive
+                        ? '⚠️ Недостатньо турнірного балансу'
+                        : '💰 Поповнити баланс'
                       : remaining <= 1
                       ? 'Раунд закінчується…'
-                      : `Поставити ${stake} монет`}
+                      : `Поставити ${effectiveStake} монет`}
                   </motion.button>
                   {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
                 </motion.div>
@@ -909,6 +1000,49 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         </div>
       </motion.div>
       )}
+
+      {/* Рейтинг турніру */}
+      <AnimatePresence>
+        {leaderboardOpen && (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setLeaderboardOpen(false)}
+          >
+            <motion.div
+              className="w-full max-w-sm overflow-hidden rounded-[1.75rem] bg-white shadow-2xl"
+              initial={{ scale: 0.94, y: 16, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.94, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative bg-gradient-to-br from-amber-500 to-orange-500 px-6 py-5 text-white">
+                <button onClick={() => setLeaderboardOpen(false)} className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/20 hover:bg-white/30"><X className="h-4 w-4" /></button>
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5" />
+                  <h3 className="text-lg font-black">Рейтинг турніру</h3>
+                </div>
+                <p className="mt-1 text-xs text-amber-50/90">{tstatus?.name}</p>
+              </div>
+              <div className="max-h-[60vh] space-y-1.5 overflow-y-auto px-4 py-4">
+                {leaderboard.length === 0 && (
+                  <p className="py-8 text-center text-sm text-slate-400">Поки що немає результатів.</p>
+                )}
+                {leaderboard.map((row) => {
+                  const medal = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `${row.rank}.`;
+                  return (
+                    <div key={row.rank} className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${row.rank <= 3 ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                      <span className="w-7 shrink-0 text-center text-lg font-black">{medal}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">{row.nickname}</span>
+                      <span className="flex shrink-0 items-center gap-1 text-sm font-black text-emerald-700">
+                        <Coins className="h-3.5 w-3.5 text-amber-500" /> {row.tournament_balance.toLocaleString('uk-UA')}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };

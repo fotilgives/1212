@@ -62,9 +62,11 @@ interface TournamentInvite { invite_id: number; player_id: string; nick: string;
 interface Tournament {
   id: number; name: string; description: string; date: string | null;
   prepay_coins: number; created_at: string;
+  stake: number; round_seconds: number; status: 'scheduled' | 'active' | 'finished';
   responses: { total: number; yes: number; no: number; later: number; pending: number };
   invites: TournamentInvite[];
 }
+interface LeaderRow { rank: number; nickname: string; tournament_balance: number; wins: number }
 type GameSubTab = 'payouts' | 'bots' | 'bluff';
 
 type PriceRow = { id?: number; group_title: string; name: string; price: string; meta: string | null; sort: number; active: boolean };
@@ -565,10 +567,15 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   const [tDesc, setTDesc] = useState('');
   const [tDate, setTDate] = useState('');
   const [tPrepay, setTPrepay] = useState('0');
+  const [tStake, setTStake] = useState('100');
+  const [tRoundSecs, setTRoundSecs] = useState('30');
   const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
   const [searchQ, setSearchQ] = useState('');
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState<{ type: 'ok' | 'error'; text: string } | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [leaderboardFor, setLeaderboardFor] = useState<Tournament | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -609,16 +616,42 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
       p_date:       tDate || null,
       p_prepay:     parseInt(tPrepay) || 0,
       p_player_ids: Array.from(selectedPlayers),
+      p_stake:      parseInt(tStake) || 100,
+      p_round_seconds: parseInt(tRoundSecs) || 30,
     });
     setSending(false);
     if (data && !data.error) {
       setSendMsg({ type: 'ok', text: `✅ Запрошення надіслано ${data.invited || selectedPlayers.size} гравцям!` });
-      setTName(''); setTDesc(''); setTDate(''); setTPrepay('0'); setSelectedPlayers(new Set());
+      setTName(''); setTDesc(''); setTDate(''); setTPrepay('0'); setTStake('100'); setTRoundSecs('30'); setSelectedPlayers(new Set());
       setShowForm(false);
       load();
     } else {
       setSendMsg({ type: 'error', text: 'Помилка при створенні турніру' });
     }
+  };
+
+  const startTournament = async (id: number) => {
+    setBusyId(id);
+    const { data } = await supabase.rpc('rps_admin_tournament_start', { p_token: token, p_tournament_id: id });
+    setBusyId(null);
+    if (data === 'other_active') alert('Вже є активний турнір — спершу заверши його.');
+    else if (data === 'ok') load();
+    else alert('Не вдалося запустити турнір.');
+  };
+
+  const finishTournament = async (id: number) => {
+    if (!window.confirm('Завершити турнір? Гра одразу повернеться в звичайний режим для всіх.')) return;
+    setBusyId(id);
+    const { data } = await supabase.rpc('rps_admin_tournament_finish', { p_token: token, p_tournament_id: id });
+    setBusyId(null);
+    if (data === 'ok') load();
+    else alert('Не вдалося завершити турнір.');
+  };
+
+  const viewLeaderboard = async (t: Tournament) => {
+    const { data } = await supabase.rpc('rps_tournament_leaderboard', { p_tournament_id: t.id });
+    setLeaderboard((data as LeaderRow[]) || []);
+    setLeaderboardFor(t);
   };
 
   const statusColor = (s: string) =>
@@ -685,6 +718,26 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                 placeholder="0 = безкоштовно"
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white"
               />
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-100">
+            <p className="mb-2 text-xs font-bold text-amber-800">⚙️ Налаштування ТІЛЬКИ для цього турніру (не чіпають звичайну гру)</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Ставка раунду (турнір)</label>
+                <input
+                  type="number" min={1} value={tStake} onChange={(e) => setTStake(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Тривалість раунду (сек)</label>
+                <input
+                  type="number" min={5} value={tRoundSecs} onChange={(e) => setTRoundSecs(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400"
+                />
+              </div>
             </div>
           </div>
 
@@ -770,16 +823,26 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                 className="flex w-full items-start justify-between gap-3 p-4 text-left"
               >
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
                     <span className="font-bold text-slate-900 truncate">{t.name}</span>
+                    {t.status === 'active' && (
+                      <span className="shrink-0 flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> ЖИВИЙ
+                      </span>
+                    )}
+                    {t.status === 'finished' && (
+                      <span className="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">завершено</span>
+                    )}
                     {t.prepay_coins > 0 && (
                       <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
                         {t.prepay_coins} монет
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">{fmtDate(t.created_at)}{t.date ? ` · Турнір: ${fmtDate(t.date)}` : ''}</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {fmtDate(t.created_at)}{t.date ? ` · Турнір: ${fmtDate(t.date)}` : ''} · ставка {t.stake} · {t.round_seconds}с
+                  </div>
                   {/* Статистика відповідей */}
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
@@ -807,6 +870,39 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               {expanded === t.id && (
                 <div className="border-t border-slate-100 px-4 pb-4 pt-3">
                   {t.description && <p className="mb-3 text-sm text-slate-600">{t.description}</p>}
+
+                  {/* Керування турніром: старт/фініш + рейтинг */}
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {t.status !== 'active' && (
+                      <button
+                        onClick={() => startTournament(t.id)}
+                        disabled={busyId === t.id}
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        {busyId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '▶️'} {t.status === 'finished' ? 'Запустити знову' : 'Старт турніру'}
+                      </button>
+                    )}
+                    {t.status === 'active' && (
+                      <button
+                        onClick={() => finishTournament(t.id)}
+                        disabled={busyId === t.id}
+                        className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-50"
+                      >
+                        {busyId === t.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : '⏹️'} Завершити турнір
+                      </button>
+                    )}
+                    <button
+                      onClick={() => viewLeaderboard(t)}
+                      className="flex items-center gap-1.5 rounded-xl bg-amber-100 px-3 py-2 text-xs font-bold text-amber-700 transition hover:bg-amber-200"
+                    >
+                      🏆 Рейтинг
+                    </button>
+                  </div>
+                  {t.status === 'active' && (
+                    <p className="mb-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+                      Зараз грають лише учасники цього турніру (ставка {t.stake}, раунд {t.round_seconds}с). Інші гравці бачать екран очікування.
+                    </p>
+                  )}
 
                   {/* Публічне посилання для соцмереж */}
                   <div className="mb-4 rounded-2xl bg-indigo-50 p-3 ring-1 ring-indigo-100">
@@ -877,6 +973,34 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Модалка рейтингу турніру */}
+      {leaderboardFor && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4" onClick={() => setLeaderboardFor(null)}>
+          <div className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between bg-gradient-to-br from-amber-500 to-orange-500 px-5 py-4 text-white">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-amber-50/90">Рейтинг</div>
+                <div className="font-black">{leaderboardFor.name}</div>
+              </div>
+              <button onClick={() => setLeaderboardFor(null)} className="grid h-8 w-8 place-items-center rounded-full bg-white/20 hover:bg-white/30"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="max-h-[60vh] space-y-1.5 overflow-y-auto p-4">
+              {leaderboard.length === 0 && <p className="py-8 text-center text-sm text-slate-400">Ще немає результатів.</p>}
+              {leaderboard.map((row) => {
+                const medal = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `${row.rank}.`;
+                return (
+                  <div key={row.rank} className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${row.rank <= 3 ? 'bg-amber-50' : 'bg-slate-50'}`}>
+                    <span className="w-7 shrink-0 text-center text-lg font-black">{medal}</span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">{row.nickname}</span>
+                    <span className="flex shrink-0 items-center gap-1 text-sm font-black text-emerald-700"><Coins className="h-3.5 w-3.5 text-amber-500" /> {row.tournament_balance.toLocaleString('uk-UA')}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
