@@ -759,7 +759,13 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                className="relative mt-4 overflow-hidden rounded-3xl bg-gradient-to-b from-emerald-50 to-white p-4 text-center text-sm font-bold text-emerald-700 ring-1 ring-emerald-200"
+                className={`relative mt-4 overflow-hidden rounded-3xl p-4 text-center text-sm font-bold ring-1 ${
+                  lastResult.net > 0
+                    ? 'bg-gradient-to-b from-emerald-50 to-white text-emerald-700 ring-emerald-200'
+                    : lastResult.net < 0
+                    ? 'bg-gradient-to-b from-rose-50 to-white text-rose-600 ring-rose-200'
+                    : 'bg-slate-100 text-slate-600 ring-slate-200'
+                }`}
               >
                 <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
                   <span className="inline-flex items-center gap-1.5">
@@ -767,7 +773,13 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     <span>Твій хід{lastResult.isBluff && <span className="ml-1">🤫 блеф</span>}</span>
                   </span>
                   <span className="opacity-40">·</span>
-                  <span>{`виграш ${lastResult.payout} монет 🎉`}</span>
+                  <span>
+                    {lastResult.net > 0
+                      ? `виграш +${lastResult.net} монет 🎉`
+                      : lastResult.net < 0
+                      ? `програш ${Math.abs(lastResult.net)} монет`
+                      : `повернення ставки`}
+                  </span>
                 </div>
                 {lastWin && (
                   <div className="mt-1 text-xs font-medium opacity-80">
