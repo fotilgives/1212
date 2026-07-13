@@ -686,20 +686,21 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
 
   const startTournament = async (id: number) => {
     setBusyId(id);
-    const { data } = await supabase.rpc('rps_admin_tournament_start', { p_token: token, p_tournament_id: id });
+    const { data, error } = await supabase.rpc('rps_admin_tournament_start', { p_token: token, p_tournament_id: id });
     setBusyId(null);
-    if (data === 'other_active') alert('Вже є активний турнір — спершу заверши його.');
-    else if (data === 'ok') load();
-    else alert('Не вдалося запустити турнір.');
+    if (data === 'ok') load();
+    else if (data === 'other_active') alert('Вже є активний турнір — спершу заверши його.');
+    else if (data === 'not_found') alert('Турнір не знайдено (онови сторінку).');
+    else alert(`Не вдалося запустити турнір${error?.message ? `: ${error.message}` : data ? `: ${data}` : ''}`);
   };
 
   const finishTournament = async (id: number) => {
     if (!window.confirm('Завершити турнір? Гра одразу повернеться в звичайний режим для всіх.')) return;
     setBusyId(id);
-    const { data } = await supabase.rpc('rps_admin_tournament_finish', { p_token: token, p_tournament_id: id });
+    const { data, error } = await supabase.rpc('rps_admin_tournament_finish', { p_token: token, p_tournament_id: id });
     setBusyId(null);
     if (data === 'ok') load();
-    else alert('Не вдалося завершити турнір.');
+    else alert(`Не вдалося завершити турнір${error?.message ? `: ${error.message}` : data ? `: ${data}` : ''}`);
   };
 
   const viewLeaderboard = async (t: Tournament) => {

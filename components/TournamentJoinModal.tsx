@@ -25,8 +25,15 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.rpc('rps_tournament_info', { p_tournament_id: tournamentId });
+      const { data, error } = await supabase.rpc('rps_tournament_info', { p_tournament_id: tournamentId });
       if (cancelled) return;
+      if (error) {
+        // Функція/кеш на сервері (напр. не застосовано міграцію турнірів) —
+        // показуємо справжню причину, а не «застаріле посилання».
+        setStage('error');
+        setErrMsg(`Сервер турнірів недоступний: ${error.message}`);
+        return;
+      }
       if (!data) { setStage('error'); setErrMsg('Турнір не знайдено або посилання застаріле.'); return; }
       setInfo(data as Info);
       setStage(account.isAccount ? 'consent' : 'need_auth');
