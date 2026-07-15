@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Coins, Trophy, Heart, Users, Receipt, Gift, LogIn, LogOut, Copy, Check,
-  Loader2, Pencil, Plus, ExternalLink, Gamepad2, Sparkles, Share2,
+  Loader2, Pencil, Plus, ExternalLink, Gamepad2, Sparkles, Share2, Timer, Zap,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Account } from '../../hooks/useAccount';
 import AnimatedNumber from '../AnimatedNumber';
+import { navigate } from '../../hooks/useRoute';
 
 const COURSE_GROUP_URL = 'https://t.me/+o9i9tJpoj4A3MTcy';
 
@@ -60,6 +61,14 @@ const purchaseBadge = (kind: string, status: string) => {
   }
 };
 
+interface TournamentReminder {
+  id: number;
+  name: string;
+  status: 'scheduled' | 'active';
+  date: string;
+  end_date: string | null;
+}
+
 const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [cab, setCab] = useState<Cabinet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,6 +76,8 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [editingNick, setEditingNick] = useState(false);
   const [nickDraft, setNickDraft] = useState(account.nickname);
   const [copied, setCopied] = useState(false);
+  const [tournament, setTournament] = useState<TournamentReminder | null>(null);
+  const [countdown, setCountdown] = useState('');
 
   const inviteLink = typeof window !== 'undefined' ? `${window.location.origin}/?ref=${account.playerId}` : '';
 
@@ -80,6 +91,51 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     });
     return () => { cancelled = true; };
   }, [account.playerId, account.balance]);
+
+  // Завантажуємо турнір, на який зареєстрований гравець
+  useEffect(() => {
+    if (!account.playerId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('rps_tournament_invites')
+        .select('status, rps_tournaments!inner(id, name, status, date, end_date)')
+        .eq('player_id', account.playerId)
+        .eq('status', 'yes')
+        .in('rps_tournaments.status', ['scheduled', 'active'])
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.rps_tournaments) {
+        const t = data.rps_tournaments as any;
+        setTournament({ id: t.id, name: t.name, status: t.status, date: t.date, end_date: t.end_date ?? null });
+      } else {
+        setTournament(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [account.playerId]);
+
+  // Зворотній відлік до початку турніру
+  useEffect(() => {
+    if (!tournament || tournament.status !== 'scheduled') { setCountdown(''); return; }
+    const tick = () => {
+      const diff = new Date(tournament.date).getTime() - Date.now();
+      if (diff <= 0) { setCountdown('Вже починається!'); return; }
+      const h = Math.floor(diff / 3_600_000);
+      const m = Math.floor((diff % 3_600_000) / 60_000);
+      const s = Math.floor((diff % 60_000) / 1_000);
+      setCountdown(
+        h > 0
+          ? `${h} год ${String(m).padStart(2,'0')} хв`
+          : m > 0
+          ? `${m} хв ${String(s).padStart(2,'0')} сек`
+          : `${s} сек`
+      );
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [tournament]);
 
   const saveNick = () => {
     const n = nickDraft.trim().slice(0, 20);
@@ -213,6 +269,86 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           )}
         </div>
       </motion.section>
+
+      {/* Банер турніру */}
+      <AnimatePresence>
+        {tournament && (
+          <motion.div
+            key={tournament.id}
+            initial={{ opacity: 0, y: 14, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.97 }}
+            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            className="relative mt-4 overflow-hidden rounded-3xl shadow-xl"
+          >
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700" />
+            {/* Decorative blobs */}
+            <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-violet-300/25 blur-2xl" />
+            <div className="pointer-events-none absolute right-1/3 top-0 h-20 w-20 rounded-full bg-fuchsia-400/20 blur-xl" />
+
+            <div className="relative p-5 sm:p-6">
+              {/* Header row */}
+              <div className="flex items-start gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl ring-1 ring-white/30 backdrop-blur-sm">
+                  🏆
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {tournament.status === 'active' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-950">
+                        <Zap className="h-2.5 w-2.5" /> Турнір ЙДЕ
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/90 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-950">
+                        <Timer className="h-2.5 w-2.5" /> Зареєстрований
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="mt-1 text-base font-black leading-snug text-white sm:text-lg">
+                    «{tournament.name}»
+                  </h4>
+                </div>
+              </div>
+
+              {/* Info row */}
+              <div className="mt-4 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-sm">
+                {tournament.status === 'active' ? (
+                  <p className="text-sm font-semibold text-violet-100">
+                    🎮 Турнір вже активний! Переходь до гри та борись за перемогу.
+                  </p>
+                ) : (
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-violet-300">Початок</div>
+                      <div className="mt-0.5 text-sm font-bold text-white">
+                        {new Date(tournament.date).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}
+                      </div>
+                    </div>
+                    {countdown && (
+                      <div className="text-right">
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-violet-300">До початку</div>
+                        <div className="mt-0.5 font-mono text-sm font-extrabold text-amber-300">{countdown}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Action button */}
+              {tournament.status === 'active' && (
+                <button
+                  onClick={() => navigate('home')}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3 text-sm font-extrabold text-violet-700 shadow-lg transition hover:bg-violet-50 active:scale-95"
+                >
+                  <Zap className="h-4 w-4" /> Грати зараз!
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Статистика */}
       <div className="mt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
