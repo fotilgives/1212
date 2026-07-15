@@ -774,25 +774,67 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2 grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                <Calendar className="inline h-3.5 w-3.5 mr-1" />Час початку
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />Дата початку
               </label>
               <input
-                type="datetime-local" value={tDate} onChange={(e) => setTDate(e.target.value)}
+                type="date"
+                value={tDate.split('T')[0] || ''}
+                onChange={(e) => {
+                  const time = tDate.split('T')[1] || '00:00';
+                  setTDate(e.target.value ? `${e.target.value}T${time}` : '');
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                <Calendar className="inline h-3.5 w-3.5 mr-1" />Час закінчення
+                ⏱️ Час початку
               </label>
               <input
-                type="datetime-local" value={tEndDate} onChange={(e) => setTEndDate(e.target.value)}
+                type="time"
+                value={tDate.split('T')[1] || ''}
+                onChange={(e) => {
+                  const date = tDate.split('T')[0] || new Date().toISOString().split('T')[0];
+                  setTDate(e.target.value ? `${date}T${e.target.value}` : '');
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
             </div>
+          </div>
+
+          <div className="col-span-2 grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />Дата закінчення
+              </label>
+              <input
+                type="date"
+                value={tEndDate.split('T')[0] || ''}
+                onChange={(e) => {
+                  const time = tEndDate.split('T')[1] || '00:00';
+                  setTEndDate(e.target.value ? `${e.target.value}T${time}` : '');
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                ⏱️ Час закінчення
+              </label>
+              <input
+                type="time"
+                value={tEndDate.split('T')[1] || ''}
+                onChange={(e) => {
+                  const date = tEndDate.split('T')[0] || new Date().toISOString().split('T')[0];
+                  setTEndDate(e.target.value ? `${date}T${e.target.value}` : '');
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+              />
+            </div>
+          </div>
             <div className="col-span-2">
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                 <Lock className="inline h-3.5 w-3.5 mr-1" />Передоплата (монет)
@@ -1090,17 +1132,59 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
             <textarea value={eDesc} onChange={(e) => setEDesc(e.target.value)} rows={2} placeholder="Опис / деталі"
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Дата початку</label>
+                <input
+                  type="date"
+                  value={eDate.split('T')[0] || ''}
+                  onChange={(e) => {
+                    const time = eDate.split('T')[1] || '00:00';
+                    setEDate(e.target.value ? `${e.target.value}T${time}` : '');
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+                />
+              </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Час початку</label>
-                <input type="datetime-local" value={eDate} onChange={(e) => setEDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                <input
+                  type="time"
+                  value={eDate.split('T')[1] || ''}
+                  onChange={(e) => {
+                    const date = eDate.split('T')[0] || new Date().toISOString().split('T')[0];
+                    setEDate(e.target.value ? `${date}T${e.target.value}` : '');
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+                />
+              </div>
+            </div>
+
+            <div className="col-span-2 grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Дата закінчення</label>
+                <input
+                  type="date"
+                  value={eEndDate.split('T')[0] || ''}
+                  onChange={(e) => {
+                    const time = eEndDate.split('T')[1] || '00:00';
+                    setEEndDate(e.target.value ? `${e.target.value}T${time}` : '');
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+                />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Час закінчення</label>
-                <input type="datetime-local" value={eEndDate} onChange={(e) => setEEndDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+                <input
+                  type="time"
+                  value={eEndDate.split('T')[1] || ''}
+                  onChange={(e) => {
+                    const date = eEndDate.split('T')[0] || new Date().toISOString().split('T')[0];
+                    setEEndDate(e.target.value ? `${date}T${e.target.value}` : '');
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+                />
               </div>
+            </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Передоплата (монет)</label>
                 <input type="number" min={0} value={ePrepay} onChange={(e) => setEPrepay(e.target.value)}
