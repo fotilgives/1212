@@ -119,6 +119,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
   const roundIdRef = useRef<number | null>(null);
   const advancing = useRef(false);
+  // Ref для playerId — уникаємо stale closure в loadCurrent
+  const playerIdRef = useRef(account.playerId);
+  useEffect(() => { playerIdRef.current = account.playerId; }, [account.playerId]);
 
 
   const fetchBets = useCallback(async (rid: number) => {
@@ -173,10 +176,30 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     const { data, error } = await supabase.rpc('rps_tick');
     if (error || !data) return;
     const r = data as RoundRow;
+
+    // Якщо раунд змінився — перевіряємо ставку гравця в попередньому раунді
+    const prevRoundId = roundIdRef.current;
+    if (prevRoundId && prevRoundId !== r.id && playerIdRef.current) {
+      const { data: bet } = await supabase
+        .from('rps_bets')
+        .select('*')
+        .eq('round_id', prevRoundId)
+        .eq('player_id', playerIdRef.current)
+        .maybeSingle();
+      if (bet && bet.payout > 0) {
+        setLastResult({ net: bet.payout - bet.stake, payout: bet.payout, move: bet.move as Move, stake: bet.stake, isBluff: bet.is_bluff });
+        if (bet.payout > bet.stake) {
+          setCelebrate(true);
+          window.setTimeout(() => setCelebrate(false), 2600);
+        }
+      }
+    }
+
     roundIdRef.current = r.id;
     setRound(r);
     await fetchBets(r.id);
   }, [fetchBets]);
+
 
   // Initial load + realtime subscriptions
   useEffect(() => {
