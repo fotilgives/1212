@@ -5,7 +5,15 @@ import { supabase } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import { navigate } from '../hooks/useRoute';
 
-interface Info { id: number; name: string; description: string | null; prepay_coins: number }
+interface Info {
+  id: number;
+  name: string;
+  description: string | null;
+  prepay_coins: number;
+  date: string | null;
+  end_date: string | null;
+  status: 'scheduled' | 'active' | 'finished';
+}
 
 interface Props {
   tournamentId: number;
@@ -110,7 +118,23 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
 
             {stage === 'consent' && (
               <div>
-                {info?.description && <p className="text-sm leading-relaxed text-slate-600">{info.description}</p>}
+                {info?.description && <p className="mb-3 text-sm leading-relaxed text-slate-600">{info.description}</p>}
+                {(info?.date || info?.end_date) && (
+                  <div className="mb-3 rounded-2xl border border-slate-100 bg-slate-50 p-3.5 text-xs text-slate-600 space-y-1">
+                    {info.date && (
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-500">Час початку:</span>
+                        <span className="font-bold text-slate-800">{new Date(info.date).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                    )}
+                    {info.end_date && (
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-slate-500">Час закінчення:</span>
+                        <span className="font-bold text-slate-800">{new Date(info.end_date).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-amber-800">Завдаток за участь</span>
@@ -148,8 +172,16 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
               <div className="flex flex-col items-center gap-3 py-4 text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-emerald-600"><Check className="h-7 w-7" /></span>
                 <p className="text-lg font-bold text-slate-900">Ти в турнірі! 🏆</p>
-                <p className="text-sm text-slate-500">Завдаток зарезервовано. Грай і бийся за призові місця.</p>
-                <button onClick={goPlay} className="shine mt-1 w-full rounded-2xl bg-emerald-600 py-3.5 font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700">Грати →</button>
+                <p className="text-sm text-slate-500">
+                  {info?.status === 'active'
+                    ? 'Завдаток зарезервовано. Турнір вже розпочався, переходь до гри!'
+                    : 'Завдаток зарезервовано. Турнір розпочнеться у запланований час. Чекаємо на старт!'}
+                </p>
+                {info?.status === 'active' ? (
+                  <button onClick={goPlay} className="shine mt-1 w-full rounded-2xl bg-emerald-600 py-3.5 font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700">Грати →</button>
+                ) : (
+                  <button onClick={onClose} className="mt-1 w-full rounded-2xl bg-slate-800 py-3.5 font-bold text-white transition hover:bg-slate-700">Очікувати старту (Закрити)</button>
+                )}
               </div>
             )}
 

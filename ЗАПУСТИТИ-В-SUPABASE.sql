@@ -87,17 +87,22 @@ begin
 end; $function$;
 
 -- ── 3. Створення турніру (8-арг основна + 6-арг сумісна) ───────────────────
+-- Додаємо колонку end_date якщо ще не існує
+alter table public.rps_tournaments add column if not exists end_date timestamptz;
+
+drop function if exists public.rps_admin_create_tournament(uuid, text, text, text, text, int, uuid[], int, int);
 drop function if exists public.rps_admin_create_tournament(uuid, text, text, text, int, uuid[], int, int);
 create function public.rps_admin_create_tournament(
-  p_token uuid, p_name text, p_desc text, p_date text, p_prepay int, p_player_ids uuid[],
+  p_token uuid, p_name text, p_desc text, p_date text, p_end_date text, p_prepay int, p_player_ids uuid[],
   p_stake int, p_round_seconds int
 ) returns jsonb language plpgsql security definer set search_path to 'public' as $function$
-declare v_tid bigint; v_pid uuid; v_date timestamptz;
+declare v_tid bigint; v_pid uuid; v_date timestamptz; v_end_date timestamptz;
 begin
   if not rps_is_admin_token(p_token) then return jsonb_build_object('error','forbidden'); end if;
   begin v_date := nullif(trim(p_date), '')::timestamptz; exception when others then v_date := null; end;
-  insert into rps_tournaments(name, description, date, prepay_coins, stake, round_seconds)
-    values (p_name, p_desc, v_date, coalesce(p_prepay,0), coalesce(p_stake,100), coalesce(p_round_seconds,30))
+  begin v_end_date := nullif(trim(p_end_date), '')::timestamptz; exception when others then v_end_date := null; end;
+  insert into rps_tournaments(name, description, date, end_date, prepay_coins, stake, round_seconds)
+    values (p_name, p_desc, v_date, v_end_date, coalesce(p_prepay,0), coalesce(p_stake,100), coalesce(p_round_seconds,30))
     returning id into v_tid;
   if p_player_ids is not null then
     foreach v_pid in array p_player_ids loop
@@ -108,11 +113,12 @@ begin
   return jsonb_build_object('tournament_id', v_tid, 'invited', array_length(p_player_ids,1));
 end; $function$;
 
+-- Сумісна версія без p_end_date (для старих викликів)
 create or replace function public.rps_admin_create_tournament(
   p_token uuid, p_name text, p_desc text, p_date text, p_prepay int, p_player_ids uuid[]
 ) returns jsonb language plpgsql security definer set search_path to 'public' as $function$
 begin
-  return public.rps_admin_create_tournament(p_token, p_name, p_desc, p_date, p_prepay, p_player_ids, 100, 30);
+  return public.rps_admin_create_tournament(p_token, p_name, p_desc, p_date, null, p_prepay, p_player_ids, 100, 30);
 end; $function$;
 
 -- ── 4. Старт / фініш / видалення / редагування ────────────────────────────
@@ -147,20 +153,23 @@ begin
   return 'ok';
 end; $function$;
 
-create or replace function public.rps_admin_tournament_update(
-  p_token uuid, p_id bigint, p_name text, p_desc text, p_date text,
+drop function if exists public.rps_admin_tournament_update(uuid, bigint, text, text, text, text, int, int, int);
+drop function if exists public.rps_admin_tournament_update(uuid, bigint, text, text, text, int, int, int);
+create function public.rps_admin_tournament_update(
+  p_token uuid, p_id bigint, p_name text, p_desc text, p_date text, p_end_date text,
   p_prepay int, p_stake int, p_round_seconds int
 ) returns text language plpgsql security definer set search_path to 'public' as $function$
-declare v_status text; v_date timestamptz;
+declare v_status text; v_date timestamptz; v_end_date timestamptz;
 begin
   if not rps_is_admin_token(p_token) then raise exception 'forbidden'; end if;
   select status into v_status from rps_tournaments where id = p_id;
   if not found then return 'not_found'; end if;
   if v_status = 'active' then return 'is_active'; end if;
   begin v_date := nullif(trim(p_date), '')::timestamptz; exception when others then v_date := null; end;
+  begin v_end_date := nullif(trim(p_end_date), '')::timestamptz; exception when others then v_end_date := null; end;
   update rps_tournaments set
     name = coalesce(nullif(trim(p_name), ''), name),
-    description = p_desc, date = v_date,
+    description = p_desc, date = v_date, end_date = v_end_date,
     prepay_coins = coalesce(p_prepay, prepay_coins),
     stake = coalesce(p_stake, stake),
     round_seconds = coalesce(p_round_seconds, round_seconds)
@@ -173,7 +182,7 @@ create or replace function public.rps_tournament_info(p_tournament_id bigint)
 returns jsonb language sql security definer set search_path to 'public' stable as $function$
   select jsonb_build_object(
     'id', id, 'name', name, 'description', description,
-    'prepay_coins', prepay_coins, 'date', date
+    'prepay_coins', prepay_coins, 'date', date, 'end_date', end_date
   ) from public.rps_tournaments where id = p_tournament_id;
 $function$;
 
@@ -341,7 +350,7 @@ begin
   return (
     select coalesce(jsonb_agg(t order by t.created_at desc), '[]'::jsonb)
     from (
-      select tr.id, tr.name, tr.description, tr.date, tr.prepay_coins, tr.created_at,
+      select tr.id, tr.name, tr.description, tr.date, tr.end_date, tr.prepay_coins, tr.created_at,
         tr.stake, tr.round_seconds, tr.status,
         jsonb_build_object(
           'total', count(ti.id),
@@ -356,18 +365,18 @@ begin
       from rps_tournaments tr
       left join rps_tournament_invites ti on ti.tournament_id = tr.id
       left join rps_profiles p on p.id = ti.player_id
-      group by tr.id, tr.name, tr.description, tr.date, tr.prepay_coins, tr.created_at, tr.stake, tr.round_seconds, tr.status
+      group by tr.id, tr.name, tr.description, tr.date, tr.end_date, tr.prepay_coins, tr.created_at, tr.stake, tr.round_seconds, tr.status
     ) t
   );
 end; $function$;
 
 -- ── 8. Права + перезавантаження кешу PostgREST ────────────────────────────
-grant execute on function public.rps_admin_create_tournament(uuid,text,text,text,int,uuid[],int,int) to anon, authenticated;
+grant execute on function public.rps_admin_create_tournament(uuid,text,text,text,text,int,uuid[],int,int) to anon, authenticated;
 grant execute on function public.rps_admin_create_tournament(uuid,text,text,text,int,uuid[]) to anon, authenticated;
 grant execute on function public.rps_admin_tournament_start(uuid,bigint) to anon, authenticated;
 grant execute on function public.rps_admin_tournament_finish(uuid,bigint) to anon, authenticated;
 grant execute on function public.rps_admin_tournament_delete(uuid,bigint) to anon, authenticated;
-grant execute on function public.rps_admin_tournament_update(uuid,bigint,text,text,text,int,int,int) to anon, authenticated;
+grant execute on function public.rps_admin_tournament_update(uuid,bigint,text,text,text,text,int,int,int) to anon, authenticated;
 grant execute on function public.rps_tournament_info(bigint) to anon, authenticated;
 grant execute on function public.rps_tournament_join(uuid,bigint) to anon, authenticated;
 grant execute on function public.rps_my_tournament_status(uuid) to anon, authenticated;

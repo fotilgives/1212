@@ -60,7 +60,7 @@ interface ScriptRow {
 interface Settings { [key: string]: { value: string; label: string } }
 interface TournamentInvite { invite_id: number; player_id: string; nick: string; status: string; }
 interface Tournament {
-  id: number; name: string; description: string; date: string | null;
+  id: number; name: string; description: string; date: string | null; end_date: string | null;
   prepay_coins: number; created_at: string;
   stake: number; round_seconds: number; status: 'scheduled' | 'active' | 'finished';
   responses: { total: number; yes: number; no: number; later: number; pending: number };
@@ -566,6 +566,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   const [tName, setTName] = useState('');
   const [tDesc, setTDesc] = useState('');
   const [tDate, setTDate] = useState('');
+  const [tEndDate, setTEndDate] = useState('');
   const [tPrepay, setTPrepay] = useState('0');
   const [tStake, setTStake] = useState('100');
   const [tRoundSecs, setTRoundSecs] = useState('30');
@@ -614,6 +615,15 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
       p_name:       tName.trim(),
       p_desc:       tDesc.trim(),
       p_date:       tDate || null,
+      p_end_date:   tEndDate || null,
+      p_prepay:     parseInt(tPrepay) || 0,
+      p_player_ids: Array.from(selectedPlayers),
+    };
+    const baseCompat = {
+      p_token:      token,
+      p_name:       tName.trim(),
+      p_desc:       tDesc.trim(),
+      p_date:       tDate || null,
       p_prepay:     parseInt(tPrepay) || 0,
       p_player_ids: Array.from(selectedPlayers),
     };
@@ -623,16 +633,15 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
       p_stake:      parseInt(tStake) || 100,
       p_round_seconds: parseInt(tRoundSecs) || 30,
     });
-    // Якщо схема-кеш PostgREST ще не знає нову 8-арг версію — падаємо на
-    // сумісну 6-арг (створює зі ставкою 100 / раунд 30), щоб турнір усе одно
-    // створився без очікування перезавантаження кешу.
+    // Якщо схема-кеш PostgREST ще не знає нову версію — падаємо на
+    // сумісну версію, щоб турнір усе одно створився без очікування перезавантаження кешу.
     if (error && /schema cache|PGRST202|could not find/i.test(error.message || '')) {
-      ({ data, error } = await supabase.rpc('rps_admin_create_tournament', base));
+      ({ data, error } = await supabase.rpc('rps_admin_create_tournament', baseCompat));
     }
     setSending(false);
     if (data && !data.error) {
       setSendMsg({ type: 'ok', text: `✅ Запрошення надіслано ${data.invited || selectedPlayers.size} гравцям!` });
-      setTName(''); setTDesc(''); setTDate(''); setTPrepay('0'); setTStake('100'); setTRoundSecs('30'); setSelectedPlayers(new Set());
+      setTName(''); setTDesc(''); setTDate(''); setTEndDate(''); setTPrepay('0'); setTStake('100'); setTRoundSecs('30'); setSelectedPlayers(new Set());
       setShowForm(false);
       load();
     } else {
@@ -654,6 +663,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   const [eName, setEName] = useState('');
   const [eDesc, setEDesc] = useState('');
   const [eDate, setEDate] = useState('');
+  const [eEndDate, setEEndDate] = useState('');
   const [ePrepay, setEPrepay] = useState('0');
   const [eStake, setEStake] = useState('100');
   const [eRoundSecs, setERoundSecs] = useState('30');
@@ -665,6 +675,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
     setEName(t.name);
     setEDesc(t.description || '');
     setEDate(t.date ? t.date.slice(0, 16) : '');
+    setEEndDate(t.end_date ? t.end_date.slice(0, 16) : '');
     setEPrepay(String(t.prepay_coins));
     setEStake(String(t.stake));
     setERoundSecs(String(t.round_seconds));
@@ -674,10 +685,16 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   const saveEdit = async () => {
     if (editId == null) return;
     setEBusy(true); setEMsg(null);
-    const { data, error } = await supabase.rpc('rps_admin_tournament_update', {
-      p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(), p_date: eDate || null,
+    let { data, error } = await supabase.rpc('rps_admin_tournament_update', {
+      p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(), p_date: eDate || null, p_end_date: eEndDate || null,
       p_prepay: parseInt(ePrepay) || 0, p_stake: parseInt(eStake) || 100, p_round_seconds: parseInt(eRoundSecs) || 30,
     });
+    if (error && /schema cache|PGRST202|could not find/i.test(error.message || '')) {
+      ({ data, error } = await supabase.rpc('rps_admin_tournament_update', {
+        p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(), p_date: eDate || null,
+        p_prepay: parseInt(ePrepay) || 0, p_stake: parseInt(eStake) || 100, p_round_seconds: parseInt(eRoundSecs) || 30,
+      }));
+    }
     setEBusy(false);
     if (data === 'ok') { setEditId(null); load(); }
     else if (data === 'is_active') setEMsg('Не можна редагувати активний турнір — спершу заверши його.');
@@ -757,7 +774,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
-                <Calendar className="inline h-3.5 w-3.5 mr-1" />Дата турніру
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />Час початку
               </label>
               <input
                 type="datetime-local" value={tDate} onChange={(e) => setTDate(e.target.value)}
@@ -765,6 +782,15 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               />
             </div>
             <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-500">
+                <Calendar className="inline h-3.5 w-3.5 mr-1" />Час закінчення
+              </label>
+              <input
+                type="datetime-local" value={tEndDate} onChange={(e) => setTEndDate(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
+              />
+            </div>
+            <div className="col-span-2">
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                 <Lock className="inline h-3.5 w-3.5 mr-1" />Передоплата (монет)
               </label>
@@ -895,8 +921,11 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">
-                    {fmtDate(t.created_at)}{t.date ? ` · Турнір: ${fmtDate(t.date)}` : ''} · ставка {t.stake} · {t.round_seconds}с
+                  <div className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                    Створено: {fmtDate(t.created_at)}
+                    {t.date && ` · Початок: ${fmtDate(t.date)}`}
+                    {t.end_date && ` · Закінчення: ${fmtDate(t.end_date)}`}
+                    {` · ставка ${t.stake} · ${t.round_seconds}с`}
                   </div>
                   {/* Статистика відповідей */}
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1060,8 +1089,13 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Дата турніру</label>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Час початку</label>
                 <input type="datetime-local" value={eDate} onChange={(e) => setEDate(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-500">Час закінчення</label>
+                <input type="datetime-local" value={eEndDate} onChange={(e) => setEEndDate(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
               </div>
               <div>
@@ -1074,7 +1108,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                 <input type="number" min={1} value={eStake} onChange={(e) => setEStake(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white" />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Тривалість раунду (сек)</label>
                 <input type="number" min={5} value={eRoundSecs} onChange={(e) => setERoundSecs(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold outline-none focus:border-emerald-400 focus:bg-white" />
