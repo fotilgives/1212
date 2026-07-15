@@ -86,12 +86,15 @@ begin
   return 'ok';
 end; $function$;
 
--- ── 3. Створення турніру (8-арг основна + 6-арг сумісна) ───────────────────
+-- ── 3. Створення турніру (9-арг основна + 6-арг сумісна) ───────────────────
 -- Додаємо колонку end_date якщо ще не існує
 alter table public.rps_tournaments add column if not exists end_date timestamptz;
 
+-- Дропаємо ВСІ можливі варіанти функції (різний порядок параметрів), щоб уникнути конфлікту
 drop function if exists public.rps_admin_create_tournament(uuid, text, text, text, text, int, uuid[], int, int);
+drop function if exists public.rps_admin_create_tournament(uuid, text, text, text, int, uuid[], int, int, text);
 drop function if exists public.rps_admin_create_tournament(uuid, text, text, text, int, uuid[], int, int);
+drop function if exists public.rps_admin_create_tournament(uuid, text, text, text, int, uuid[]);
 create function public.rps_admin_create_tournament(
   p_token uuid, p_name text, p_desc text, p_date text, p_end_date text, p_prepay int, p_player_ids uuid[],
   p_stake int, p_round_seconds int
@@ -153,7 +156,9 @@ begin
   return 'ok';
 end; $function$;
 
+-- Дропаємо всі варіанти rps_admin_tournament_update
 drop function if exists public.rps_admin_tournament_update(uuid, bigint, text, text, text, text, int, int, int);
+drop function if exists public.rps_admin_tournament_update(uuid, bigint, text, text, text, int, int, int, text);
 drop function if exists public.rps_admin_tournament_update(uuid, bigint, text, text, text, int, int, int);
 create function public.rps_admin_tournament_update(
   p_token uuid, p_id bigint, p_name text, p_desc text, p_date text, p_end_date text,

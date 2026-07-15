@@ -226,6 +226,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           }
           account.refresh();
           fetchBonus();
+          fetchTournamentStatus(); // оновлюємо турнірний баланс після кожного раунду
         }
       })
       .subscribe();
