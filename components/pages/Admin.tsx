@@ -774,7 +774,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
             />
           </div>
 
-          <div className="col-span-2 grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                 <Calendar className="inline h-3.5 w-3.5 mr-1" />Дата початку
@@ -803,9 +803,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
             </div>
-          </div>
 
-          <div className="col-span-2 grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                 <Calendar className="inline h-3.5 w-3.5 mr-1" />Дата закінчення
@@ -834,7 +832,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
               />
             </div>
-          </div>
+
             <div className="col-span-2">
               <label className="mb-1.5 block text-xs font-semibold text-slate-500">
                 <Lock className="inline h-3.5 w-3.5 mr-1" />Передоплата (монет)
@@ -1132,7 +1130,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
             <textarea value={eDesc} onChange={(e) => setEDesc(e.target.value)} rows={2} placeholder="Опис / деталі"
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white" />
-            <div className="col-span-2 grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Дата початку</label>
                 <input
@@ -1157,9 +1155,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
                 />
               </div>
-            </div>
 
-            <div className="col-span-2 grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Дата закінчення</label>
                 <input
@@ -1184,7 +1180,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-emerald-400 focus:bg-white"
                 />
               </div>
-            </div>
+
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-slate-500">Передоплата (монет)</label>
                 <input type="number" min={0} value={ePrepay} onChange={(e) => setEPrepay(e.target.value)}
