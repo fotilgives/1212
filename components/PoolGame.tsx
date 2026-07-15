@@ -89,6 +89,8 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [tstatus, setTstatus] = useState<TournamentStatus | null>(null);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
+  const [upcomingTournament, setUpcomingTournament] = useState<{ id: number; name: string; date: string } | null>(null);
+
 
   useEffect(() => {
     (async () => {
@@ -152,6 +154,37 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     if (data) { setInvites(data as TournamentInvite[]); setCurrentInviteIdx(0); }
   }, [account.isAccount, account.playerId]);
 
+  const fetchUpcomingTournament = useCallback(async () => {
+    if (!account.playerId) return;
+    const { data } = await supabase
+      .from('rps_tournament_invites')
+      .select(`
+        status,
+        rps_tournaments!inner (
+          id,
+          name,
+          status,
+          date
+        )
+      `)
+      .eq('player_id', account.playerId)
+      .eq('status', 'yes')
+      .eq('rps_tournaments.status', 'scheduled')
+      .maybeSingle();
+
+    if (data && data.rps_tournaments) {
+      const t = data.rps_tournaments as any;
+      setUpcomingTournament({
+        id: t.id,
+        name: t.name,
+        date: t.date,
+      });
+    } else {
+      setUpcomingTournament(null);
+    }
+  }, [account.playerId]);
+
+
   const respondInvite = async (inviteId: number, status: 'yes' | 'no' | 'later') => {
     setInviteBusy(true); setInviteMsg(null);
     const { data } = await supabase.rpc('rps_tournament_respond', {
@@ -161,8 +194,12 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     });
     setInviteBusy(false);
     if (data === 'ok') {
-      if (status === 'yes') account.refresh();
+      if (status === 'yes') {
+        account.refresh();
+        fetchUpcomingTournament();
+      }
       // прибрати поточне запрошення
+
       setInvites((prev) => prev.filter((i) => i.invite_id !== inviteId));
       setCurrentInviteIdx(0);
     } else if (data === 'insufficient') {
@@ -182,26 +219,34 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     const r = data as RoundRow;
 
     // Якщо раунд змінився — перевіряємо ставку гравця в попередньому раунді
-    if (prevRoundId && prevRoundId !== r.id && playerIdRef.current) {
-      const { data: bet } = await supabase
-        .from('rps_bets')
-        .select('*')
-        .eq('round_id', prevRoundId)
-        .eq('player_id', playerIdRef.current)
-        .maybeSingle();
-      if (bet && bet.payout > 0) {
-        setLastResult({ net: bet.payout - bet.stake, payout: bet.payout, move: bet.move as Move, stake: bet.stake, isBluff: bet.is_bluff });
-        if (bet.payout > bet.stake) {
-          setCelebrate(true);
-          window.setTimeout(() => setCelebrate(false), 2600);
+    if (prevRoundId && prevRoundId !== r.id) {
+      if (playerIdRef.current) {
+        const { data: bet } = await supabase
+          .from('rps_bets')
+          .select('*')
+          .eq('round_id', prevRoundId)
+          .eq('player_id', playerIdRef.current)
+          .maybeSingle();
+        if (bet) {
+          setLastResult({ net: bet.payout - bet.stake, payout: bet.payout, move: bet.move as Move, stake: bet.stake, isBluff: bet.is_bluff });
+          if (bet.payout > bet.stake) {
+            setCelebrate(true);
+            window.setTimeout(() => setCelebrate(false), 2600);
+          }
         }
       }
+      // Оновлюємо баланси та статуси турнірів на клієнті
+      account.refresh();
+      fetchBonus();
+      fetchTournamentStatus();
+      fetchUpcomingTournament();
     }
 
     roundIdRef.current = r.id;
     setRound(r);
     await fetchBets(r.id);
-  }, [fetchBets]);
+  }, [fetchBets, account, fetchBonus, fetchTournamentStatus, fetchUpcomingTournament]);
+
 
 
   // Initial load + realtime subscriptions
@@ -210,16 +255,20 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     fetchBonus();
     fetchInvites();
     fetchTournamentStatus();
+    fetchUpcomingTournament();
     const ch = supabase
       .channel('rps-game')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rps_tournaments' }, (p) => {
         console.log('Realtime rps_tournaments:', p);
         fetchTournamentStatus();
+        fetchUpcomingTournament();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_tournament_invites', filter: `player_id=eq.${account.playerId}` }, (p) => {
         console.log('Realtime rps_tournament_invites:', p);
         fetchTournamentStatus();
+        fetchUpcomingTournament();
       })
+
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
         console.log('Realtime rps_rounds INSERT:', p);
         const r = p.new as RoundRow;
@@ -813,6 +862,28 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Upcoming registered tournament info */}
+          {upcomingTournament && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative mt-4 overflow-hidden rounded-3xl bg-gradient-to-r from-violet-50 to-indigo-50 p-4 text-left text-sm font-semibold text-violet-850 ring-1 ring-violet-100"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 text-white shadow-md shadow-violet-200">
+                  <Trophy className="h-4.5 w-4.5" />
+                </span>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-violet-500">Зареєстрований у турнірі</div>
+                  <div className="text-sm font-black text-slate-800">«{upcomingTournament.name}»</div>
+                  <div className="mt-0.5 text-xs font-medium text-slate-500">
+                    Початок: {new Date(upcomingTournament.date).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Controls */}
           <div className="mt-6">

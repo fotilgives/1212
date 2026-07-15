@@ -614,8 +614,8 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
       p_token:      token,
       p_name:       tName.trim(),
       p_desc:       tDesc.trim(),
-      p_date:       tDate || null,
-      p_end_date:   tEndDate || null,
+      p_date:       tDate ? new Date(tDate).toISOString() : null,
+      p_end_date:   tEndDate ? new Date(tEndDate).toISOString() : null,
       p_prepay:     parseInt(tPrepay) || 0,
       p_player_ids: Array.from(selectedPlayers),
     };
@@ -623,7 +623,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
       p_token:      token,
       p_name:       tName.trim(),
       p_desc:       tDesc.trim(),
-      p_date:       tDate || null,
+      p_date:       tDate ? new Date(tDate).toISOString() : null,
       p_prepay:     parseInt(tPrepay) || 0,
       p_player_ids: Array.from(selectedPlayers),
     };
@@ -686,12 +686,15 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
     if (editId == null) return;
     setEBusy(true); setEMsg(null);
     let { data, error } = await supabase.rpc('rps_admin_tournament_update', {
-      p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(), p_date: eDate || null, p_end_date: eEndDate || null,
+      p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(),
+      p_date: eDate ? new Date(eDate).toISOString() : null,
+      p_end_date: eEndDate ? new Date(eEndDate).toISOString() : null,
       p_prepay: parseInt(ePrepay) || 0, p_stake: parseInt(eStake) || 100, p_round_seconds: parseInt(eRoundSecs) || 30,
     });
     if (error && /schema cache|PGRST202|could not find/i.test(error.message || '')) {
       ({ data, error } = await supabase.rpc('rps_admin_tournament_update', {
-        p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(), p_date: eDate || null,
+        p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(),
+        p_date: eDate ? new Date(eDate).toISOString() : null,
         p_prepay: parseInt(ePrepay) || 0, p_stake: parseInt(eStake) || 100, p_round_seconds: parseInt(eRoundSecs) || 30,
       }));
     }
