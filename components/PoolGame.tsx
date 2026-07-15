@@ -173,12 +173,15 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   };
 
   const loadCurrent = useCallback(async () => {
+    // ⚠️ Зберігаємо prevRoundId ДО await — щоб realtime event INSERT rps_rounds
+    // не встиг оновити roundIdRef.current раніше ніж ми перевіримо ставку.
+    const prevRoundId = roundIdRef.current;
+
     const { data, error } = await supabase.rpc('rps_tick');
     if (error || !data) return;
     const r = data as RoundRow;
 
     // Якщо раунд змінився — перевіряємо ставку гравця в попередньому раунді
-    const prevRoundId = roundIdRef.current;
     if (prevRoundId && prevRoundId !== r.id && playerIdRef.current) {
       const { data: bet } = await supabase
         .from('rps_bets')
