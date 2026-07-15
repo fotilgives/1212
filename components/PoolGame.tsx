@@ -186,13 +186,16 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     fetchTournamentStatus();
     const ch = supabase
       .channel('rps-game')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rps_tournaments' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rps_tournaments' }, (p) => {
+        console.log('Realtime rps_tournaments:', p);
         fetchTournamentStatus();
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_tournament_invites', filter: `player_id=eq.${account.playerId}` }, () => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_tournament_invites', filter: `player_id=eq.${account.playerId}` }, (p) => {
+        console.log('Realtime rps_tournament_invites:', p);
         fetchTournamentStatus();
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_rounds' }, (p) => {
+        console.log('Realtime rps_rounds INSERT:', p);
         const r = p.new as RoundRow;
         roundIdRef.current = r.id;
         setRound(r);
@@ -201,6 +204,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         advancing.current = false;
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_rounds' }, (p) => {
+        console.log('Realtime rps_rounds UPDATE:', p);
         const r = p.new as RoundRow;
         if (r.id === roundIdRef.current) {
           setRound(r);
@@ -211,14 +215,17 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rps_bets' }, (p) => {
+        console.log('Realtime rps_bets INSERT:', p);
         const b = p.new as BetRow;
         if (b.round_id === roundIdRef.current) {
           setBets((prev) => (prev.some((x) => x.id === b.id) ? prev : [...prev, b]));
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_bets' }, (p) => {
+        console.log('Realtime rps_bets UPDATE:', p);
         const b = p.new as BetRow;
         if (b.player_id === account.playerId) {
+          console.log('Match found for current player bet update:', b);
           setLastResult({ net: b.payout - b.stake, payout: b.payout, move: b.move as Move, stake: b.stake, isBluff: b.is_bluff });
           if (b.payout > b.stake) {
             setCelebrate(true);
@@ -229,7 +236,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           fetchTournamentStatus(); // оновлюємо турнірний баланс після кожного раунду
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
     return () => {
       supabase.removeChannel(ch);
     };
