@@ -447,24 +447,34 @@ grant execute on function public.rps_my_tournament_status(uuid) to anon, authent
 grant execute on function public.rps_tournament_leaderboard(bigint) to anon, authenticated;
 grant execute on function public.rps_admin_get_tournaments(uuid) to anon, authenticated;
 
--- ── Моя реєстрація в турнірі (scheduled або active) ─────────────────────────
--- Залізний фікс: обходить проблеми PostgREST join
+-- ── Моя реєстрація в турнірі (scheduled, active, або нещодавно finished) ──────
+-- Повертає активний/запланований турнір, або нещодавно завершений (за 7 днів)
 create or replace function public.rps_my_registered_tournament(p_player_id uuid)
 returns jsonb language sql security definer set search_path to 'public' stable as $function$
-  select case when t.id is null then null else jsonb_build_object(
-    'id',        t.id,
-    'name',      t.name,
-    'status',    t.status,
-    'date',      t.date,
-    'end_date',  t.end_date,
+  select jsonb_build_object(
+    'id',           t.id,
+    'name',         t.name,
+    'status',       t.status,
+    'date',         t.date,
+    'end_date',     t.end_date,
     'prepay_coins', t.prepay_coins
-  ) end
+  )
   from public.rps_tournament_invites i
   join public.rps_tournaments t on t.id = i.tournament_id
   where i.player_id = p_player_id
     and i.status = 'yes'
-    and t.status in ('scheduled', 'active')
-  order by t.date asc
+    and (
+      t.status in ('scheduled', 'active')
+      or (t.status = 'finished' and coalesce(t.end_date, t.date) > now() - interval '7 days')
+    )
+  order by
+    case t.status
+      when 'active'    then 1
+      when 'scheduled' then 2
+      when 'finished'  then 3
+      else 4
+    end,
+    t.date asc
   limit 1;
 $function$;
 
