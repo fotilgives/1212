@@ -120,7 +120,10 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
             <User className="h-3.5 w-3.5 shrink-0 opacity-80 sm:h-4 sm:w-4" />
             <Coins className="h-3.5 w-3.5 shrink-0 text-amber-500 sm:h-4 sm:w-4" />
             <AnimatedNumber value={balance} />
-            <span className="hidden xs:inline-block text-[11px] font-bold opacity-80 sm:text-xs">
+            <span className="text-[11px] font-bold opacity-85 sm:text-xs">
+              балів
+            </span>
+            <span className="hidden xs:inline-block text-[11px] font-bold opacity-85 sm:text-xs">
               · Профіль
             </span>
           </button>
