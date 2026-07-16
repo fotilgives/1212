@@ -241,6 +241,13 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     fetchInvites();
     fetchTournamentStatus();
     fetchUpcomingTournament();
+
+    // Автоматична перевірка старту/фінішу турніру кажні 4 сек
+    const pollInterval = window.setInterval(() => {
+      fetchTournamentStatus();
+      fetchUpcomingTournament();
+    }, 4000);
+
     const ch = supabase
       .channel('rps-game')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rps_tournaments' }, (p) => {
@@ -300,6 +307,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         console.log('Realtime subscription status:', status);
       });
     return () => {
+      window.clearInterval(pollInterval);
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

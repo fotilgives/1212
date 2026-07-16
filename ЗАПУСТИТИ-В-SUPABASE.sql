@@ -250,17 +250,68 @@ returns jsonb language sql security definer set search_path to 'public' stable a
   ) from public.rps_tournaments where id = p_tournament_id;
 $function$;
 
+-- ── Автоматичне оновлення статусів турнірів (авто-старт та авто-фініш за датою) ──
+create or replace function public.rps_auto_update_tournaments()
+returns void language plpgsql security definer set search_path to 'public' as $function$
+begin
+  -- 1. Авто-фініш активних турнірів, у яких настав end_date
+  update public.rps_tournaments
+  set status = 'finished', ended_at = coalesce(ended_at, now())
+  where status = 'active'
+    and end_date is not null
+    and end_date <= now();
+
+  -- 2. Авто-фініш застарілих scheduled турнірів, у яких end_date минув
+  update public.rps_tournaments
+  set status = 'finished', ended_at = coalesce(ended_at, now())
+  where status = 'scheduled'
+    and end_date is not null
+    and end_date <= now();
+
+  -- 3. Авто-старт турнірів: якщо настала date, статус scheduled і end_date ще в майбутньому
+  update public.rps_tournaments
+  set status = 'active', started_at = coalesce(started_at, now())
+  where status = 'scheduled'
+    and date is not null
+    and date <= now()
+    and (end_date is null or end_date > now())
+    and not exists (select 1 from public.rps_tournaments where status = 'active');
+end; $function$;
+
+grant execute on function public.rps_auto_update_tournaments() to anon, authenticated;
+
 create or replace function public.rps_my_tournament_status(p_player_id uuid)
-returns jsonb language sql security definer set search_path to 'public' stable as $function$
-  select case when t.id is null then jsonb_build_object('active', false) else jsonb_build_object(
-    'active', true, 'tournament_id', t.id, 'name', t.name, 'stake', t.stake,
-    'round_seconds', t.round_seconds, 'prepay_coins', t.prepay_coins,
+returns jsonb language plpgsql security definer set search_path to 'public' as $function$
+declare
+  t public.rps_tournaments%rowtype;
+  i public.rps_tournament_invites%rowtype;
+begin
+  perform public.rps_auto_update_tournaments();
+
+  select * into t
+  from public.rps_tournaments
+  where status = 'active'
+  limit 1;
+
+  if t.id is null then
+    return jsonb_build_object('active', false);
+  end if;
+
+  select * into i
+  from public.rps_tournament_invites
+  where tournament_id = t.id and player_id = p_player_id;
+
+  return jsonb_build_object(
+    'active', true,
+    'tournament_id', t.id,
+    'name', t.name,
+    'stake', t.stake,
+    'round_seconds', t.round_seconds,
+    'prepay_coins', t.prepay_coins,
     'participant', (i.id is not null and i.status = 'yes'),
     'tournament_balance', coalesce(i.tournament_balance, 0)
-  ) end
-  from (select * from public.rps_tournaments where status = 'active' and (date is null or date <= now()) limit 1) t
-  left join public.rps_tournament_invites i on i.tournament_id = t.id and i.player_id = p_player_id;
-$function$;
+  );
+end; $function$;
 
 create or replace function public.rps_tournament_leaderboard(p_tournament_id bigint)
 returns jsonb language sql security definer set search_path to 'public' stable as $function$
@@ -382,6 +433,7 @@ returns rps_rounds language plpgsql security definer set search_path to 'public'
 declare cur public.rps_rounds; nextw text; v_secs int;
 begin
   perform pg_advisory_xact_lock(778899001);
+  perform public.rps_auto_update_tournaments();
   select coalesce(t.round_seconds, rps_round_seconds()) into v_secs
     from (select round_seconds from rps_tournaments where status = 'active' limit 1) t;
   if v_secs is null then v_secs := rps_round_seconds(); end if;
@@ -450,7 +502,12 @@ grant execute on function public.rps_admin_get_tournaments(uuid) to anon, authen
 -- ── Моя реєстрація в турнірі (scheduled, active, або нещодавно finished) ──────
 -- Повертає активний/запланований турнір, або нещодавно завершений (за 7 днів)
 create or replace function public.rps_my_registered_tournament(p_player_id uuid)
-returns jsonb language sql security definer set search_path to 'public' stable as $function$
+returns jsonb language plpgsql security definer set search_path to 'public' as $function$
+declare
+  result jsonb;
+begin
+  perform public.rps_auto_update_tournaments();
+
   select jsonb_build_object(
     'id',           t.id,
     'name',         t.name,
@@ -458,7 +515,7 @@ returns jsonb language sql security definer set search_path to 'public' stable a
     'date',         t.date,
     'end_date',     t.end_date,
     'prepay_coins', t.prepay_coins
-  )
+  ) into result
   from public.rps_tournament_invites i
   join public.rps_tournaments t on t.id = i.tournament_id
   where i.player_id = p_player_id
@@ -476,7 +533,9 @@ returns jsonb language sql security definer set search_path to 'public' stable a
     end,
     t.date asc
   limit 1;
-$function$;
+
+  return result;
+end; $function$;
 
 grant execute on function public.rps_my_registered_tournament(uuid) to anon, authenticated;
 

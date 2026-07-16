@@ -96,7 +96,7 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   useEffect(() => {
     if (!account.playerId) return;
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const { data, error } = await supabase.rpc('rps_my_registered_tournament', { p_player_id: account.playerId });
       if (cancelled) return;
       if (error || !data) { setTournament(null); return; }
@@ -107,8 +107,10 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         date: data.date,
         end_date: data.end_date ?? null,
       });
-    })();
-    return () => { cancelled = true; };
+    };
+    load();
+    const interval = window.setInterval(load, 4000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, [account.playerId]);
 
   // Зворотній відлік до початку турніру
