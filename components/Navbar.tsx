@@ -62,11 +62,11 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <div className="flex items-center gap-4">
           <a href="/" onClick={(e) => { e.preventDefault(); setOpen(false); navigate('home'); }} className="flex items-center gap-2.5">
-            <motion.span whileHover={{ rotate: -6, scale: 1.06 }}>
-              <BrandMark size={38} />
+            <motion.span whileHover={{ rotate: -6, scale: 1.06 }} className="flex shrink-0 items-center justify-center">
+              <BrandMark size={38} className="shrink-0" />
             </motion.span>
-            <span className="leading-tight">
-              <span className={`font-display block max-w-[46vw] text-[13px] font-bold leading-snug tracking-tight sm:max-w-none sm:text-[15px] lg:text-lg transition-colors ${onDark ? 'text-ivory-50' : 'text-forest-900'}`}>
+            <span className="flex flex-col justify-center leading-tight">
+              <span className={`font-display block max-w-[46vw] text-[13px] font-bold leading-tight tracking-tight sm:max-w-none sm:text-[15px] lg:text-lg transition-colors ${onDark ? 'text-ivory-50' : 'text-forest-900'}`}>
                 Центр розвитку та здоров'я
               </span>
               <span className={`hidden text-[9px] font-medium uppercase tracking-[0.2em] transition-colors sm:block sm:text-[10px] ${onDark ? 'text-gold-300/80' : 'text-gold-600/80'}`}>
@@ -110,15 +110,19 @@ const Navbar: React.FC<Props> = ({ balance, route, onExchange, account, onLogin 
         <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => navigate('profile')}
-            title="Мій кабінет"
-            className={`flex cursor-pointer items-center gap-1 rounded-full px-2 py-1.5 text-xs font-bold ring-1 transition sm:gap-1.5 sm:px-3 sm:text-sm ${
+            title="Мій профіль та кабінет"
+            className={`flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold ring-1 transition sm:gap-1.5 sm:px-3 sm:text-sm ${
               onDark
                 ? 'glass-dark text-gold-300 ring-white/15 hover:ring-gold-300/50'
                 : `bg-white/70 text-gold-600 hover:ring-gold-500/60 ${route === 'profile' ? 'ring-gold-500/60' : 'ring-gold-500/25'}`
             }`}
           >
-            <Coins className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <User className="h-3.5 w-3.5 shrink-0 opacity-80 sm:h-4 sm:w-4" />
+            <Coins className="h-3.5 w-3.5 shrink-0 text-amber-500 sm:h-4 sm:w-4" />
             <AnimatedNumber value={balance} />
+            <span className="hidden xs:inline-block text-[11px] font-bold opacity-80 sm:text-xs">
+              · Профіль
+            </span>
           </button>
           <motion.button
             whileHover={{ scale: 1.05 }}

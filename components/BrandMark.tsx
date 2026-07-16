@@ -16,8 +16,8 @@ const BrandMark: React.FC<Props> = ({ size = 36, className = '' }) => {
   const px = `${size}px`;
   return (
     <span
-      className={`grid place-items-center overflow-hidden rounded-full shadow-md shadow-emerald-200/60 ${className}`}
-      style={{ height: px, width: px }}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full shadow-sm shadow-emerald-950/20 ${className}`}
+      style={{ height: px, width: px, minWidth: px, minHeight: px }}
     >
       <SmartImage
         src="/images/logo.png"

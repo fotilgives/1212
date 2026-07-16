@@ -258,7 +258,7 @@ returns jsonb language sql security definer set search_path to 'public' stable a
     'participant', (i.id is not null and i.status = 'yes'),
     'tournament_balance', coalesce(i.tournament_balance, 0)
   ) end
-  from (select * from public.rps_tournaments where status = 'active' limit 1) t
+  from (select * from public.rps_tournaments where status = 'active' and (date is null or date <= now()) limit 1) t
   left join public.rps_tournament_invites i on i.tournament_id = t.id and i.player_id = p_player_id;
 $function$;
 

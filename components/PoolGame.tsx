@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Coins, Users, Wifi, Trophy, X, Lock } from 'lucide-react';
+import { Coins, Users, Wifi, Trophy, X, Lock, CalendarCheck, Home, LogIn } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
 import type { Account } from '../hooks/useAccount';
 import AnimatedNumber from './AnimatedNumber';
 import Confetti from './Confetti';
-import { LogIn } from 'lucide-react';
+import { goToBooking, navigate } from '../hooks/useRoute';
 
 interface TournamentInvite {
   invite_id: number;
@@ -513,12 +513,27 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500">
             Зараз гра доступна лише зареєстрованим учасникам цього турніру. Загальна гра для всіх повернеться одразу після його завершення.
           </p>
-          <button
-            onClick={openLeaderboard}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-200 transition hover:bg-amber-600"
-          >
-            🏆 Переглянути рейтинг турніру
-          </button>
+          
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={goToBooking}
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700 cursor-pointer"
+            >
+              <CalendarCheck className="h-4 w-4" /> Записатися на прийом
+            </button>
+            <button
+              onClick={() => navigate('home')}
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+            >
+              <Home className="h-4 w-4" /> Переглянути сайт
+            </button>
+            <button
+              onClick={openLeaderboard}
+              className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-200 transition hover:bg-amber-600 cursor-pointer"
+            >
+              <Trophy className="h-4 w-4" /> Рейтинг
+            </button>
+          </div>
         </motion.div>
       ) : (
       <motion.div

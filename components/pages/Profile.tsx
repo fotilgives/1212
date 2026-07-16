@@ -113,8 +113,9 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
   // Зворотній відлік до початку турніру
   useEffect(() => {
-    if (!tournament || tournament.status !== 'scheduled') { setCountdown(''); return; }
+    if (!tournament || tournament.status === 'finished') { setCountdown(''); return; }
     const tick = () => {
+      if (!tournament.date) { setCountdown(''); return; }
       const diff = new Date(tournament.date).getTime() - Date.now();
       if (diff <= 0) { setCountdown(''); return; }
       const totalSec = Math.floor(diff / 1000);
@@ -295,7 +296,7 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    {tournament.status === 'active' ? (
+                    {tournament.status === 'active' && (!tournament.date || new Date(tournament.date).getTime() <= Date.now()) ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-950 animate-pulse">
                         <Zap className="h-2.5 w-2.5" /> Турнір ЙДЕ
                       </span>
@@ -342,7 +343,7 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   </div>
                 </div>
 
-                {tournament.status === 'active' && (
+                {tournament.status === 'active' && (!tournament.date || new Date(tournament.date).getTime() <= Date.now()) && (
                   <div className="border-t border-white/10 pt-2.5 text-center">
                     <span className="inline-flex items-center gap-1.5 text-sm font-extrabold text-emerald-300">
                       <Zap className="h-3.5 w-3.5 animate-pulse" /> Турнір вже йде! Грай просто зараз 🔥
@@ -350,16 +351,16 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                   </div>
                 )}
 
-                {tournament.status === 'scheduled' && countdown && (
+                {(tournament.status !== 'active' || (tournament.date && new Date(tournament.date).getTime() > Date.now())) && tournament.status !== 'finished' && countdown && (
                   <div className="flex items-center justify-between border-t border-white/10 pt-2.5">
                     <span className="text-xs font-semibold text-violet-300">⏱ До початку:</span>
                     <span className="font-mono text-sm font-extrabold text-amber-300 tabular-nums">{countdown}</span>
                   </div>
                 )}
 
-                {tournament.status === 'scheduled' && !countdown && (
+                {(tournament.status !== 'active' || (tournament.date && new Date(tournament.date).getTime() > Date.now())) && tournament.status !== 'finished' && !countdown && (
                   <div className="border-t border-white/10 pt-2.5 text-center text-xs text-amber-300 font-semibold">
-                    ⚡ Починається! Переходь до гри.
+                    ⚡ Очікується старт! Скоро почнеться.
                   </div>
                 )}
 
