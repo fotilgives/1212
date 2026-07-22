@@ -609,6 +609,10 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
 
   const send = async () => {
     if (!tName.trim()) { setSendMsg({ type: 'error', text: 'Введи назву турніру' }); return; }
+    if (!tDate || !tEndDate) { setSendMsg({ type: 'error', text: 'Вкажи дату й час початку та завершення турніру' }); return; }
+    if (new Date(tEndDate).getTime() <= new Date(tDate).getTime()) {
+      setSendMsg({ type: 'error', text: 'Завершення турніру має бути пізніше за початок' }); return;
+    }
     setSending(true); setSendMsg(null);
     const base = {
       p_token:      token,
@@ -684,6 +688,10 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
 
   const saveEdit = async () => {
     if (editId == null) return;
+    if (!eDate || !eEndDate) { setEMsg('Вкажи дату й час початку та завершення турніру.'); return; }
+    if (new Date(eEndDate).getTime() <= new Date(eDate).getTime()) {
+      setEMsg('Завершення турніру має бути пізніше за початок.'); return;
+    }
     setEBusy(true); setEMsg(null);
     let { data, error } = await supabase.rpc('rps_admin_tournament_update', {
       p_token: token, p_id: editId, p_name: eName.trim(), p_desc: eDesc.trim(),
@@ -710,6 +718,7 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
     setBusyId(null);
     if (data === 'ok') load();
     else if (data === 'other_active') alert('Вже є активний турнір — спершу заверши його.');
+    else if (data === 'missing_end_date') alert('Спочатку вкажи майбутню дату завершення турніру.');
     else if (data === 'not_found') alert('Турнір не знайдено (онови сторінку).');
     else alert(`Не вдалося запустити турнір${error?.message ? `: ${error.message}` : data ? `: ${data}` : ''}`);
   };

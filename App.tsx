@@ -4,16 +4,9 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import HowItWorks from './components/HowItWorks';
 import HomeSections from './components/HomeSections';
-import PoolGame from './components/PoolGame';
-import Leaderboard from './components/Leaderboard';
 import Footer from './components/Footer';
 import ExchangeModal from './components/ExchangeModal';
-import Profile from './components/pages/Profile';
 import Background from './components/Background';
-import About from './components/pages/About';
-import Services from './components/pages/Services';
-import Prizes from './components/pages/Prizes';
-import Philosophy from './components/pages/Philosophy';
 import FloatingContact from './components/FloatingContact';
 import RehabDetails from './components/RehabDetails';
 import PriceList from './components/PriceList';
@@ -26,14 +19,25 @@ import ReviewsWall from './components/ReviewsWall';
 import { useAccount } from './hooks/useAccount';
 import { useRoute, navigate } from './hooks/useRoute';
 
-import LocationPage from './components/pages/Location';
-import PricesPage from './components/pages/Prices';
-import Support from './components/pages/Support';
-import Legal from './components/pages/Legal';
 import AuthModal from './components/AuthModal';
 import TournamentJoinModal from './components/TournamentJoinModal';
 
 const Admin = lazy(() => import('./components/pages/Admin'));
+const PoolGame = lazy(() => import('./components/PoolGame'));
+const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const Profile = lazy(() => import('./components/pages/Profile'));
+const About = lazy(() => import('./components/pages/About'));
+const Services = lazy(() => import('./components/pages/Services'));
+const Prizes = lazy(() => import('./components/pages/Prizes'));
+const Philosophy = lazy(() => import('./components/pages/Philosophy'));
+const LocationPage = lazy(() => import('./components/pages/Location'));
+const PricesPage = lazy(() => import('./components/pages/Prices'));
+const Support = lazy(() => import('./components/pages/Support'));
+const Legal = lazy(() => import('./components/pages/Legal'));
+
+const PageLoader = () => (
+  <div className="grid min-h-[45vh] place-items-center text-sm font-semibold text-emerald-700">Завантаження…</div>
+);
 
 const App: React.FC = () => {
   const account = useAccount();
@@ -145,21 +149,27 @@ const App: React.FC = () => {
           )}
 
           {route === 'game' && (
-            <main>
-              <PoolGame account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />
-              <Leaderboard account={account} />
-            </main>
+            <Suspense fallback={<PageLoader />}>
+              <main>
+                <PoolGame account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />
+                <Leaderboard account={account} />
+              </main>
+            </Suspense>
           )}
 
-          {route === 'about' && <About />}
-          {route === 'services' && <Services />}
-          {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} onHistory={openHistory} />}
-          {route === 'profile' && <Profile account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />}
-          {route === 'philosophy' && <Philosophy />}
-          {route === 'prices' && <PricesPage account={account} />}
-          {route === 'location' && <LocationPage />}
-          {route === 'donate' && <Support />}
-          {route === 'legal' && <Legal />}
+          {route !== 'home' && route !== 'game' && (
+            <Suspense fallback={<PageLoader />}>
+              {route === 'about' && <About />}
+              {route === 'services' && <Services />}
+              {route === 'prizes' && <Prizes account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} onHistory={openHistory} />}
+              {route === 'profile' && <Profile account={account} onTopUp={openExchange} onLogin={() => setAuthOpen(true)} />}
+              {route === 'philosophy' && <Philosophy />}
+              {route === 'prices' && <PricesPage account={account} />}
+              {route === 'location' && <LocationPage />}
+              {route === 'donate' && <Support />}
+              {route === 'legal' && <Legal />}
+            </Suspense>
+          )}
         </motion.div>
       </AnimatePresence>
       </div>

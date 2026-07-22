@@ -122,7 +122,7 @@ const MediaBlock: React.FC<{ item: Item }> = ({ item }) => {
               muted
               loop
               playsInline
-              preload="auto"
+              preload="none"
             />
             {/* Кнопка play, поки відео на паузі */}
             <button

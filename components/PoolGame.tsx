@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Coins, Users, Wifi, Trophy, X, Lock, CalendarCheck, Home, LogIn } from 'lucide-react';
 import { supabase, type RoundRow, type BetRow } from '../lib/supabase';
@@ -90,6 +90,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [upcomingTournament, setUpcomingTournament] = useState<{ id: number; name: string; date: string } | null>(null);
+  const [connectionState, setConnectionState] = useState<'online' | 'recovering'>('online');
 
 
   useEffect(() => {
@@ -121,14 +122,26 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
   const roundIdRef = useRef<number | null>(null);
   const advancing = useRef(false);
+  const loadingCurrentRef = useRef<Promise<void> | null>(null);
+  const betsRequestRef = useRef(0);
   // Ref для playerId — уникаємо stale closure в loadCurrent
   const playerIdRef = useRef(account.playerId);
   useEffect(() => { playerIdRef.current = account.playerId; }, [account.playerId]);
 
 
   const fetchBets = useCallback(async (rid: number) => {
-    const { data } = await supabase.from('rps_bets').select('*').eq('round_id', rid).order('id');
-    setBets((data as BetRow[]) || []);
+    const requestId = ++betsRequestRef.current;
+    const { data, error } = await supabase.from('rps_bets').select('*').eq('round_id', rid).order('id');
+    if (error) {
+      console.error('[game] Не вдалося оновити ставки', error);
+      setConnectionState('recovering');
+      return;
+    }
+    // Повільна відповідь старого раунду не повинна затерти новий раунд.
+    if (requestId === betsRequestRef.current && roundIdRef.current === rid) {
+      setBets((data as BetRow[]) || []);
+      setConnectionState('online');
+    }
   }, []);
 
   const fetchBonus = useCallback(async () => {
@@ -137,8 +150,25 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   }, []);
 
   const fetchTournamentStatus = useCallback(async () => {
-    const { data } = await supabase.rpc('rps_my_tournament_status', { p_player_id: account.playerId });
-    if (data) setTstatus(data as TournamentStatus);
+    const { data, error } = await supabase.rpc('rps_my_tournament_status', { p_player_id: account.playerId });
+    if (error) {
+      console.error('[game] Не вдалося оновити статус турніру', error);
+      return;
+    }
+    if (data) {
+      const next = data as TournamentStatus;
+      setTstatus((prev) => {
+        if (
+          prev?.active === next.active &&
+          prev?.tournament_id === next.tournament_id &&
+          prev?.participant === next.participant &&
+          prev?.tournament_balance === next.tournament_balance &&
+          prev?.stake === next.stake &&
+          prev?.round_seconds === next.round_seconds
+        ) return prev;
+        return next;
+      });
+    }
   }, [account.playerId]);
 
   const openLeaderboard = useCallback(async () => {
@@ -194,18 +224,25 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     }
   };
 
-  const loadCurrent = useCallback(async () => {
-    // ⚠️ Зберігаємо prevRoundId ДО await — щоб realtime event INSERT rps_rounds
-    // не встиг оновити roundIdRef.current раніше ніж ми перевіримо ставку.
-    const prevRoundId = roundIdRef.current;
+  const loadCurrent = useCallback(() => {
+    // Один клієнт може отримати одночасно timer, realtime, focus та online event.
+    // Об'єднуємо їх в один RPC, щоб не створювати чергу на блокуванні БД.
+    if (loadingCurrentRef.current) return loadingCurrentRef.current;
 
-    const { data, error } = await supabase.rpc('rps_tick');
-    if (error || !data) return;
-    const r = data as RoundRow;
+    const task = (async () => {
+      // ⚠️ Зберігаємо prevRoundId ДО await — щоб realtime event INSERT rps_rounds
+      // не встиг оновити roundIdRef.current раніше ніж ми перевіримо ставку.
+      const prevRoundId = roundIdRef.current;
+      const { data, error } = await supabase.rpc('rps_tick');
+      if (error || !data) {
+        console.error('[game] Не вдалося синхронізувати раунд', error);
+        setConnectionState('recovering');
+        return;
+      }
+      const r = data as RoundRow;
 
-    // Якщо раунд змінився — перевіряємо ставку гравця в попередньому раунді
-    if (prevRoundId && prevRoundId !== r.id) {
-      if (playerIdRef.current) {
+      // Якщо раунд змінився — перевіряємо ставку гравця в попередньому раунді.
+      if (prevRoundId && prevRoundId !== r.id && playerIdRef.current) {
         const { data: bet } = await supabase
           .from('rps_bets')
           .select('*')
@@ -219,18 +256,21 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             window.setTimeout(() => setCelebrate(false), 2600);
           }
         }
+        // Не блокуємо показ нового раунду другорядними оновленнями.
+        void Promise.all([account.refresh(), fetchBonus(), fetchTournamentStatus(), fetchUpcomingTournament()]);
       }
-      // Оновлюємо баланси та статуси турнірів на клієнті
-      account.refresh();
-      fetchBonus();
-      fetchTournamentStatus();
-      fetchUpcomingTournament();
-    }
 
-    roundIdRef.current = r.id;
-    setRound(r);
-    await fetchBets(r.id);
-  }, [fetchBets, account, fetchBonus, fetchTournamentStatus, fetchUpcomingTournament]);
+      roundIdRef.current = r.id;
+      setRound(r);
+      setRemaining(Math.max(0, Math.ceil((new Date(r.ends_at).getTime() - Date.now()) / 1000)));
+      await fetchBets(r.id);
+    })().finally(() => {
+      loadingCurrentRef.current = null;
+    });
+
+    loadingCurrentRef.current = task;
+    return task;
+  }, [fetchBets, account.refresh, fetchBonus, fetchTournamentStatus, fetchUpcomingTournament]);
 
 
 
@@ -242,11 +282,18 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     fetchTournamentStatus();
     fetchUpcomingTournament();
 
-    // Автоматична перевірка старту/фінішу турніру кажні 4 сек
+    // Realtime повідомляє зміни одразу; рідший poll — лише страховка для мобільних
+    // браузерів, які присипляють websocket у фоновій вкладці.
     const pollInterval = window.setInterval(() => {
       fetchTournamentStatus();
-      fetchUpcomingTournament();
-    }, 4000);
+    }, 12000);
+
+    const recover = () => {
+      void loadCurrent();
+      void fetchTournamentStatus();
+    };
+    window.addEventListener('online', recover);
+    window.addEventListener('focus', recover);
 
     const ch = supabase
       .channel('rps-game')
@@ -254,6 +301,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         console.log('Realtime rps_tournaments:', p);
         fetchTournamentStatus();
         fetchUpcomingTournament();
+        void loadCurrent();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_tournament_invites', filter: `player_id=eq.${account.playerId}` }, (p) => {
         console.log('Realtime rps_tournament_invites:', p);
@@ -269,6 +317,9 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
         setBets([]);
         setMyPlay(null);
         advancing.current = false;
+        // Round INSERT приходить раніше за burst ставок ботів. Авторитетний
+        // fetch страхує мобільний websocket від пропущених INSERT events.
+        window.setTimeout(() => void fetchBets(r.id), 120);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rps_rounds' }, (p) => {
         console.log('Realtime rps_rounds UPDATE:', p);
@@ -305,62 +356,66 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       })
       .subscribe((status) => {
         console.log('Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          setConnectionState('online');
+          void loadCurrent();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setConnectionState('recovering');
+        }
       });
     return () => {
       window.clearInterval(pollInterval);
+      window.removeEventListener('online', recover);
+      window.removeEventListener('focus', recover);
       supabase.removeChannel(ch);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account.playerId]);
 
-  // Synced countdown from server ends_at; advance when expired.
+  // Синхронний секундний таймер. 250 мс змушували весь великий екран гри
+  // перемальовуватися 4 рази/сек на слабких телефонах.
   useEffect(() => {
-    const id = window.setInterval(() => {
+    const sync = () => {
       if (!round) return;
       const ms = new Date(round.ends_at).getTime() - Date.now();
       setRemaining(Math.max(0, Math.ceil(ms / 1000)));
       if (ms <= 0 && round.status === 'betting' && !advancing.current) {
         advancing.current = true;
-        loadCurrent().finally(() => window.setTimeout(() => (advancing.current = false), 2000));
+        loadCurrent().finally(() => window.setTimeout(() => (advancing.current = false), 1200));
       }
-    }, 250);
+    };
+    sync();
+    const id = window.setInterval(sync, 1000);
     return () => window.clearInterval(id);
   }, [round, loadCurrent]);
 
-  const filledRef = useRef<number | null>(null);
-
-  // Auto-fill: боти заходять автоматично й ПОСТУПОВО протягом раунду (за сценарієм).
+  // Якщо websocket/мережа коротко обірвалися, клієнт сам відновлює
+  // авторитетний стан без перезавантаження сторінки користувачем.
   useEffect(() => {
-    if (!round || round.status !== 'betting') return;
-    if (filledRef.current === round.id) return;
-    filledRef.current = round.id;
+    if (connectionState !== 'recovering') return;
+    const id = window.setInterval(() => void loadCurrent(), 3000);
+    return () => window.clearInterval(id);
+  }, [connectionState, loadCurrent]);
 
-    const finalTarget = 14 + Math.floor(Math.random() * 7); // 14-20
-    let current = 2 + Math.floor(Math.random() * 3); // старт 2-4
-    let cancelled = false;
-    let timer = 0;
-
-    const step = async () => {
-      if (cancelled) return;
-      const t = Math.min(finalTarget, current);
-      await supabase.rpc('rps_fill', { p_target: t });
-      if (!cancelled && roundIdRef.current === round.id) fetchBets(round.id);
-      if (!cancelled && t < finalTarget) {
-        current += 2 + Math.floor(Math.random() * 3); // +2..4 щокроку
-        timer = window.setTimeout(step, 1500 + Math.random() * 1800);
-      }
-    };
-
-    timer = window.setTimeout(step, 500 + Math.random() * 700);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [round, fetchBets]);
+  // Старт або фініш турніру створює чітку межу раундів на сервері.
+  useEffect(() => {
+    if (tstatus) void loadCurrent();
+  }, [tstatus?.active, tstatus?.tournament_id, loadCurrent]);
 
   const myBet = bets.find((b) => b.player_id === account.playerId) || null;
-  const potOf = (m: Move) => bets.filter((b) => b.move === m).reduce((s, b) => s + b.stake, 0);
-  const bank = bets.reduce((s, b) => s + b.stake, 0);
+  const pools = useMemo(() => {
+    const next: Record<Move, { pot: number; count: number }> = {
+      rock: { pot: 0, count: 0 }, scissors: { pot: 0, count: 0 }, paper: { pot: 0, count: 0 },
+    };
+    let total = 0;
+    for (const bet of bets) {
+      next[bet.move].pot += bet.stake;
+      next[bet.move].count += 1;
+      total += bet.stake;
+    }
+    return { byMove: next, total };
+  }, [bets]);
+  const bank = pools.total;
 
   // Під час активного турніру гра йде за його параметрами й ізольованим балансом.
   const tournamentActive = !!tstatus?.active;
@@ -380,33 +435,48 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     const useBluff = bluff && canBluff && shownMove !== move;
     setBusy(true);
     setErr(null);
-    const { error } = await supabase.rpc('rps_place_bet', {
-      p_id: account.playerId,
-      p_nick: account.nickname,
-      p_move: move,
-      p_stake: effectiveStake,
-      p_shown_move: useBluff ? shownMove : move,
-      p_is_bluff: useBluff,
-    });
-    if (error) {
-      const msg = error.message || '';
-      if (msg.includes('tournament_locked')) { setErr('Триває турнір — гра доступна лише учасникам.'); fetchTournamentStatus(); }
-      else if (msg.includes('insufficient_tournament')) setErr('Недостатньо монет турнірного балансу.');
-      else if (msg.includes('insufficient')) { if (tournamentActive) setErr('Недостатньо турнірного балансу.'); else onTopUp(); }
-      else if (msg.includes('bluff locked')) setErr('Блеф відкриється після першої перемоги 🔒');
-      else if (msg.includes('round closed')) {
-        setErr('Раунд щойно завершився - зачекай наступний 🙂');
-        loadCurrent();
-      } else if (msg.includes('already bet')) setErr('Ти вже зробив ставку в цьому раунді');
-      else setErr('Не вдалося поставити. Спробуй ще раз.');
-    } else {
-      setLastResult(null);
-      setMyPlay({ real: move, shown: useBluff ? shownMove : move, bluff: useBluff });
-      await account.refresh();
-      await fetchTournamentStatus();
-      if (roundIdRef.current) await fetchBets(roundIdRef.current);
+    try {
+      const { error } = await supabase.rpc('rps_place_bet', {
+        p_id: account.playerId,
+        p_nick: account.nickname,
+        p_move: move,
+        p_stake: effectiveStake,
+        p_shown_move: useBluff ? shownMove : move,
+        p_is_bluff: useBluff,
+      });
+      if (error) {
+        console.error('[game] Ставку не прийнято', error);
+        const msg = error.message || '';
+        if (msg.includes('tournament_locked')) { setErr('Триває турнір — гра доступна лише учасникам.'); void fetchTournamentStatus(); }
+        else if (msg.includes('insufficient_tournament')) setErr('Недостатньо монет турнірного балансу.');
+        else if (msg.includes('insufficient')) { if (tournamentActive) setErr('Недостатньо турнірного балансу.'); else onTopUp(); }
+        else if (msg.includes('bluff locked')) setErr('Блеф відкриється після першої перемоги 🔒');
+        else if (msg.includes('round closed')) {
+          setErr('Раунд щойно завершився — відкриваємо наступний 🙂');
+          void loadCurrent();
+        } else if (msg.includes('already bet')) {
+          setErr('Ставку вже прийнято в цьому раунді');
+          if (roundIdRef.current) void fetchBets(roundIdRef.current);
+        } else setErr('Не вдалося поставити. Перевіряємо з’єднання…');
+      } else {
+        // Показуємо підтвердження одразу; другорядні дані оновлюємо паралельно.
+        setLastResult(null);
+        setMyPlay({ real: move, shown: useBluff ? shownMove : move, bluff: useBluff });
+        const rid = roundIdRef.current;
+        await Promise.allSettled([
+          account.refresh(),
+          fetchTournamentStatus(),
+          rid ? fetchBets(rid) : Promise.resolve(),
+        ]);
+      }
+    } catch (error) {
+      console.error('[game] Помилка мережі під час ставки', error);
+      setErr('Зв’язок перервався. Перевіряємо, чи ставку прийнято…');
+      setConnectionState('recovering');
+      void loadCurrent();
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const low = remaining <= 5;
@@ -648,6 +718,11 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
               <div className="text-[10px] font-medium text-emerald-50/60">монет</div>
             </div>
           </div>
+          {connectionState === 'recovering' && (
+            <div className="relative mt-3 rounded-xl bg-amber-300/20 px-3 py-2 text-center text-[11px] font-semibold text-amber-50 ring-1 ring-amber-200/30">
+              Відновлюємо синхронізацію з грою…
+            </div>
+          )}
         </div>
 
         {/* ── Банк центру (gold strip) ── */}
@@ -656,7 +731,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
             <div
               className="h-11 w-11 shrink-0 rounded-2xl overflow-hidden ring-1 ring-amber-200/80 sm:h-12 sm:w-12"
               dangerouslySetInnerHTML={{
-                __html: `<video src="/images/game/bank.mp4" poster="/images/game/bank.png" autoplay loop muted playsinline preload="auto" class="h-full w-full object-cover"></video>`
+                __html: `<video src="/images/game/bank.mp4" poster="/images/game/bank.png" autoplay loop muted playsinline preload="metadata" class="h-full w-full object-cover"></video>`
               }}
             />
             <div className="min-w-0 flex-1">
@@ -801,8 +876,8 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           {/* Pools */}
           <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
             {MOVES.map((m, i) => {
-              const pot = potOf(m.id);
-              const cnt = bets.filter((b) => b.move === m.id).length;
+              const pot = pools.byMove[m.id].pot;
+              const cnt = pools.byMove[m.id].count;
               const isMine = myBet?.move === m.id;
               const share = bank > 0 ? pot / bank : 0;
               return (
@@ -1040,14 +1115,16 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={placeBet}
-                    disabled={busy || remaining <= 1 || (tournamentActive && displayBalance < effectiveStake)}
+                    disabled={busy || connectionState === 'recovering' || round?.status !== 'betting' || remaining <= 2 || (tournamentActive && displayBalance < effectiveStake)}
                     className="shine mt-5 w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 py-4 text-base font-bold text-white shadow-lg shadow-emerald-300/50 transition hover:from-emerald-700 hover:to-teal-600 disabled:opacity-50"
                   >
                     {displayBalance < effectiveStake
                       ? tournamentActive
                         ? '⚠️ Недостатньо турнірного балансу'
                         : '💰 Поповнити баланс'
-                      : remaining <= 1
+                      : connectionState === 'recovering'
+                      ? 'Відновлюємо з’єднання…'
+                      : remaining <= 2 || round?.status !== 'betting'
                       ? 'Раунд закінчується…'
                       : `Поставити ${effectiveStake} монет`}
                   </motion.button>

@@ -14,6 +14,9 @@ export interface RoundRow {
   status: 'betting' | 'settled';
   started_at: string;
   ends_at: string;
+  tournament_id?: number | null;
+  stake?: number | null;
+  round_seconds?: number | null;
   win_move: 'rock' | 'scissors' | 'paper' | null;
   result: Record<string, unknown> | null;
 }
