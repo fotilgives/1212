@@ -128,21 +128,33 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const playerIdRef = useRef(account.playerId);
   useEffect(() => { playerIdRef.current = account.playerId; }, [account.playerId]);
 
+  // Одиничний мережевий «блимк» на мобільному не повинен блокувати ставку й
+  // лякати банером. Показуємо «відновлюємо синхронізацію» лише після 2 підряд
+  // невдач; будь-яка успішна відповідь миттєво повертає стан «онлайн».
+  const failuresRef = useRef(0);
+  const markOnline = useCallback(() => {
+    failuresRef.current = 0;
+    setConnectionState('online');
+  }, []);
+  const markFailure = useCallback(() => {
+    failuresRef.current += 1;
+    if (failuresRef.current >= 2) setConnectionState('recovering');
+  }, []);
 
   const fetchBets = useCallback(async (rid: number) => {
     const requestId = ++betsRequestRef.current;
     const { data, error } = await supabase.from('rps_bets').select('*').eq('round_id', rid).order('id');
     if (error) {
       console.error('[game] Не вдалося оновити ставки', error);
-      setConnectionState('recovering');
+      markFailure();
       return;
     }
     // Повільна відповідь старого раунду не повинна затерти новий раунд.
     if (requestId === betsRequestRef.current && roundIdRef.current === rid) {
       setBets((data as BetRow[]) || []);
-      setConnectionState('online');
+      markOnline();
     }
-  }, []);
+  }, [markFailure, markOnline]);
 
   const fetchBonus = useCallback(async () => {
     const { data } = await supabase.rpc('rps_bonus');
@@ -236,7 +248,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       const { data, error } = await supabase.rpc('rps_tick');
       if (error || !data) {
         console.error('[game] Не вдалося синхронізувати раунд', error);
-        setConnectionState('recovering');
+        markFailure();
         return;
       }
       const r = data as RoundRow;
@@ -270,7 +282,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
 
     loadingCurrentRef.current = task;
     return task;
-  }, [fetchBets, account.refresh, fetchBonus, fetchTournamentStatus, fetchUpcomingTournament]);
+  }, [fetchBets, markFailure, account.refresh, fetchBonus, fetchTournamentStatus, fetchUpcomingTournament]);
 
 
 
@@ -357,10 +369,10 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
       .subscribe((status) => {
         console.log('Realtime subscription status:', status);
         if (status === 'SUBSCRIBED') {
-          setConnectionState('online');
+          markOnline();
           void loadCurrent();
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setConnectionState('recovering');
+          markFailure();
         }
       });
     return () => {
@@ -472,7 +484,7 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     } catch (error) {
       console.error('[game] Помилка мережі під час ставки', error);
       setErr('Зв’язок перервався. Перевіряємо, чи ставку прийнято…');
-      setConnectionState('recovering');
+      markFailure();
       void loadCurrent();
     } finally {
       setBusy(false);
