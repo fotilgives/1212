@@ -33,6 +33,9 @@ interface LeaderRow {
   nickname: string;
   tournament_balance: number;
   wins: number;
+  rounds_played?: number;
+  won_coins?: number;
+  avg_score?: number;
 }
 
 type Move = 'rock' | 'scissors' | 'paper';
@@ -1232,13 +1235,29 @@ const PoolGame: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
                 )}
                 {leaderboard.map((row) => {
                   const medal = row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `${row.rank}.`;
+                  const rounds = row.rounds_played ?? 0;
+                  const wonCoins = row.won_coins ?? row.tournament_balance;
+                  const avg = row.avg_score ?? (rounds > 0 ? Math.round((wonCoins / rounds) * 10) / 10 : 0);
+
                   return (
-                    <div key={row.rank} className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${row.rank <= 3 ? 'bg-amber-50' : 'bg-slate-50'}`}>
-                      <span className="w-7 shrink-0 text-center text-lg font-black">{medal}</span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">{row.nickname}</span>
-                      <span className="flex shrink-0 items-center gap-1 text-sm font-black text-emerald-700">
-                        <Coins className="h-3.5 w-3.5 text-amber-500" /> {row.tournament_balance.toLocaleString('uk-UA')}
-                      </span>
+                    <div key={row.rank} className={`flex items-center justify-between gap-3 rounded-2xl px-3.5 py-3 ${row.rank <= 3 ? 'bg-amber-50/90 ring-1 ring-amber-200/70' : 'bg-slate-50'}`}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-6 shrink-0 text-center text-base font-black">{medal}</span>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-bold text-slate-800">{row.nickname}</div>
+                          <div className="flex flex-wrap items-center gap-x-2 text-[11px] text-slate-500">
+                            <span>🎮 {rounds} раундів</span>
+                            <span>•</span>
+                            <span>📊 сер. {avg}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="flex items-center justify-end gap-1 text-sm font-black text-emerald-700">
+                          <Coins className="h-3.5 w-3.5 text-amber-500" /> {wonCoins.toLocaleString('uk-UA')}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium">виграно балів</div>
+                      </div>
                     </div>
                   );
                 })}

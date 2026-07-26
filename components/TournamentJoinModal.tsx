@@ -31,7 +31,7 @@ function useCountdown(targetDate: string | null | undefined) {
     if (!targetDate) { setText(''); return; }
     const tick = () => {
       const diff = new Date(targetDate).getTime() - Date.now();
-      if (diff <= 0) { setText('Вже починається!'); return; }
+      if (diff <= 0) { setText('Очікується старт...'); return; }
       const h = Math.floor(diff / 3_600_000);
       const m = Math.floor((diff % 3_600_000) / 60_000);
       const s = Math.floor((diff % 60_000) / 1_000);

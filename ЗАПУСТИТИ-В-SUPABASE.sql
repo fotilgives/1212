@@ -83,7 +83,9 @@ end $$;
 
 alter table public.rps_tournament_invites
   add column if not exists tournament_balance int not null default 0,
-  add column if not exists wins int not null default 0;
+  add column if not exists wins int not null default 0,
+  add column if not exists rounds_played int not null default 0,
+  add column if not exists won_coins int not null default 0;
 
 alter table public.rps_bets
   add column if not exists tournament_id bigint references public.rps_tournaments(id);
@@ -317,15 +319,28 @@ create or replace function public.rps_tournament_leaderboard(p_tournament_id big
 returns jsonb language sql security definer set search_path to 'public' stable as $function$
   select coalesce(jsonb_agg(x), '[]'::jsonb) from (
     select jsonb_build_object(
-      'rank', row_number() over (order by i.tournament_balance desc, i.wins desc),
+      'rank', row_number() over (
+        order by i.won_coins desc,
+                 (case when i.rounds_played > 0 then (i.won_coins::numeric / i.rounds_played) else 0 end) desc,
+                 i.rounds_played desc,
+                 i.wins desc,
+                 i.tournament_balance desc
+      ),
       'nickname', coalesce(p.nickname, 'Гравець'),
       'tournament_balance', i.tournament_balance,
-      'wins', i.wins
+      'wins', i.wins,
+      'rounds_played', i.rounds_played,
+      'won_coins', i.won_coins,
+      'avg_score', round((case when i.rounds_played > 0 then (i.won_coins::numeric / i.rounds_played) else 0 end), 1)
     ) as x
     from public.rps_tournament_invites i
     join public.rps_profiles p on p.id = i.player_id
     where i.tournament_id = p_tournament_id and i.status = 'yes'
-    order by i.tournament_balance desc, i.wins desc
+    order by i.won_coins desc,
+             (case when i.rounds_played > 0 then (i.won_coins::numeric / i.rounds_played) else 0 end) desc,
+             i.rounds_played desc,
+             i.wins desc,
+             i.tournament_balance desc
   ) q;
 $function$;
 
@@ -386,47 +401,84 @@ end; $function$;
 create or replace function public.rps_settle_round(p_round_id bigint)
 returns void language plpgsql security definer set search_path to 'public' as $function$
 declare
-  rno int; rk int; sc int; pp int; mx int; cos text; r record;
-  v_total_profit int := 0; v_payout int;
+  v_rock_pool bigint := 0; v_scissors_pool bigint := 0; v_paper_pool bigint := 0;
+  v_rock_rate numeric := 0; v_scissors_rate numeric := 0; v_paper_rate numeric := 0;
+  v_best_move text; v_total_profit int := 0;
 begin
-  rno := ((p_round_id - 1) % 35) + 1;
-  select res_rock, res_scissors, res_paper into rk, sc, pp from rps_bot_script where round_no = rno;
-  if rk is null then return; end if;
   perform rps_bonus_accrue();
-  mx := greatest(rk, sc, pp);
-  cos := case when rk = mx then 'rock' when sc = mx then 'scissors' else 'paper' end;
-  update rps_rounds set win_move = cos where id = p_round_id;
-  for r in
-    select b.id, b.stake, b.tournament_id, s.real_move,
-           (case s.real_move when 'rock' then rk when 'scissors' then sc else pp end) as tablepay,
-           exists(select 1 from rps_profiles p where p.id = b.player_id) as is_real, b.player_id
+
+  select
+    coalesce(sum(b.stake) filter (where s.real_move = 'rock'), 0),
+    coalesce(sum(b.stake) filter (where s.real_move = 'scissors'), 0),
+    coalesce(sum(b.stake) filter (where s.real_move = 'paper'), 0)
+  into v_rock_pool, v_scissors_pool, v_paper_pool
+  from rps_bets b
+  join rps_secret s on s.round_id = b.round_id and s.player_id = b.player_id
+  where b.round_id = p_round_id;
+
+  update rps_bets b
+     set payout = case s.real_move
+       when 'rock' then case when v_rock_pool > 0 then floor(v_scissors_pool::numeric * b.stake / v_rock_pool)::int else 0 end
+       when 'scissors' then case when v_scissors_pool > 0 then floor(v_paper_pool::numeric * b.stake / v_scissors_pool)::int else 0 end
+       else case when v_paper_pool > 0 then floor(v_rock_pool::numeric * b.stake / v_paper_pool)::int else 0 end
+     end,
+     move = s.real_move
     from rps_secret s
-    join rps_bets b on b.round_id = s.round_id and b.player_id = s.player_id
-    where s.round_id = p_round_id order by b.id
-  loop
-    v_payout := round(r.tablepay * r.stake / 100.0)::int;
-    update rps_bets set payout = v_payout, move = r.real_move where id = r.id;
-    if r.tournament_id is not null then
-      update rps_tournament_invites
-         set tournament_balance = tournament_balance + v_payout,
-             wins = wins + (case when v_payout > r.stake then 1 else 0 end)
-       where tournament_id = r.tournament_id and player_id = r.player_id;
-    elsif r.is_real and v_payout > r.stake then
-      v_total_profit := v_total_profit + (v_payout - r.stake);
-    end if;
-  end loop;
+   where b.round_id = p_round_id and s.round_id = b.round_id and s.player_id = b.player_id;
+
+  update rps_tournament_invites i
+     set tournament_balance = i.tournament_balance + x.payout,
+         won_coins = i.won_coins + x.payout,
+         rounds_played = i.rounds_played + x.rounds_count,
+         wins = i.wins + x.wins
+    from (
+      select b.tournament_id, b.player_id,
+             sum(b.payout)::int as payout,
+             count(*)::int as rounds_count,
+             count(*) filter (where b.payout > b.stake)::int as wins
+        from rps_bets b join rps_profiles p on p.id = b.player_id
+       where b.round_id = p_round_id and b.tournament_id is not null
+       group by b.tournament_id, b.player_id
+    ) x
+   where i.tournament_id = x.tournament_id and i.player_id = x.player_id;
+
+  update rps_profiles p
+     set balance = p.balance + x.payout,
+         wins = p.wins + x.wins,
+         bluff_ready = x.has_win
+    from (
+      select b.player_id, sum(b.payout)::int as payout,
+             count(*) filter (where b.payout > b.stake)::int as wins,
+             bool_or(b.payout > b.stake) as has_win
+        from rps_bets b
+       where b.round_id = p_round_id and b.tournament_id is null
+       group by b.player_id
+    ) x
+   where p.id = x.player_id;
+
+  select coalesce(sum(b.payout), 0)::int
+    into v_total_profit
+    from rps_bets b
+    join rps_profiles p on p.id = b.player_id
+   where b.round_id = p_round_id and b.tournament_id is null and b.payout > 0;
+
   if v_total_profit > 0 then
     update rps_center_bonus
        set amount = greatest(0, amount - v_total_profit), last_claim_at = now(), updated_at = now()
      where id = 1;
   end if;
-  update rps_profiles p
-     set balance = balance + b.payout,
-         wins = wins + (case when b.payout > b.stake then 1 else 0 end),
-         bluff_ready = (b.payout > b.stake)
-    from rps_bets b
-    where b.round_id = p_round_id and b.player_id = p.id and b.tournament_id is null;
+
+  v_rock_rate := case when v_rock_pool > 0 then v_scissors_pool::numeric / v_rock_pool else 0 end;
+  v_scissors_rate := case when v_scissors_pool > 0 then v_paper_pool::numeric / v_scissors_pool else 0 end;
+  v_paper_rate := case when v_paper_pool > 0 then v_rock_pool::numeric / v_paper_pool else 0 end;
+  v_best_move := case
+    when v_rock_rate >= v_scissors_rate and v_rock_rate >= v_paper_rate then 'rock'
+    when v_scissors_rate >= v_paper_rate then 'scissors'
+    else 'paper'
+  end;
+  update rps_rounds set win_move = v_best_move where id = p_round_id;
 end; $function$;
+
 
 create or replace function public.rps_tick()
 returns rps_rounds language plpgsql security definer set search_path to 'public' as $function$
