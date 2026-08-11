@@ -253,12 +253,17 @@ export function buildPrizeEmail({ name, reward, cost, code, profileUrl, supportE
   return { subject: `Приз оформлено — ${reward || 'винагорода'}`, html, text };
 }
 
-export function buildOwnerNotice({ title, rows }) {
-  const text = [title, '', ...(rows || []).map((r) => `${r[0]}: ${r[1]}`)].join('\n');
+export function buildOwnerNotice({ title, rows, buttons }) {
+  const text = [
+    title, '',
+    ...(rows || []).filter(Boolean).map((r) => `${r[0]}: ${r[1]}`),
+    ...(buttons || []).map((b) => `${b.label}: ${b.href}`),
+  ].join('\n');
   const html = shell({
     title,
     intro: 'Нове сповіщення з сайту 👇',
     rows: rows || [],
+    buttons: buttons || [],
     footerNote: 'Це автоматичне сповіщення з сайту.',
   });
   return { subject: title, html, text };

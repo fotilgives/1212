@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShieldCheck, Loader2, Mail, Phone, User, Coins, CreditCard, CheckCircle2 } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
+import PhoneAskModal from './PhoneAskModal';
 
 interface Props {
   open: boolean;
@@ -22,27 +23,39 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** Питаємо телефон перед оплатою монетами — щоб було як звʼязатися. */
+  const [askPhone, setAskPhone] = useState(false);
+  const [askErr, setAskErr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) { setBusy(false); setErr(null); setMode('choose'); }
+    if (!open) { setBusy(false); setErr(null); setMode('choose'); setAskPhone(false); setAskErr(null); }
   }, [open]);
 
-  // Оплата бонусами: списуємо монети й одразу ведемо в Telegram-бот курсу.
-  const payWithCoins = async () => {
+  // Оплата бонусами — крок 1: перевірка балансу й запит номера телефону.
+  const startCoins = () => {
     setErr(null);
     if (account.balance < COURSE_PRICE_COINS) {
       setErr(`Недостатньо монет: потрібно ${COURSE_PRICE_COINS.toLocaleString('uk-UA')}, у вас ${account.balance.toLocaleString('uk-UA')}.`);
       return;
     }
+    setAskErr(null);
+    setAskPhone(true);
+  };
+
+  // Оплата бонусами — крок 2: списуємо монети (з телефоном) і ведемо в Telegram-бот курсу.
+  const payWithCoins = async (coinsPhone: string) => {
+    setErr(null);
+    setAskErr(null);
     setBusy(true);
-    const error = await account.redeem('Курс з йоги (онлайн)', COURSE_PRICE_COINS);
+    const error = await account.redeem('Курс з йоги (онлайн)', COURSE_PRICE_COINS, coinsPhone);
     if (error) {
-      setErr(error === 'Недостатньо монет'
+      setAskErr(error === 'Недостатньо монет'
         ? `Недостатньо монет: потрібно ${COURSE_PRICE_COINS.toLocaleString('uk-UA')}.`
         : error);
       setBusy(false);
       return;
     }
+    setAskPhone(false);
     // Лист доступу до курсу на пошту (fire-and-forget). Email візьметься з акаунта.
     fetch('/api/send-course-access', {
       method: 'POST',
@@ -101,6 +114,17 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
   const enough = account.balance >= COURSE_PRICE_COINS;
 
   return (
+    <>
+      <PhoneAskModal
+        open={open && askPhone}
+        title="Курс з йоги (онлайн)"
+        cost={COURSE_PRICE_COINS}
+        initialPhone={account.phone}
+        busy={busy}
+        error={askErr}
+        onClose={() => { setAskPhone(false); setAskErr(null); }}
+        onSubmit={payWithCoins}
+      />
     <AnimatePresence>
       {open && (
         <motion.div
@@ -135,7 +159,7 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
               <div className="mt-5 space-y-3">
                 {/* Оплата бонусами */}
                 <button
-                  onClick={payWithCoins}
+                  onClick={startCoins}
                   disabled={busy || !enough}
                   className="group flex w-full items-center gap-3 rounded-2xl border-2 border-amber-200 bg-amber-50 px-4 py-4 text-left transition hover:border-amber-300 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -271,6 +295,7 @@ const CourseBuyModal: React.FC<Props> = ({ open, onClose, account }) => {
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 };
 

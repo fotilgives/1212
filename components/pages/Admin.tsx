@@ -32,12 +32,20 @@ const fmt = (n: number) => (n ?? 0).toLocaleString('uk-UA');
 const fmtDate = (s?: string) =>
   s ? new Date(s).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 
+// Номер у міжнародному вигляді — для посилань Viber/Telegram (0501234567 -> 380501234567).
+const redPhoneIntl = (p: string) => {
+  const d = (p || '').replace(/\D/g, '');
+  if (d.length === 9) return `380${d}`;
+  if (d.length === 10 && d.startsWith('0')) return `38${d}`;
+  return d;
+};
+
 interface UserRow {
   id: string; nick: string; email: string | null; login: string | null;
   balance: number; wins: number; donated: number; created: string;
   last_activity: string; is_account: boolean; is_admin: boolean;
 }
-interface RedRow { id: number; nick: string; reward: string; cost: number; status: string; created: string; email: string | null; }
+interface RedRow { id: number; nick: string; reward: string; cost: number; status: string; created: string; email: string | null; phone: string | null; }
 interface ReviewRow { id: number; nick: string; rating: number; text: string; hidden: boolean; created: string; }
 interface Stats { players: number; accounts: number; coins: number; redemptions_pending: number; redemptions_total: number; reviews: number; bookings: number; }
 interface PrizeRow {
@@ -1704,7 +1712,16 @@ const Admin: React.FC = () => {
                         <div className="min-w-0">
                           <div className="font-bold text-slate-900">{r.reward}</div>
                           <div className="mt-0.5 text-xs text-slate-500">{r.nick} · {r.email || 'без пошти'} · {fmtDate(r.created)}</div>
-                          <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-600"><Coins className="h-3 w-3" />{fmt(r.cost)}</div>
+                          {r.phone ? (
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+                              <a href={`tel:${r.phone}`} className="rounded-lg bg-emerald-50 px-2 py-1 font-bold text-emerald-700 ring-1 ring-emerald-200">📞 {r.phone}</a>
+                              <a href={`viber://chat?number=%2B${redPhoneIntl(r.phone)}`} className="rounded-lg bg-[#7360F2]/10 px-2 py-1 font-semibold text-[#5c4cc4]">Viber</a>
+                              <a href={`https://t.me/+${redPhoneIntl(r.phone)}`} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-[#229ED9]/10 px-2 py-1 font-semibold text-[#1c85b7]">Telegram</a>
+                            </div>
+                          ) : (
+                            <div className="mt-1 text-xs text-slate-400">телефон не вказано</div>
+                          )}
+                          <div className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-600"><Coins className="h-3 w-3" />{fmt(r.cost)}</div>
                         </div>
                         <button
                           onClick={() => setRedStatus(r.id, issued ? 'pending' : 'issued')}

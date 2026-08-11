@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 const GUEST_KEY = 'rps_player_id';
 const ACCOUNT_KEY = 'rps_account_id';
 const NICK_KEY = 'rps_nickname';
+const PHONE_KEY = 'rps_phone';
 
 function uuid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
@@ -31,6 +32,14 @@ function initialNick(): string {
   return sessionStorage.getItem(NICK_KEY) || localStorage.getItem(NICK_KEY) || 'Гравець-' + Math.floor(1000 + Math.random() * 9000);
 }
 
+function initialPhone(): string {
+  try {
+    return localStorage.getItem(PHONE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
 export interface Account {
   playerId: string;
   nickname: string;
@@ -40,6 +49,9 @@ export interface Account {
   lastBetRound: number | null;
   isAccount: boolean;
   ready: boolean;
+  /** Останній номер телефону гравця — підставляємо у форму обміну призу. */
+  phone: string;
+  setPhone: (p: string) => void;
   setNickname: (n: string) => void;
   refresh: () => Promise<void>;
   topUp: (amount: number) => Promise<void>;
@@ -47,7 +59,7 @@ export interface Account {
   login: (loginStr: string, password: string, remember?: boolean) => Promise<string | null>;
   signup: (loginStr: string, password: string, nick: string, remember?: boolean, refCode?: string) => Promise<string | null>;
   logout: () => void;
-  redeem: (reward: string, cost: number) => Promise<string | null>;
+  redeem: (reward: string, cost: number, phone?: string) => Promise<string | null>;
   addReview: (rating: number, text: string) => Promise<string | null>;
 }
 
@@ -60,12 +72,24 @@ export function useAccount(): Account {
   const [bluffReady, setBluffReady] = useState(false);
   const [lastBetRound, setLastBetRound] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
+  const [phone, setPhoneState] = useState(initialPhone);
   const nickRef = useRef(nickname);
   nickRef.current = nickname;
 
   const setNickname = useCallback((n: string) => {
     setNicknameState(n);
     localStorage.setItem(NICK_KEY, n);
+  }, []);
+
+  const setPhone = useCallback((p: string) => {
+    const v = p.trim();
+    setPhoneState(v);
+    try {
+      if (v) localStorage.setItem(PHONE_KEY, v);
+      else localStorage.removeItem(PHONE_KEY);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -232,28 +256,32 @@ export function useAccount(): Account {
   }, []);
 
   const redeem = useCallback(
-    async (reward: string, cost: number): Promise<string | null> => {
-      const { data, error } = await supabase.rpc('rps_redeem', {
-        p_id: playerId,
-        p_nick: nickRef.current,
-        p_reward: reward,
-        p_cost: cost,
-      });
+    async (reward: string, cost: number, phoneArg?: string): Promise<string | null> => {
+      const p_phone = (phoneArg || '').trim();
+      const args = { p_id: playerId, p_nick: nickRef.current, p_reward: reward, p_cost: cost };
+      let { data, error } = await supabase.rpc('rps_redeem', { ...args, p_phone });
+      // Якщо в базі ще стара (4-аргументна) версія функції — оформлюємо без телефону,
+      // а сам номер усе одно долетить у сповіщення власнику нижче.
+      if (error && /rps_redeem|schema cache|function/i.test(error.message || '')) {
+        ({ data, error } = await supabase.rpc('rps_redeem', args));
+      }
       await refresh();
       if (error) {
         if ((error.message || '').includes('insufficient')) return 'Недостатньо монет';
+        if ((error.message || '').includes('bad phone')) return 'Вкажіть коректний номер телефону';
         return 'Не вдалося оформити';
       }
+      if (p_phone) setPhone(p_phone);
       const code = (data as { code?: string } | null)?.code;
       // Лист про оформлення призу клієнту + сповіщення власнику (fire-and-forget).
       fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'redeem', playerId, reward, cost, nickname: nickRef.current, code }),
+        body: JSON.stringify({ type: 'redeem', playerId, reward, cost, nickname: nickRef.current, code, phone: p_phone }),
       }).catch(() => {});
       return null;
     },
-    [playerId, refresh]
+    [playerId, refresh, setPhone]
   );
 
   const addReview = useCallback(
@@ -283,6 +311,8 @@ export function useAccount(): Account {
     lastBetRound,
     isAccount,
     ready,
+    phone,
+    setPhone,
     setNickname,
     refresh,
     topUp,

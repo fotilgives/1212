@@ -4,6 +4,7 @@ import { Coins, Gift, Check, UserPlus, Copy, Star, Send, MessageSquare, External
 import type { Account } from '../../hooks/useAccount';
 import { supabase } from '../../lib/supabase';
 import AnimatedNumber from '../AnimatedNumber';
+import PhoneAskModal from '../PhoneAskModal';
 
 interface Props {
   account: Account;
@@ -30,6 +31,9 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
   const [busy, setBusy] = useState<string | null>(null);
   const [delivered, setDelivered] = useState<Prize | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  /** Приз, для якого зараз питаємо номер телефону. */
+  const [asking, setAsking] = useState<Prize | null>(null);
+  const [askErr, setAskErr] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -112,8 +116,10 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
     }
   };
 
-  const redeem = async (r: Prize) => {
+  // Крок 1 — перевірки й запит телефону (без нього немає як звʼязатися з гравцем).
+  const startRedeem = (r: Prize) => {
     setErr(null);
+    setAskErr(null);
     // Покупка за монети — лише для зареєстрованих (видача йде на акаунт/пошту).
     if (!account.isAccount) {
       onLogin?.();
@@ -123,11 +129,23 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
       onTopUp();
       return;
     }
+    setAsking(r);
+  };
+
+  // Крок 2 — списання монет разом з номером телефону.
+  const confirmRedeem = async (phone: string) => {
+    const r = asking;
+    if (!r) return;
+    setAskErr(null);
     setBusy(r.title);
-    const e = await account.redeem(r.title, r.cost);
+    const e = await account.redeem(r.title, r.cost, phone);
     setBusy(null);
-    if (e) setErr(e);
-    else setDelivered(r);
+    if (e) {
+      setAskErr(e);
+      return;
+    }
+    setAsking(null);
+    setDelivered(r);
   };
 
   const Wrapper: any = embedded ? 'div' : 'main';
@@ -194,7 +212,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
                   <span className="text-sm text-slate-400">монет</span>
                 </div>
                 <button
-                  onClick={() => redeem(r)}
+                  onClick={() => startRedeem(r)}
                   disabled={busy === r.title}
                   className={`mt-4 w-full rounded-xl py-3 text-sm font-semibold transition disabled:opacity-50 ${
                     !account.isAccount
@@ -323,6 +341,18 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
         </div>
       </div>
 
+      {/* Телефон перед обміном */}
+      <PhoneAskModal
+        open={!!asking}
+        title={asking?.title || ''}
+        cost={asking?.cost}
+        initialPhone={account.phone}
+        busy={!!busy}
+        error={askErr}
+        onClose={() => { setAsking(null); setAskErr(null); }}
+        onSubmit={confirmRedeem}
+      />
+
       {/* Видача після покупки */}
       <AnimatePresence>
         {delivered && (
@@ -357,7 +387,7 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
                 </a>
               ) : (
                 <p className="mt-5 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-100">
-                  📞 Спеціаліст звʼяжеться з тобою найближчим часом, щоб видати нагороду. Заявку вже прийнято.
+                  📞 Спеціаліст звʼяжеться з тобою найближчим часом{account.phone ? <> за номером <b className="text-slate-800">{account.phone}</b></> : ''}, щоб видати нагороду. Заявку вже прийнято.
                 </p>
               )}
 
