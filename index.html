@@ -28,10 +28,30 @@
     <meta name="twitter:description" content="Масажист-реабілітолог у Вінниці. Лікувальний масаж, реабілітація, йога. Запис онлайн.">
     <meta name="twitter:image" content="https://1212-main-2.vercel.app/images/about.jpg">
 
-    <!-- PWA / Theme -->
+    <!-- Public site is deliberately not a PWA. -->
     <meta name="theme-color" content="#065f46">
     <link rel="icon" type="image/png" href="/images/logo.png">
     <link rel="apple-touch-icon" href="/images/logo.png">
+    <script>
+      // Run before the application bundle. Old builds registered the admin PWA
+      // for the whole origin, so remove that legacy state on every public page.
+      if (!location.pathname.startsWith('/admin')) {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations()
+            .then(function (items) {
+              return Promise.all(items.map(function (item) { return item.unregister(); }));
+            })
+            .catch(function () {});
+        }
+        if ('caches' in window) {
+          caches.keys()
+            .then(function (keys) {
+              return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+            })
+            .catch(function () {});
+        }
+      }
+    </script>
 
     <!-- JSON-LD Structured Data (LocalBusiness + Person) -->
     <script type="application/ld+json">
@@ -97,6 +117,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://fjrkvxzuwihogmwfpnnt.supabase.co" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600&display=swap" rel="stylesheet">
+    <style>
+      html,body,#root{min-height:100%;margin:0}
+      body{background:#065f46}
+    </style>
 </head>
 <body>
     <div id="root"></div>

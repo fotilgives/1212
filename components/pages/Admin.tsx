@@ -1299,7 +1299,7 @@ function useAdminPwa() {
     add('link', { rel: 'apple-touch-icon', href: '/images/logo.png' });
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/admin' }).catch(() => {});
+      navigator.serviceWorker.register('/admin-sw.js', { scope: '/admin' }).catch(() => {});
     }
     const onPrompt = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
     const onInstalled = () => { setInstalled(true); setDeferred(null); };

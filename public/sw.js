@@ -1,8 +1,11 @@
-// Мінімальний service worker — потрібен лише для встановлюваності PWA (адмін-додаток).
-// Без кешування: всі запити йдуть у мережу як зазвичай (щоб не віддавати застарілий
-// білд після деплою). Наявність fetch-обробника — умова інсталяції в Chrome.
+// Tombstone for the legacy root-scoped worker. Older builds accidentally
+// registered /sw.js for the whole site. As soon as Android checks for an update,
+// this version deletes its caches and unregisters itself.
 self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', () => {
-  // passthrough — не перехоплюємо відповідь, браузер обробляє сам
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+    await self.registration.unregister();
+  })());
 });
