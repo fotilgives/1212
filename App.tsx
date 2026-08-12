@@ -47,17 +47,13 @@ const App: React.FC = () => {
   const [thanks, setThanks] = useState<null | 'donate' | 'topup' | 'course'>(null);
   const [tournamentJoin, setTournamentJoin] = useState<number | null>(null);
 
+  const authRequired = route !== 'admin' && !account.isAccount;
+
   const closeAuth = (reason?: 'success') => {
+    // Обов'язкову форму не можна закрити як гість. Після успішного входу
+    // account.isAccount оновлюється і блокування автоматично зникає.
+    if (reason !== 'success' && authRequired) return;
     setAuthOpen(false);
-    if (reason === 'success' || account.isAccount) return;
-
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has('ref')) return;
-
-    // Відмова від реєстрації за реферальним посиланням повертає на звичайну
-    // головну сторінку, без гостьового профілю та повторного відкриття форми.
-    window.history.replaceState({}, '', '/');
-    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   // Запрошення в турнір ?tournament=<id> — завжди показуємо модалку.
@@ -88,23 +84,11 @@ const App: React.FC = () => {
     navigate('profile');
   };
 
-  // Нові гості (без збереженого акаунта) → одразу показуємо реєстрацію.
-  // Реф-гостей (?ref=) завжди ведемо на реєстрацію (модалка сама перемикається
-  // на «Реєстрація» і підставляє код запрошення), щоб не лишались гостями.
+  // Якщо збережений акаунт з'явився (вхід/реєстрація), прибираємо будь-який
+  // ручний стан форми. Для гостей authRequired тримає її відкритою постійно.
   useEffect(() => {
-    if (!account.ready) return;
-    if (account.isAccount) return;
-    const params = new URLSearchParams(window.location.search);
-    // Турнірна модалка сама вирішує, чи потрібен вхід. Для завершеного
-    // турніру не відкриваємо зайву форму реєстрації під повідомленням.
-    if (params.has('tournament')) return;
-    const ref = params.get('ref');
-    if (ref) { setAuthOpen(true); return; }
-    const seen = localStorage.getItem('rps_auth_seen');
-    if (seen) return;
-    localStorage.setItem('rps_auth_seen', '1');
-    setAuthOpen(true);
-  }, [account.ready, account.isAccount]);
+    if (account.isAccount) setAuthOpen(false);
+  }, [account.isAccount]);
 
   // Кабінет — лише для зареєстрованого користувача. Пряме посилання гостя
   // відкриває форму входу, але не показує фальшивий профіль «Гравець-…».
@@ -260,8 +244,13 @@ const App: React.FC = () => {
       <FloatingContact />
       <BackToTop />
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} onHistory={openHistory} />
-      <AuthModal open={authOpen} onClose={closeAuth} account={account} />
-      {tournamentJoin != null && (
+      <AuthModal
+        open={authRequired || authOpen}
+        onClose={closeAuth}
+        account={account}
+        required={authRequired}
+      />
+      {tournamentJoin != null && account.isAccount && (
         <TournamentJoinModal
           tournamentId={tournamentJoin}
           account={account}

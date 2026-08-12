@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserRound, LogIn } from 'lucide-react';
+import { ShieldCheck, UserRound, LogIn } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
 import { supabase } from '../lib/supabase';
 
@@ -8,9 +8,10 @@ interface Props {
   open: boolean;
   onClose: (reason?: 'success') => void;
   account: Account;
+  required?: boolean;
 }
 
-const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
+const AuthModal: React.FC<Props> = ({ open, onClose, account, required = false }) => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -45,6 +46,23 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
     }
   }, [open]);
 
+  // Поки обов'язковий вхід відкритий, сторінка позаду не прокручується.
+  // Escape також не закриває форму: вийти з неї можна лише після успішної
+  // авторизації або реєстрації.
+  useEffect(() => {
+    if (!open || !required) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const blockEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') event.preventDefault();
+    };
+    window.addEventListener('keydown', blockEscape, true);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', blockEscape, true);
+    };
+  }, [open, required]);
+
   const submit = async () => {
     setErr(null);
     if (mode === 'signup' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(login.trim())) {
@@ -75,14 +93,17 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => onClose()}
+          onClick={required ? undefined : () => onClose()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-title"
         >
           <motion.div
-            className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
+            className="my-auto w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-white/70"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -90,16 +111,20 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-xl font-extrabold text-slate-900">
+                {required && (
+                  <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Захищений доступ
+                  </span>
+                )}
+                <h3 id="auth-title" className="text-xl font-extrabold text-slate-900">
                   {mode === 'login' ? 'Вхід' : 'Реєстрація'}
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Акаунт зберігає баланс на будь-якому пристрої
+                  {required
+                    ? 'Увійдіть або створіть акаунт, щоб користуватися сайтом'
+                    : 'Акаунт зберігає баланс на будь-якому пристрої'}
                 </p>
               </div>
-              <button onClick={() => onClose()} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
             <div className="mt-5 space-y-3">
