@@ -31,7 +31,17 @@
       "headers": [
         { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
+    },
+    {
+      "source": "/android-reset",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, max-age=0" },
+        { "key": "Clear-Site-Data", "value": "\"cache\", \"storage\"" }
+      ]
     }
+  ],
+  "redirects": [
+    { "source": "/android-reset", "destination": "/?android=fixed", "permanent": false }
   ],
   "rewrites": [
     { "source": "/((?!api/|assets/|images/|media/).*)", "destination": "/index.html" }
