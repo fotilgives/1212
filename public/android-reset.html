@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#065f46">
+  <title>Оновлення сайту</title>
+  <style>
+    html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#065f46;color:#fbf9f4;font:600 16px/1.5 system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+  </style>
+</head>
+<body>
+  <div>Оновлюємо сайт…</div>
+  <script>
+    (async function () {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (_) {}
+      location.replace('/?android=fixed');
+    })();
+  </script>
+</body>
+</html>
