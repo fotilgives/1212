@@ -35,12 +35,11 @@
     {
       "source": "/android-reset.html",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0" },
-        { "key": "Clear-Site-Data", "value": "\"cache\", \"storage\"" }
+        { "key": "Cache-Control", "value": "no-store, max-age=0" }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/((?!api/|assets/|images/|media/|android-reset\.html).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|images/|media/).*)", "destination": "/index.html" }
   ]
 }
