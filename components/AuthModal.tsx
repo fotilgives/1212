@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 
 interface Props {
   open: boolean;
-  onClose: () => void;
+  onClose: (reason?: 'success') => void;
   account: Account;
 }
 
@@ -67,7 +67,7 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
       setPassword('');
       setNick('');
       setRefCode('');
-      onClose();
+      onClose('success');
     }
   };
 
@@ -79,7 +79,7 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={() => onClose()}
         >
           <motion.div
             className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl"
@@ -97,7 +97,7 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account }) => {
                   Акаунт зберігає баланс на будь-якому пристрої
                 </p>
               </div>
-              <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">
+              <button onClick={() => onClose()} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">
                 <X className="h-5 w-5" />
               </button>
             </div>

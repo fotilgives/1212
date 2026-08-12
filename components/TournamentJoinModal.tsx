@@ -23,7 +23,13 @@ interface Props {
   onLogin: () => void;
 }
 
-type Stage = 'loading' | 'need_auth' | 'already_joined' | 'consent' | 'joining' | 'done' | 'insufficient' | 'error';
+type Stage = 'loading' | 'need_auth' | 'already_joined' | 'consent' | 'joining' | 'done' | 'insufficient' | 'finished' | 'error';
+
+function tournamentHasFinished(info: Info | null) {
+  if (!info) return false;
+  if (info.status === 'finished') return true;
+  return !!info.end_date && new Date(info.end_date).getTime() <= Date.now();
+}
 
 function useCountdown(targetDate: string | null | undefined) {
   const [text, setText] = useState('');
@@ -68,7 +74,13 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
         return;
       }
       if (!data) { setStage('error'); setErrMsg('Турнір не знайдено або посилання застаріле.'); return; }
-      setInfo(data as Info);
+      const tournament = data as Info;
+      setInfo(tournament);
+
+      if (tournamentHasFinished(tournament)) {
+        setStage('finished');
+        return;
+      }
 
       if (!account.isAccount) {
         setStage('need_auth');
@@ -100,11 +112,23 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
     if (stage === 'need_auth' && account.isAccount) setStage('consent');
   }, [account.isAccount, stage]);
 
+  // Якщо час завершення настав, поки модалка відкрита, одразу блокуємо участь.
+  useEffect(() => {
+    if (!info?.end_date || stage === 'finished' || stage === 'done') return;
+    const tick = () => {
+      if (tournamentHasFinished(info)) setStage('finished');
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [info, stage]);
+
   const prepay = info?.prepay_coins ?? 0;
   const enough = account.balance >= prepay;
 
   const join = async () => {
     if (!info) return;
+    if (tournamentHasFinished(info)) { setStage('finished'); return; }
     if (prepay > 0 && !enough) { setStage('insufficient'); return; }
     setStage('joining');
     const { data } = await supabase.rpc('rps_tournament_join', { p_player_id: account.playerId, p_tournament_id: tournamentId });
@@ -112,6 +136,8 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
       try { localStorage.setItem(`rps_tournament_joined_${tournamentId}`, '1'); } catch { /* ignore */ }
       await account.refresh();
       setStage('done');
+    } else if (data === 'tournament_finished' || data === 'finished') {
+      setStage('finished');
     } else if (data === 'insufficient') {
       setStage('insufficient');
     } else {
@@ -123,7 +149,9 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
   const goPlay = () => { onClose(); navigate('game'); };
 
   // Колір шапки залежно від статусу
-  const headerGradient = stage === 'already_joined'
+  const headerGradient = stage === 'finished'
+    ? 'from-slate-600 via-slate-700 to-slate-800'
+    : stage === 'already_joined'
     ? 'from-violet-600 via-purple-600 to-indigo-700'
     : 'from-amber-500 via-amber-500 to-orange-500';
 
@@ -173,6 +201,33 @@ const TournamentJoinModal: React.FC<Props> = ({ tournamentId, account, onClose, 
                   <LogIn className="h-5 w-5" /> Увійти / Зареєструватися
                 </button>
                 <button onClick={onClose} className="mt-2 w-full text-xs font-semibold text-slate-400 hover:text-slate-600">Пізніше</button>
+              </div>
+            )}
+
+            {stage === 'finished' && (
+              <div className="flex flex-col items-center gap-4 py-3 text-center">
+                <motion.div
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                  className="grid h-16 w-16 place-items-center rounded-full bg-slate-100 text-3xl"
+                >
+                  🏁
+                </motion.div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Цей турнір уже завершився</h3>
+                  <p className="mt-1 text-sm text-slate-500">«{info?.name}»</p>
+                </div>
+                <div className="w-full rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-100">
+                  Реєстрацію закрито після завершення турніру.
+                  {info?.end_date && (
+                    <div className="mt-2 font-bold text-slate-800">
+                      Завершився {new Date(info.end_date).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' })}
+                    </div>
+                  )}
+                </div>
+                <button onClick={onClose} className="w-full rounded-2xl bg-slate-800 py-3.5 font-bold text-white transition hover:bg-slate-700 active:scale-95">
+                  Зрозуміло
+                </button>
               </div>
             )}
 

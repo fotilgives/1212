@@ -47,6 +47,19 @@ const App: React.FC = () => {
   const [thanks, setThanks] = useState<null | 'donate' | 'topup' | 'course'>(null);
   const [tournamentJoin, setTournamentJoin] = useState<number | null>(null);
 
+  const closeAuth = (reason?: 'success') => {
+    setAuthOpen(false);
+    if (reason === 'success' || account.isAccount) return;
+
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('ref')) return;
+
+    // Відмова від реєстрації за реферальним посиланням повертає на звичайну
+    // головну сторінку, без гостьового профілю та повторного відкриття форми.
+    window.history.replaceState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   // Запрошення в турнір ?tournament=<id> — завжди показуємо модалку.
   // Модалка сама перевіряє через Supabase чи вже зареєстрований.
   useEffect(() => {
@@ -81,13 +94,25 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!account.ready) return;
     if (account.isAccount) return;
-    const ref = new URLSearchParams(window.location.search).get('ref');
+    const params = new URLSearchParams(window.location.search);
+    // Турнірна модалка сама вирішує, чи потрібен вхід. Для завершеного
+    // турніру не відкриваємо зайву форму реєстрації під повідомленням.
+    if (params.has('tournament')) return;
+    const ref = params.get('ref');
     if (ref) { setAuthOpen(true); return; }
     const seen = localStorage.getItem('rps_auth_seen');
     if (seen) return;
     localStorage.setItem('rps_auth_seen', '1');
     setAuthOpen(true);
   }, [account.ready, account.isAccount]);
+
+  // Кабінет — лише для зареєстрованого користувача. Пряме посилання гостя
+  // відкриває форму входу, але не показує фальшивий профіль «Гравець-…».
+  useEffect(() => {
+    if (!account.ready || account.isAccount || route !== 'profile') return;
+    navigate('home');
+    setAuthOpen(true);
+  }, [account.isAccount, account.ready, route]);
 
   // Подяка після успішної оплати (WayForPay повертає на /api/wayforpay-return).
   useEffect(() => {
@@ -235,7 +260,7 @@ const App: React.FC = () => {
       <FloatingContact />
       <BackToTop />
       <ExchangeModal open={exchangeOpen} onClose={() => setExchangeOpen(false)} account={account} onHistory={openHistory} />
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} account={account} />
+      <AuthModal open={authOpen} onClose={closeAuth} account={account} />
       {tournamentJoin != null && (
         <TournamentJoinModal
           tournamentId={tournamentJoin}

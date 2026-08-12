@@ -109,28 +109,28 @@ export function useAccount(): Account {
   useEffect(() => {
     let active = true;
     (async () => {
-      await supabase.rpc('rps_register', { p_id: playerId, p_nick: nickRef.current });
-      // Реферал: якщо зайшли за посиланням ?ref=<inviterId> — зараховуємо запрошення
-      // (скидає таймер «таяння» тому, хто запросив). Спрацьовує один раз.
-      try {
-        const ref = new URLSearchParams(window.location.search).get('ref');
-        if (ref && ref !== playerId && !localStorage.getItem('rps_ref_done')) {
-          await supabase.rpc('rps_accept_referral', { p_invitee: playerId, p_inviter: ref });
-          localStorage.setItem('rps_ref_done', '1');
-        }
-      } catch {
-        /* ignore */
+      // Гостьовий ID потрібен лише локально. Профіль у базі створюється тільки
+      // після входу або реєстрації — так в адмінці не з'являються порожні гравці.
+      if (isAccount) {
+        await supabase.rpc('rps_register', { p_id: playerId, p_nick: nickRef.current });
       }
       // Приєднання до турніру за посиланням ?tournament= більше НЕ автоматичне.
       // Його показує окремий екран згоди (TournamentJoinModal) — зі згодою,
       // попередженням про резерв завдатку і пропозицією поповнити при нестачі.
       if (active) {
-        await refresh();
+        if (isAccount) await refresh();
+        else {
+          setBalance(0);
+          setWins(0);
+          setBluffReady(false);
+          setLastBetRound(null);
+        }
         setReady(true);
       }
       // Страхувальна звірка платежів: перевіряємо статус збережених замовлень
       // у WayForPay і дораховуємо монети, якщо колбек/повернення не спрацювали.
       try {
+        if (!isAccount) return;
         const key = 'wfp_pending_refs';
         const refs: string[] = JSON.parse(localStorage.getItem(key) || '[]');
         if (refs.length > 0) {
@@ -152,7 +152,7 @@ export function useAccount(): Account {
       }
     })();
 
-    const channel = supabase
+    const channel = isAccount ? supabase
       .channel(`profile-${playerId}`)
       .on(
         'postgres_changes',
@@ -170,13 +170,13 @@ export function useAccount(): Account {
           if (row && 'last_bet_round_id' in row) setLastBetRound(row.last_bet_round_id ?? null);
         }
       )
-      .subscribe();
+      .subscribe() : null;
 
     return () => {
       active = false;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [playerId, refresh]);
+  }, [isAccount, playerId, refresh]);
 
   const topUp = useCallback(
     async (amount: number) => {

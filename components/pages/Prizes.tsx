@@ -236,7 +236,8 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
 
       {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
 
-      {/* Утримай бали від «таяння»: запроси друга або залиш відгук */}
+      {/* Реферальні дії та відгуки працюють лише для зареєстрованого акаунта. */}
+      {account.isAccount ? (
       <div id="review-section" className="mt-10 grid gap-5 md:grid-cols-2">
         {/* Запросити друга */}
         <div className="rounded-3xl bg-white p-6 ring-1 ring-slate-100 shadow-sm">
@@ -340,6 +341,18 @@ const Prizes: React.FC<Props> = ({ account, onTopUp, onLogin, onHistory, embedde
           )}
         </div>
       </div>
+      ) : (
+        <div id="review-section" className="mt-10 rounded-3xl border border-emerald-100 bg-emerald-50/70 p-6 text-center shadow-sm">
+          <Lock className="mx-auto h-8 w-8 text-emerald-600" />
+          <h3 className="mt-3 text-lg font-bold text-slate-900">Увійдіть, щоб запрошувати друзів</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+            Персональне посилання, бонуси та відгуки доступні після реєстрації. Так вони надійно прив’язані до вашого акаунта.
+          </p>
+          <button onClick={() => onLogin?.()} className="mt-4 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700">
+            Увійти або зареєструватися
+          </button>
+        </div>
+      )}
 
       {/* Телефон перед обміном */}
       <PhoneAskModal
