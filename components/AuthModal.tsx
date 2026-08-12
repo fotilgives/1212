@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, UserRound, LogIn } from 'lucide-react';
+import { ArrowLeft, FileText, Lock, ShieldCheck, UserRound, LogIn } from 'lucide-react';
 import type { Account } from '../hooks/useAccount';
 import { supabase } from '../lib/supabase';
 
@@ -18,6 +18,8 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account, required = false }
   const [nick, setNick] = useState('');
   const [refCode, setRefCode] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [accepted, setAccepted] = useState(false);
+  const [legalDoc, setLegalDoc] = useState<'privacy' | 'terms' | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // Бонуси реферала з адмінки (rps_config). Дефолти — поки не підвантажено.
@@ -65,6 +67,10 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account, required = false }
 
   const submit = async () => {
     setErr(null);
+    if (!accepted) {
+      setErr('Підтвердьте згоду з політикою та умовами');
+      return;
+    }
     if (mode === 'signup' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(login.trim())) {
       setErr('Вкажіть коректну пошту (email)');
       return;
@@ -109,6 +115,52 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account, required = false }
             exit={{ scale: 0.95, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
+            {legalDoc ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setLegalDoc(null)}
+                  className="mb-4 inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 hover:text-emerald-800"
+                >
+                  <ArrowLeft className="h-4 w-4" /> Назад до форми
+                </button>
+                <div className="flex items-center gap-3">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
+                    {legalDoc === 'privacy' ? <Lock className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+                  </span>
+                  <h3 className="text-lg font-extrabold text-slate-900">
+                    {legalDoc === 'privacy' ? 'Політика конфіденційності' : 'Умови користування'}
+                  </h3>
+                </div>
+                <div className="mt-4 max-h-[55vh] space-y-3 overflow-y-auto rounded-2xl bg-slate-50 p-4 text-sm leading-relaxed text-slate-600 ring-1 ring-slate-100">
+                  {legalDoc === 'privacy' ? (
+                    <>
+                      <p>Ми обробляємо персональні дані відповідно до Закону України «Про захист персональних даних».</p>
+                      <p><b>Які дані збираємо:</b> ім’я, e-mail, номер телефону та інформацію, яку ви добровільно вказуєте у формах.</p>
+                      <p><b>Для чого:</b> створення акаунта, збереження балансу, зв’язок із вами, оформлення послуг, платежів і звернень.</p>
+                      <p>Ми не отримуємо і не зберігаємо повні реквізити банківських карток. Платежі обробляє захищений сервіс WayForPay.</p>
+                      <p>Ви можете попросити виправити або видалити свої дані, написавши на <b>vladimirnikolaevih3@gmail.com</b>.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>Реєструючись, ви підтверджуєте достовірність зазначених даних і погоджуєтеся користуватися сайтом добросовісно.</p>
+                      <p>Баланс, бонуси та результати гри прив’язуються до вашого акаунта. Заборонено створювати акаунти для шахрайства або обходу правил.</p>
+                      <p>Оплата послуг означає згоду з публічною офертою. Актуальна вартість зазначена на сайті, а час візиту узгоджується додатково.</p>
+                      <p>Оплата за ще не надану послугу може бути повернена після звернення. Добровільні внески не повертаються, крім помилкового чи повторного списання.</p>
+                      <p>Адміністрація може обмежити доступ у разі порушення правил або спроби втручання в роботу сервісу.</p>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLegalDoc(null)}
+                  className="mt-5 w-full rounded-xl bg-emerald-600 py-3 font-bold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+                >
+                  Зрозуміло
+                </button>
+              </div>
+            ) : (
+            <>
             <div className="flex items-start justify-between">
               <div>
                 {required && (
@@ -181,12 +233,34 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account, required = false }
               <span className="text-sm text-slate-600">Запамʼятати мене</span>
             </label>
 
+            <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-2xl bg-emerald-50/70 p-3 ring-1 ring-emerald-100 select-none">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => {
+                  setAccepted(e.target.checked);
+                  if (e.target.checked) setErr(null);
+                }}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded accent-emerald-600"
+              />
+              <span className="text-xs leading-relaxed text-slate-600">
+                Натискаючи «{mode === 'login' ? 'Увійти' : 'Створити акаунт'}», я погоджуюся з{' '}
+                <button type="button" onClick={(e) => { e.preventDefault(); setLegalDoc('terms'); }} className="font-bold text-emerald-700 underline decoration-emerald-300 underline-offset-2">
+                  умовами користування
+                </button>{' '}
+                та{' '}
+                <button type="button" onClick={(e) => { e.preventDefault(); setLegalDoc('privacy'); }} className="font-bold text-emerald-700 underline decoration-emerald-300 underline-offset-2">
+                  політикою конфіденційності
+                </button>.
+              </span>
+            </label>
+
             {err && <p className="mt-3 text-center text-sm font-medium text-rose-600">{err}</p>}
 
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={submit}
-              disabled={busy || !login || !password}
+              disabled={busy || !login || !password || !accepted}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-semibold text-white shadow-lg shadow-emerald-300/50 transition hover:bg-emerald-700 disabled:opacity-50"
             >
               {mode === 'login' ? <LogIn className="h-5 w-5" /> : <UserRound className="h-5 w-5" />}
@@ -202,6 +276,8 @@ const AuthModal: React.FC<Props> = ({ open, onClose, account, required = false }
             >
               {mode === 'login' ? 'Немає акаунта? Зареєструватися' : 'Вже маєш акаунт? Увійти'}
             </button>
+            </>
+            )}
           </motion.div>
         </motion.div>
       )}
