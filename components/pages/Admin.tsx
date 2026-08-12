@@ -1272,7 +1272,8 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
   );
 };
 // ============ PWA (адмін-додаток для телефона) ============
-// На сторінці /admin підмінюємо маніфест на адмінський (start_url → /#/admin),
+// Маніфест і service worker підключаються лише на /admin. Публічний сайт не є
+// PWA, тому Android не показує нативний splash з великим логотипом при вході.
 // додаємо apple-мета й реєструємо service worker. На виході з адмінки прибираємо
 // підміну, щоб публічний сайт не успадкував адмінський маніфест.
 interface BIPEvent extends Event { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }>; }
@@ -1298,7 +1299,7 @@ function useAdminPwa() {
     add('link', { rel: 'apple-touch-icon', href: '/images/logo.png' });
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js', { scope: '/admin' }).catch(() => {});
     }
     const onPrompt = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
     const onInstalled = () => { setInstalled(true); setDeferred(null); };

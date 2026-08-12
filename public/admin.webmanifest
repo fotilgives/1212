@@ -1,9 +1,10 @@
 {
   "name": "Адмін-панель — Центр розвитку",
   "short_name": "Адмін",
+  "id": "/admin",
   "description": "Керування центром: користувачі, заявки, призи, гра.",
   "start_url": "/admin",
-  "scope": "/",
+  "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f6f2e9",
