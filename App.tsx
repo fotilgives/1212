@@ -18,6 +18,7 @@ import FinalCTA from './components/FinalCTA';
 import ReviewsWall from './components/ReviewsWall';
 import { useAccount } from './hooks/useAccount';
 import { useRoute, navigate } from './hooks/useRoute';
+import { supabase } from './lib/supabase';
 
 import AuthModal from './components/AuthModal';
 import TournamentJoinModal from './components/TournamentJoinModal';
@@ -65,6 +66,23 @@ const App: React.FC = () => {
       setTournamentJoin(tId);
     }
   }, []);
+
+  // Персональне запрошення показується при вході, навіть якщо користувач
+  // не переходив за спеціальним посиланням. Після закриття воно лишається в кабінеті.
+  useEffect(() => {
+    if (!account.ready || !account.isAccount || tournamentJoin != null) return;
+    let cancelled = false;
+    supabase.rpc('rps_my_pending_tournament_invites', { p_player_id: account.playerId }).then(({ data, error }) => {
+      if (cancelled || error || !Array.isArray(data) || !data.length) return;
+      const latest = Number(data[0]?.id);
+      const seenKey = `rps_tournament_invite_seen_${latest}`;
+      if (latest && sessionStorage.getItem(seenKey) !== '1') {
+        sessionStorage.setItem(seenKey, '1');
+        setTournamentJoin(latest);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [account.isAccount, account.playerId, account.ready, tournamentJoin]);
   const closeTournament = () => {
     setTournamentJoin(null);
     window.history.replaceState({}, '', window.location.pathname + (window.location.hash || '#/'));

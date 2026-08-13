@@ -650,13 +650,26 @@ const TournamentsTab: React.FC<{ token: string; users: UserRow[] }> = ({ token, 
     if (error && /schema cache|PGRST202|could not find/i.test(error.message || '')) {
       ({ data, error } = await supabase.rpc('rps_admin_create_tournament', baseCompat));
     }
-    setSending(false);
     if (data && !data.error) {
-      setSendMsg({ type: 'ok', text: `✅ Запрошення надіслано ${data.invited || selectedPlayers.size} гравцям!` });
+      let emailNote = '';
+      try {
+        const response = await fetch('/api/send-tournament-invites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, tournamentId: data.tournament_id }),
+        });
+        const mail = await response.json();
+        emailNote = response.ok && mail.sent > 0 ? `, на пошту: ${mail.sent}` : '';
+      } catch {
+        // Запрошення вже є в кабінеті; відсутність пошти не скасовує турнір.
+      }
+      setSending(false);
+      setSendMsg({ type: 'ok', text: `✅ Запрошення з’явилось у кабінеті ${data.invited || selectedPlayers.size} гравців${emailNote}.` });
       setTName(''); setTDesc(''); setTDate(''); setTEndDate(''); setTPrepay('0'); setTStake('100'); setTRoundSecs('30'); setSelectedPlayers(new Set());
       setShowForm(false);
       load();
     } else {
+      setSending(false);
       setSendMsg({ type: 'error', text: `Помилка при створенні турніру${error?.message ? `: ${error.message}` : data?.error ? `: ${data.error}` : ''}` });
     }
   };

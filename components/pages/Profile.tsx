@@ -69,6 +69,16 @@ interface TournamentReminder {
   end_date: string | null;
 }
 
+interface TournamentInviteNotice {
+  id: number;
+  name: string;
+  description: string | null;
+  date: string | null;
+  end_date: string | null;
+  prepay_coins: number;
+  status: 'pending' | 'later';
+}
+
 const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [cab, setCab] = useState<Cabinet | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +88,7 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
   const [copied, setCopied] = useState(false);
   const [tournament, setTournament] = useState<TournamentReminder | null>(null);
   const [countdown, setCountdown] = useState('');
+  const [tournamentInvites, setTournamentInvites] = useState<TournamentInviteNotice[]>([]);
 
   const inviteLink = typeof window !== 'undefined' ? `${window.location.origin}/?ref=${account.playerId}` : '';
 
@@ -112,6 +123,18 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
     const interval = window.setInterval(load, 4000);
     return () => { cancelled = true; window.clearInterval(interval); };
   }, [account.playerId]);
+
+  useEffect(() => {
+    if (!account.isAccount || !account.playerId) return;
+    let cancelled = false;
+    const loadInvites = async () => {
+      const { data, error } = await supabase.rpc('rps_my_pending_tournament_invites', { p_player_id: account.playerId });
+      if (!cancelled && !error) setTournamentInvites((data as TournamentInviteNotice[]) || []);
+    };
+    loadInvites();
+    const interval = window.setInterval(loadInvites, 15000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [account.isAccount, account.playerId]);
 
   // Зворотній відлік до початку турніру
   useEffect(() => {
@@ -267,6 +290,34 @@ const Profile: React.FC<Props> = ({ account, onTopUp, onLogin }) => {
           )}
         </div>
       </motion.section>
+
+      <AnimatePresence>
+        {tournamentInvites.map((invite) => (
+          <motion.section
+            key={`invite-${invite.id}`}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mt-4 overflow-hidden rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-amber-50 p-5 shadow-lg shadow-violet-900/5"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-violet-600 text-2xl text-white shadow-md">🏆</div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-violet-600">Нове запрошення</span>
+                <h3 className="mt-1 text-lg font-black text-slate-900">«{invite.name}»</h3>
+                {invite.date && <p className="mt-1 text-sm font-semibold text-slate-500">Початок: {new Date(invite.date).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}</p>}
+              </div>
+            </div>
+            {invite.description && <p className="mt-3 text-sm leading-relaxed text-slate-600">{invite.description}</p>}
+            <button
+              onClick={() => { window.location.href = `/?tournament=${invite.id}`; }}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-700 active:scale-[0.98]"
+            >
+              Переглянути й відповісти <ExternalLink className="h-4 w-4" />
+            </button>
+          </motion.section>
+        ))}
+      </AnimatePresence>
 
       {/* Банер турніру */}
       <AnimatePresence>
