@@ -1,11 +1,12 @@
 import { buildOwnerNotice, normalizeOrigin, sendTransactionalEmail } from './_mail.js';
 
-const SUPABASE_URL = 'https://fjrkvxzuwihogmwfpnnt.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqcmt2eHp1d2lob2dtd2Zwbm50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQwNDQsImV4cCI6MjA5ODE0MDA0NH0.TK3qk9J3b7MhqZYOYcpQADwR7Ps6wvD4WWnW8mAdr6g';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw new Error('Supabase is not configured');
     let body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const token = String(body.token || '');
     const tournamentId = Number(body.tournamentId);
