@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { loginErrorMessage, requestLogin } from '../lib/login';
 
 const GUEST_KEY = 'rps_player_id';
 const ACCOUNT_KEY = 'rps_account_id';
@@ -215,8 +216,8 @@ export function useAccount(): Account {
   };
 
   const login = useCallback(async (loginStr: string, password: string, remember = true): Promise<string | null> => {
-    const { data, error } = await supabase.rpc('rps_login', { p_login: loginStr, p_password: password });
-    if (error || !data) return 'Невірний логін або пароль';
+    const { data, error } = await requestLogin('rps_login', loginStr, password);
+    if (error || !data) return loginErrorMessage(error);
     const d = data as { id: string; nickname: string };
     applyAccount(d.id, d.nickname, remember);
     return null;

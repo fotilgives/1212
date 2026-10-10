@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { loginErrorMessage, requestLogin } from '../../lib/login';
 import {
   ShieldCheck, LogOut, Users, Gift, MessageSquare, BarChart3, RefreshCw,
   Search, Plus, Minus, Check, EyeOff, Eye, Loader2, Coins, Star, Crown,
@@ -146,9 +147,9 @@ const Login: React.FC<{ onIn: (t: string) => void }> = ({ onIn }) => {
 
   const submit = async () => {
     setErr(null); setBusy(true);
-    const { data, error } = await supabase.rpc('rps_admin_login', { p_login: login.trim(), p_password: password });
+    const { data, error } = await requestLogin('rps_admin_login', login, password);
     setBusy(false);
-    if (error || !data) { setErr('Невірний логін або пароль'); return; }
+    if (error || !data) { setErr(loginErrorMessage(error)); return; }
     const t = (data as { token: string }).token;
     saveToken(t, remember);
     onIn(t);
